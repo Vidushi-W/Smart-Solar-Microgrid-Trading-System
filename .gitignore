@@ -30,6 +30,8 @@ build/
 coverage/
 .npm/
 .eslintcache
+.vite/
+*.local
 *.tsbuildinfo
 npm-debug.log*
 yarn-debug.log*
