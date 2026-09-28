@@ -12,6 +12,7 @@ export const NAV_ITEMS = [
 export function titleForPath(pathname) {
   if (pathname.startsWith("/reservations/")) return "Reservation";
   if (pathname.startsWith("/transactions/")) return "Transfer";
+  if (pathname.startsWith("/stations/") && pathname.endsWith("/slots")) return "Station slots";
   const match = NAV_ITEMS.find((item) => (item.end ? pathname === item.to : pathname.startsWith(item.to)));
   return match?.label || "Smart Solar";
 }
