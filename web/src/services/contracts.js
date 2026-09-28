@@ -1,8 +1,7 @@
 export const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 /**
- * Proposed contracts only. Confirm the paths, payloads, and role split
- * before anyone builds the C# controllers around them.
+ * Shared contracts used by the API reference screen and clients.
  */
 export const contractGroups = [
   {
@@ -23,10 +22,12 @@ export const contractGroups = [
     items: [
       { method: "GET", path: "/stations", role: "Authenticated", purpose: "List microgrid stations, including coordinates, capacity, and status." },
       { method: "POST", path: "/stations", role: "Backoffice", purpose: "Register a station." },
-      { method: "PATCH", path: "/stations/{id}", role: "Backoffice", purpose: "Update station details." },
-      { method: "PATCH", path: "/stations/{id}/status", role: "Backoffice", purpose: "Activate or deactivate a station. Deactivation must fail while requested, approved, or scheduled reservations exist." },
-      { method: "GET", path: "/slots", role: "Authenticated", purpose: "List energy slots. Query by stationId." },
-      { method: "PATCH", path: "/slots/{id}/availability", role: "Backoffice, Grid Operator", purpose: "Open or close a slot. Closing must fail while the slot still has a capacity hold." },
+      { method: "PUT", path: "/stations/{id}", role: "Backoffice", purpose: "Update station details and operating schedule." },
+      { method: "PUT", path: "/stations/{id}/deactivate", role: "Backoffice", purpose: "Deactivate a station unless active reservations prevent it." },
+      { method: "POST", path: "/stations/{id}/slots", role: "Backoffice", purpose: "Create a station slot. Overlapping windows are rejected." },
+      { method: "GET", path: "/stations/{id}/slots?date=yyyy-MM-dd", role: "Authenticated", purpose: "List station slots for a date, including capacity and status." },
+      { method: "PUT", path: "/slots/{id}", role: "Backoffice", purpose: "Update slot time, date, capacity, and status." },
+      { method: "DELETE", path: "/slots/{id}", role: "Backoffice", purpose: "Delete a slot only when reservation checks allow it." },
     ],
   },
   {

@@ -10,6 +10,7 @@ const TONES = {
   Deactivated: "slate",
   Inactive: "slate",
   Open: "green",
+  Full: "sun",
   Closed: "slate",
   AwaitingQR: "sun",
   Issued: "blue",
