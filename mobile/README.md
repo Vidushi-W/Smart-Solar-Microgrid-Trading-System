@@ -77,3 +77,5 @@ The login screen links to Prosumer registration. The form sends NIC, full name, 
 
 Prosumer account status is controlled by the API. An authenticated Prosumer can request deactivation through `POST /api/prosumers/me/deactivation`; Android cannot activate, deactivate, or reactivate an account itself.
 
+The Prosumer Home screen opens `My Profile`, which reads the profile through `GET /api/prosumers/me/profile`. NIC and account status are read-only; permitted fields are saved through `PUT /api/prosumers/me/profile` with the bearer token.
+

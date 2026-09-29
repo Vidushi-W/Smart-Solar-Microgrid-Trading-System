@@ -57,6 +57,15 @@ Prosumer status is stored centrally in `AccountStatus`:
 
 Only `AccountStatus = Active` and `IsActive = true` can authenticate. Invalid state transitions are rejected by the API, and Backoffice authorization is required for activation, deactivation processing, and reactivation.
 
+## Prosumer profile API
+
+Authenticated Prosumer profile operations are token-scoped:
+
+- `GET /api/prosumers/me/profile` - returns NIC, name, email, phone, address, and account status.
+- `PUT /api/prosumers/me/profile` - updates name, email, phone, and address only.
+
+The API obtains the user ID from the JWT subject claim. NIC is returned as the primary identifier but is not accepted in the update request, so a Prosumer cannot edit another account by submitting someone else's NIC.
+
 ## Prosumer registration API
 
 `POST /api/prosumers/register` is public and is called by Android.

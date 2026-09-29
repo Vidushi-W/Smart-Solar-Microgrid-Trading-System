@@ -38,6 +38,14 @@ class RoleHomeActivity : AppCompatActivity() {
             setPadding(0, 20, 0, 20)
             setTextColor(Color.rgb(96, 112, 100))
         })
+        if (role == "Prosumer") {
+            content.addView(Button(this).apply {
+                text = getString(R.string.my_profile)
+                setOnClickListener {
+                    startActivity(android.content.Intent(this@RoleHomeActivity, ProsumerProfileActivity::class.java))
+                }
+            })
+        }
         content.addView(Button(this).apply {
             text = getString(R.string.logout)
             setOnClickListener {

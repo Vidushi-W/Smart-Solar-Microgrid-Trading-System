@@ -12,6 +12,9 @@
             android:name=".activities.RegisterProsumerActivity"
             android:exported="false" />
         <activity
+            android:name=".activities.ProsumerProfileActivity"
+            android:exported="false" />
+        <activity
             android:name=".activities.RoleHomeActivity"
             android:exported="false" />
         <activity

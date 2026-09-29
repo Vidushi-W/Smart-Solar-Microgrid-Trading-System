@@ -27,4 +27,12 @@
     <string name="registering">Submitting registration...</string>
     <string name="registration_failed">Registration failed.</string>
     <string name="passwords_do_not_match">Passwords do not match.</string>
+    <string name="my_profile">My Profile</string>
+    <string name="account_status">Account status</string>
+    <string name="nic_value">NIC: %1$s</string>
+    <string name="account_status_value">Status: %1$s</string>
+    <string name="save_profile">Save profile</string>
+    <string name="request_deactivation">Request deactivation</string>
+    <string name="profile_saved">Profile saved.</string>
+    <string name="profile_failed">Profile request failed.</string>
 </resources>

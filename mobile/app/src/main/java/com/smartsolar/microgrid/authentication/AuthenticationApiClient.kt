@@ -118,6 +118,79 @@ class AuthenticationApiClient(
         }
     }
 
+    fun getMyProfile(token: String): ProsumerProfile {
+        val response = authorizedRequest("/api/prosumers/me/profile", token, "GET")
+        return ProsumerProfile(
+            userId = response.getString("userId"),
+            nic = response.getString("nic"),
+            name = response.getString("name"),
+            email = response.getString("email"),
+            contactNumber = response.getString("contactNumber"),
+            address = response.getString("address"),
+            accountStatus = response.getString("accountStatus")
+        )
+    }
+
+    fun updateMyProfile(token: String, request: UpdateProsumerProfileRequest): ProsumerProfile {
+        val response = authorizedRequest(
+            "/api/prosumers/me/profile",
+            token,
+            "PUT",
+            JSONObject()
+                .put("name", request.name)
+                .put("email", request.email)
+                .put("contactNumber", request.contactNumber)
+                .put("address", request.address)
+        )
+        return ProsumerProfile(
+            userId = response.getString("userId"),
+            nic = response.getString("nic"),
+            name = response.getString("name"),
+            email = response.getString("email"),
+            contactNumber = response.getString("contactNumber"),
+            address = response.getString("address"),
+            accountStatus = response.getString("accountStatus")
+        )
+    }
+
+    fun requestDeactivation(token: String): String {
+        return authorizedRequest("/api/prosumers/me/deactivation", token, "POST")
+            .optString("accountStatus", "DeactivationRequested")
+    }
+
+    private fun authorizedRequest(
+        path: String,
+        token: String,
+        method: String,
+        payload: JSONObject? = null
+    ): JSONObject {
+        val connection = (URL("${baseUrl.trimEnd('/')}$path").openConnection() as HttpURLConnection).apply {
+            requestMethod = method
+            connectTimeout = 10_000
+            readTimeout = 10_000
+            setRequestProperty("Accept", "application/json")
+            setRequestProperty("Authorization", "Bearer $token")
+            if (payload != null) {
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json")
+            }
+        }
+        return try {
+            if (payload != null) {
+                connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
+            }
+            val responseText = (if (connection.responseCode in 200..299) connection.inputStream else connection.errorStream)
+                ?.bufferedReader()?.use { it.readText() }.orEmpty()
+            val response = JSONObject(responseText.ifBlank { "{}" })
+            if (connection.responseCode !in 200..299) {
+                throw IOException(response.optString("message", "Profile request failed."))
+            }
+            response
+        } finally {
+            connection.disconnect()
+        }
+    }
+
     private fun parseRole(value: String): UserRole = when (value) {
         "Prosumer" -> UserRole.PROSUMER
         "GridOperator" -> UserRole.GRID_OPERATOR

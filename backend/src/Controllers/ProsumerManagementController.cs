@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SolarMicrogridTrading.Api.Constants;
+using SolarMicrogridTrading.Api.DTOs;
 using SolarMicrogridTrading.Api.Interfaces;
 
 namespace SolarMicrogridTrading.Api.Controllers;
@@ -11,10 +12,14 @@ namespace SolarMicrogridTrading.Api.Controllers;
 public sealed class ProsumerManagementController : ControllerBase
 {
     private readonly IProsumerStatusService statusService;
+    private readonly IProsumerProfileService profileService;
 
-    public ProsumerManagementController(IProsumerStatusService statusService)
+    public ProsumerManagementController(
+        IProsumerStatusService statusService,
+        IProsumerProfileService profileService)
     {
         this.statusService = statusService;
+        this.profileService = profileService;
     }
 
     [HttpGet("pending")]
@@ -47,11 +52,33 @@ public sealed class ProsumerManagementController : ControllerBase
         role = User.FindFirst(ClaimTypes.Role)?.Value
     });
 
+    [HttpGet("me/profile")]
+    [Authorize(Policy = AuthorizationPolicies.ProsumerOnly)]
+    public async Task<IActionResult> GetOwnProfileDetails(CancellationToken cancellationToken)
+    {
+        var userId = GetAuthenticatedUserId();
+        return userId is null
+            ? Unauthorized()
+            : ProfileResult(await profileService.GetAsync(userId, cancellationToken));
+    }
+
+    [HttpPut("me/profile")]
+    [Authorize(Policy = AuthorizationPolicies.ProsumerOnly)]
+    public async Task<IActionResult> UpdateOwnProfile(
+        UpdateProsumerProfileRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetAuthenticatedUserId();
+        return userId is null
+            ? Unauthorized()
+            : ProfileResult(await profileService.UpdateAsync(userId, request, cancellationToken));
+    }
+
     [HttpPost("me/deactivation")]
     [Authorize(Policy = AuthorizationPolicies.ProsumerOnly)]
     public async Task<IActionResult> RequestOwnDeactivation(CancellationToken cancellationToken)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+        var userId = GetAuthenticatedUserId();
         return userId is null
             ? Unauthorized()
             : TransitionResult(await statusService.RequestDeactivationAsync(userId, cancellationToken));
@@ -59,4 +86,19 @@ public sealed class ProsumerManagementController : ControllerBase
 
     private IActionResult TransitionResult(object? result) =>
         result is null ? NotFound(new { message = "The prosumer is not in a valid state for this transition." }) : Ok(result);
+
+    private IActionResult ProfileResult((ProsumerProfileResponse? Profile, string? Error) result)
+    {
+        if (result.Profile is not null)
+        {
+            return Ok(result.Profile);
+        }
+
+        return result.Error == "Prosumer profile was not found."
+            ? NotFound(new { message = result.Error })
+            : BadRequest(new { message = result.Error });
+    }
+
+    private string? GetAuthenticatedUserId() =>
+        User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
 }
