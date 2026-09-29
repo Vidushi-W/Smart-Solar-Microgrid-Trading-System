@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using SolarMicrogridTrading.Api.Constants;
 using SolarMicrogridTrading.Api.DTOs;
 using SolarMicrogridTrading.Api.Interfaces;
@@ -53,6 +54,14 @@ public sealed class UserManagementController : ControllerBase
         UpdateWebUserRequest request,
         CancellationToken cancellationToken)
     {
+        var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst("sub")?.Value;
+        var currentRole = User.FindFirst(ClaimTypes.Role)?.Value;
+        if (id == currentUserId && request.Role != currentRole)
+        {
+            return BadRequest(new { message = "A user cannot change their own role." });
+        }
+
         var result = await userManagementService.UpdateAsync(id, request, cancellationToken);
         if (result.User is not null)
         {

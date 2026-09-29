@@ -25,7 +25,7 @@ Authentication, role-based access, user management, prosumer management and acti
 
 Primary roles: Backoffice, Grid Operator, Solar Prosumer.
 
-Planned MongoDB concepts: `Users`, `SolarStationInfo`, `EnergyBookingSlots`, `EnergyReservation`. Schemas and relationships are to be agreed before implementation.
+Planned MongoDB concepts: `UserDetails`, `SolarStationInfo`, `EnergyBookingSlots`, `EnergyReservation`. Schemas and relationships are to be agreed between components.
 
 ## Design boundaries
 
