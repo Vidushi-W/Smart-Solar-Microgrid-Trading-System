@@ -65,6 +65,7 @@ local.properties
 *.hprof
 
 # Secrets and local configuration
+# MongoDB Atlas credentials belong in .env only. Commit .env.example, never .env.
 .env
 .env.*
 !.env.example
