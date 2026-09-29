@@ -41,7 +41,7 @@ export default function LoginPage() {
           </div>
         </div>
         <h1>Welcome back</h1>
-        <p>Backoffice and Grid Operator sign in here. Prosumers use the Android app.</p>
+        <p>Backoffice, Grid Operator, and Prosumer demo accounts sign in here.</p>
         <ul className="login-areas">
           {AREAS.map(([index, title, text]) => (
             <li key={index}>

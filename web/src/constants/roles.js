@@ -6,6 +6,7 @@ export const ROLES = {
 export const ROLE_LABELS = {
   Backoffice: "Backoffice Officer",
   GridOperator: "Grid Operator",
+  Prosumer: "Solar Prosumer",
 };
 
 export const OWNERS = {

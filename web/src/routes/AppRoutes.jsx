@@ -10,10 +10,10 @@ import ProsumersPage from "../pages/prosumers/ProsumersPage";
 import StationsPage from "../pages/stations/StationsPage";
 import BookingsPage from "../pages/bookings/BookingsPage";
 import ReservationsPage from "../pages/reservations/ReservationsPage";
+import CreateReservationPage from "../pages/reservations/CreateReservationPage";
 import ReservationDetailPage from "../pages/reservations/ReservationDetailPage";
 import TransactionsPage from "../pages/transactions/TransactionsPage";
 import TransactionDetailPage from "../pages/transactions/TransactionDetailPage";
-import ContractsPage from "../pages/team/ContractsPage";
 
 function GuestOnly() {
   const { user } = useAuth();
@@ -67,10 +67,17 @@ export default function AppRoutes() {
         <Route path="stations" element={<StationsPage />} />
         <Route path="slots" element={<BookingsPage />} />
         <Route path="reservations" element={<ReservationsPage />} />
+        <Route
+          path="reservations/new"
+          element={
+            <Protected roles={["Backoffice", "Prosumer"]}>
+              <CreateReservationPage />
+            </Protected>
+          }
+        />
         <Route path="reservations/:id" element={<ReservationDetailPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="transactions/:id" element={<TransactionDetailPage />} />
-        <Route path="contracts" element={<ContractsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
