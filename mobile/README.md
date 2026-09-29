@@ -73,3 +73,5 @@ Open the `mobile/` directory in Android Studio, allow Gradle to sync, and run th
 
 For a physical device, change `API_BASE_URL` in `app/build.gradle.kts` to the host machine's LAN address and keep the phone and host on the same network. Do not commit local SDK paths, signing keys, generated APKs, Gradle caches, or API secrets; the repository root `.gitignore` excludes them.
 
+The login screen links to Prosumer registration. The form sends NIC, full name, email, phone number, address, password, and confirmation to `POST /api/prosumers/register`. A successful submission displays the pending-activation response; Android does not activate the account locally.
+

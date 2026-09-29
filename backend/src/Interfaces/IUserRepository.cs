@@ -8,6 +8,7 @@ public interface IUserRepository
     Task<IReadOnlyList<User>> GetAllAsync(CancellationToken cancellationToken);
     Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken);
     Task<bool> ExistsByUsernameOrNicAsync(string username, string nic, string? excludedId, CancellationToken cancellationToken);
+    Task<bool> ExistsByNicAsync(string nic, CancellationToken cancellationToken);
     Task CreateAsync(User user, CancellationToken cancellationToken);
     Task<bool> UpdateAsync(User user, CancellationToken cancellationToken);
 }

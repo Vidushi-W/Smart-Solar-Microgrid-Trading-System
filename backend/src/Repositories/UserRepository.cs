@@ -53,6 +53,11 @@ public sealed class UserRepository : IUserRepository
         return await users.Find(filter).Limit(1).AnyAsync(cancellationToken);
     }
 
+    public Task<bool> ExistsByNicAsync(string nic, CancellationToken cancellationToken)
+    {
+        return users.Find(user => user.Nic == nic).Limit(1).AnyAsync(cancellationToken);
+    }
+
     public Task CreateAsync(User user, CancellationToken cancellationToken)
     {
         return users.InsertOneAsync(user, cancellationToken: cancellationToken);

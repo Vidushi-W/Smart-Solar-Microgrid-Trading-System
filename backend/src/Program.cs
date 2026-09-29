@@ -27,6 +27,7 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDat
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
+builder.Services.AddScoped<IProsumerRegistrationService, ProsumerRegistrationService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 var jwtKey = builder.Configuration["Jwt:Key"]
@@ -64,6 +65,16 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
     policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
 var app = builder.Build();
+var usersCollection = app.Services.GetRequiredService<IMongoDatabase>()
+    .GetCollection<User>(mongoSettings.UsersCollectionName);
+usersCollection.Indexes.CreateOne(new CreateIndexModel<User>(
+    Builders<User>.IndexKeys.Ascending(user => user.Nic),
+    new CreateIndexOptions
+    {
+        Name = "unique_non_empty_nic",
+        Unique = true,
+        PartialFilterExpression = Builders<User>.Filter.Ne(user => user.Nic, string.Empty)
+    }));
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();

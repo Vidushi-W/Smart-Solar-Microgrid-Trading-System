@@ -76,6 +76,48 @@ class AuthenticationApiClient(
         }
     }
 
+    fun register(request: RegisterProsumerRequest): ProsumerRegistrationResponse {
+        val connection = (URL("${baseUrl.trimEnd('/')}/api/prosumers/register").openConnection() as HttpURLConnection).apply {
+            requestMethod = "POST"
+            connectTimeout = 10_000
+            readTimeout = 10_000
+            doOutput = true
+            setRequestProperty("Content-Type", "application/json")
+            setRequestProperty("Accept", "application/json")
+        }
+
+        return try {
+            val payload = JSONObject()
+                .put("nic", request.nic)
+                .put("fullName", request.fullName)
+                .put("email", request.email)
+                .put("phoneNumber", request.phoneNumber)
+                .put("address", request.address)
+                .put("password", request.password)
+                .put("confirmPassword", request.confirmPassword)
+            connection.outputStream.use { output ->
+                output.write(payload.toString().toByteArray(Charsets.UTF_8))
+            }
+
+            val responseText = (if (connection.responseCode in 200..299) {
+                connection.inputStream
+            } else {
+                connection.errorStream
+            })?.bufferedReader()?.use { it.readText() }.orEmpty()
+            val response = JSONObject(responseText.ifBlank { "{}" })
+            if (connection.responseCode !in 200..299) {
+                throw IOException(response.optString("message", "Registration failed."))
+            }
+            ProsumerRegistrationResponse(
+                message = response.getString("message"),
+                nic = response.getString("nic"),
+                accountStatus = response.getString("accountStatus")
+            )
+        } finally {
+            connection.disconnect()
+        }
+    }
+
     private fun parseRole(value: String): UserRole = when (value) {
         "Prosumer" -> UserRole.PROSUMER
         "GridOperator" -> UserRole.GRID_OPERATOR

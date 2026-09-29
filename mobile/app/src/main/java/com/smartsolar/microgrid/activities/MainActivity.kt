@@ -82,6 +82,10 @@ class MainActivity : AppCompatActivity() {
         content.addView(identifierInput, matchWidth())
         content.addView(passwordInput, matchWidth())
         content.addView(loginButton, matchWidth())
+        content.addView(Button(this).apply {
+            text = getString(R.string.register_as_prosumer)
+            setOnClickListener { startActivity(Intent(this@MainActivity, RegisterProsumerActivity::class.java)) }
+        }, matchWidth())
         content.addView(messageView, matchWidth())
         return content
     }
