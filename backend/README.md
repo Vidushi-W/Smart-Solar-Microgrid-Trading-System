@@ -41,3 +41,38 @@ Controllers stay thin. Services own authoritative decisions such as permissions,
 
 No project file, endpoints, configuration secrets or deployment files are supplied by this scaffold.
 
+## Login API
+
+`POST /api/auth/login`
+
+Request:
+
+```json
+{
+	"identifier": "username-or-nic",
+	"password": "password"
+}
+```
+
+Successful response:
+
+```json
+{
+	"message": "Login successful",
+	"role": "GridOperator",
+	"token": "..."
+}
+```
+
+The API accepts `Username` or `Nic`, rejects missing or incorrect credentials, rejects inactive accounts, and signs a JWT containing the user's role.
+
+Set secrets through environment variables before running the API:
+
+```powershell
+$env:MONGODB_CONNECTION_STRING = "your-mongodb-connection-string"
+$env:JWT_KEY = "a-long-local-signing-key-at-least-32-characters"
+dotnet run --project .\src\SolarMicrogridTrading.Api.csproj
+```
+
+Do not commit the MongoDB URI or JWT key. Passwords must be stored as ASP.NET Core `PasswordHasher<User>` hashes, never plaintext.
+

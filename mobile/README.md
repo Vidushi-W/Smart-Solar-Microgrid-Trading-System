@@ -53,3 +53,15 @@ Configure the REST endpoint, Google Maps integration and QR implementation durin
 
 This scaffold has no Gradle project, Android manifest or runnable application yet.
 
+## Authentication starter
+
+The Kotlin contracts under `app/src/main/java/com/smartsolar/microgrid/authentication/` model the shared login request and response, supported roles, and initial routing destinations:
+
+- `PROSUMER` -> Prosumer Home
+- `GRID_OPERATOR` -> Operator Home
+- `BACKOFFICE` -> Backoffice Home, if enabled by the team
+
+The Android client should call the backend `POST /api/auth/login` endpoint. MongoDB credentials and account rules remain on the backend.
+
+`AuthenticationApiClient` provides the initial REST call. Invoke its blocking `login` method from a background thread, persist the returned token using the app's local storage choice, and use `LoginRouter` to select the role-specific home screen.
+
