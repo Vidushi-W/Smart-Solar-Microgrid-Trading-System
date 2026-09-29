@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { activateProsumer, createUser, deactivateProsumer, getPendingProsumers, getUsers, reactivateProsumer, updateUser, updateUserStatus } from '../../services/userService.js';
+import { activateProsumer, createUser, deactivateProsumer, getDeactivatedProsumers, getPendingProsumers, getUsers, reactivateProsumer, updateUser, updateUserStatus } from '../../services/userService.js';
 
 const emptyForm = {
   name: '',
@@ -13,6 +13,7 @@ const emptyForm = {
 export default function UserManagementPage({ onLogout }) {
   const [users, setUsers] = useState([]);
   const [prosumers, setProsumers] = useState([]);
+  const [deactivatedProsumers, setDeactivatedProsumers] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState('');
@@ -38,9 +39,18 @@ export default function UserManagementPage({ onLogout }) {
     }
   }
 
+  async function loadDeactivatedProsumers() {
+    try {
+      setDeactivatedProsumers(await getDeactivatedProsumers());
+    } catch (loadError) {
+      setError(loadError.message);
+    }
+  }
+
   useEffect(() => {
     loadUsers();
     loadProsumers();
+    loadDeactivatedProsumers();
   }, []);
 
   function updateField(event) {
@@ -118,6 +128,7 @@ export default function UserManagementPage({ onLogout }) {
         setMessage(`${user.username} was activated.`);
       }
       await loadProsumers();
+      await loadDeactivatedProsumers();
     } catch (actionError) {
       setError(actionError.message);
     }
@@ -204,6 +215,20 @@ export default function UserManagementPage({ onLogout }) {
         {prosumers.length === 0 && <p className="muted">No prosumer status actions are waiting.</p>}
         {prosumers.length > 0 && <div className="user-table-wrap"><table><thead><tr><th>Name</th><th>NIC</th><th>Status</th><th /></tr></thead><tbody>
           {prosumers.map((user) => <tr key={user.id}><td><strong>{user.name}</strong><small>{user.email}</small></td><td>{user.username}</td><td><span className="status-label">{user.accountStatus}</span></td><td><button className="link-button" onClick={() => processProsumer(user)}>{prosumerActionLabel(user.accountStatus)}</button></td></tr>)}
+        </tbody></table></div>}
+      </section>
+
+      <section className="prosumer-queue-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Backoffice only</p>
+            <h2>Deactivated Prosumers</h2>
+          </div>
+          <span className="muted">{deactivatedProsumers.length} accounts</span>
+        </div>
+        {deactivatedProsumers.length === 0 && <p className="muted">No deactivated prosumers.</p>}
+        {deactivatedProsumers.length > 0 && <div className="user-table-wrap"><table><thead><tr><th>NIC</th><th>Name</th><th>Status</th><th /></tr></thead><tbody>
+          {deactivatedProsumers.map((user) => <tr key={user.id}><td>{user.username}</td><td><strong>{user.name}</strong><small>{user.email}</small></td><td><span className="inactive-label">{user.accountStatus}</span></td><td><button className="link-button" onClick={() => processProsumer(user)}>Reactivate</button></td></tr>)}
         </tbody></table></div>}
       </section>
     </main>

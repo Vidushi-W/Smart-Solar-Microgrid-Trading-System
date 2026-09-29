@@ -27,6 +27,11 @@ public sealed class ProsumerManagementController : ControllerBase
     public async Task<IActionResult> GetPendingProsumers(CancellationToken cancellationToken) =>
         Ok(await statusService.GetPendingAsync(cancellationToken));
 
+    [HttpGet("deactivated")]
+    [Authorize(Policy = AuthorizationPolicies.BackofficeOnly)]
+    public async Task<IActionResult> GetDeactivatedProsumers(CancellationToken cancellationToken) =>
+        Ok(await statusService.GetDeactivatedAsync(cancellationToken));
+
     [HttpPost("{userId}/activate")]
     [Authorize(Policy = AuthorizationPolicies.BackofficeOnly)]
     public async Task<IActionResult> ActivateProsumer(string userId, CancellationToken cancellationToken) =>

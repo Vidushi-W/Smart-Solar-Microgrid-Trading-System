@@ -34,6 +34,11 @@ export async function getPendingProsumers() {
   return response.json();
 }
 
+export async function getDeactivatedProsumers() {
+  const response = await fetchWithAuth('/api/prosumers/deactivated');
+  return response.json();
+}
+
 export async function activateProsumer(id) {
   const response = await fetchWithAuth(`/api/prosumers/${id}/activate`, { method: 'POST' });
   return response.json();

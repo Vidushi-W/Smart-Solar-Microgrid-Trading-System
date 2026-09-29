@@ -18,7 +18,16 @@ public sealed class ProsumerStatusService : IProsumerStatusService
     {
         var users = await userRepository.GetByRoleAndStatusesAsync(
             "Prosumer",
-            new[] { AccountStatuses.PendingActivation, AccountStatuses.Registered, AccountStatuses.DeactivationRequested, AccountStatuses.Deactivated },
+            new[] { AccountStatuses.PendingActivation, AccountStatuses.Registered, AccountStatuses.DeactivationRequested },
+            cancellationToken);
+        return users.Select(Map).ToList();
+    }
+
+    public async Task<IReadOnlyList<UserSummaryResponse>> GetDeactivatedAsync(CancellationToken cancellationToken)
+    {
+        var users = await userRepository.GetByRoleAndStatusesAsync(
+            "Prosumer",
+            new[] { AccountStatuses.Deactivated },
             cancellationToken);
         return users.Select(Map).ToList();
     }

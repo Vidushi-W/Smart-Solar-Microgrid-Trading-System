@@ -49,7 +49,8 @@ Prosumer status is stored centrally in `AccountStatus`:
 
 `PendingActivation` -> `Active` -> `DeactivationRequested` -> `Deactivated` -> `Active`
 
-- `GET /api/prosumers/pending` - Backoffice queue for pending, requested-deactivation, and deactivated prosumers.
+- `GET /api/prosumers/pending` - Backoffice queue for pending and requested-deactivation prosumers.
+- `GET /api/prosumers/deactivated` - Backoffice-only list of deactivated prosumers.
 - `POST /api/prosumers/{id}/activate` - Backoffice activates a pending prosumer.
 - `POST /api/prosumers/{id}/deactivate` - Backoffice processes a deactivation request.
 - `POST /api/prosumers/{id}/reactivate` - Backoffice reactivates a deactivated prosumer.
