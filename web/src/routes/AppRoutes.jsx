@@ -8,6 +8,7 @@ import DashboardPage from "../pages/dashboard/DashboardPage";
 import UsersPage from "../pages/users/UsersPage";
 import ProsumersPage from "../pages/prosumers/ProsumersPage";
 import StationsPage from "../pages/stations/StationsPage";
+import StationSlotsPage from "../pages/stations/StationSlotsPage";
 import BookingsPage from "../pages/bookings/BookingsPage";
 import ReservationsPage from "../pages/reservations/ReservationsPage";
 import CreateReservationPage from "../pages/reservations/CreateReservationPage";
@@ -65,6 +66,14 @@ export default function AppRoutes() {
           }
         />
         <Route path="stations" element={<StationsPage />} />
+        <Route
+          path="stations/:stationId/slots"
+          element={
+            <Protected roles={["Backoffice"]}>
+              <StationSlotsPage />
+            </Protected>
+          }
+        />
         <Route path="slots" element={<BookingsPage />} />
         <Route path="reservations" element={<ReservationsPage />} />
         <Route
