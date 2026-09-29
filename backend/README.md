@@ -74,6 +74,15 @@ Authorization: Bearer <token>
 
 `GET /api/auth/me` is a protected verification endpoint. It returns the authenticated user ID, username, and role only when the JWT signature, issuer, audience, and expiry are valid. Role policies are available as `BackofficeOnly`, `GridOperatorOnly`, and `ProsumerOnly` for protected feature endpoints.
 
+Current authorization boundaries include:
+
+- `BackofficeOnly`: `/api/users`, pending prosumers, activation, and reactivation.
+- `GridOperatorOnly`: `/api/operations/bookings`.
+- `ProsumerOnly`: `/api/prosumers/me/deactivation`.
+- Any authenticated role: `/api/auth/me` and `/api/prosumers/me`.
+
+The protected workflow endpoints currently return `501 Not Implemented` after authorization succeeds because their business services and repositories belong to later component slices. An authenticated user with the wrong role is rejected with `403 Forbidden` before the controller action runs.
+
 Set secrets through environment variables before running the API:
 
 ```powershell

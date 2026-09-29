@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using SolarMicrogridTrading.Api.Configuration;
+using SolarMicrogridTrading.Api.Constants;
 using SolarMicrogridTrading.Api.Interfaces;
 using SolarMicrogridTrading.Api.Models;
 using SolarMicrogridTrading.Api.Repositories;
@@ -53,9 +54,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("BackofficeOnly", policy => policy.RequireRole("Backoffice"));
-    options.AddPolicy("GridOperatorOnly", policy => policy.RequireRole("GridOperator"));
-    options.AddPolicy("ProsumerOnly", policy => policy.RequireRole("Prosumer"));
+    options.AddPolicy(AuthorizationPolicies.BackofficeOnly, policy => policy.RequireRole("Backoffice"));
+    options.AddPolicy(AuthorizationPolicies.GridOperatorOnly, policy => policy.RequireRole("GridOperator"));
+    options.AddPolicy(AuthorizationPolicies.ProsumerOnly, policy => policy.RequireRole("Prosumer"));
 });
 builder.Services.AddControllers();
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
