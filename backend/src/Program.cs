@@ -1,7 +1,9 @@
+using System.Security.Authentication;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using SolarMicrogridTrading.Api.Configuration;
 using SolarMicrogridTrading.Api.Constants;
@@ -22,7 +24,15 @@ var mongoSettings = new MongoDbSettings
 };
 
 builder.Services.AddSingleton(mongoSettings);
-builder.Services.AddSingleton<IMongoClient>(_ => new MongoClient(mongoSettings.ConnectionString));
+builder.Services.AddSingleton<IMongoClient>(_ =>
+{
+    var clientSettings = MongoClientSettings.FromConnectionString(mongoSettings.ConnectionString);
+    clientSettings.SslSettings = new SslSettings
+    {
+        EnabledSslProtocols = SslProtocols.Tls12
+    };
+    return new MongoClient(clientSettings);
+});
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(mongoSettings.DatabaseName));
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -67,15 +77,21 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
     policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
 var app = builder.Build();
-var usersCollection = app.Services.GetRequiredService<IMongoDatabase>()
+var database = app.Services.GetRequiredService<IMongoDatabase>();
+database.RunCommand<BsonDocument>(new BsonDocument("ping", 1));
+app.Logger.LogInformation(
+    "Connected to MongoDB database {DatabaseName}, collection {CollectionName}",
+    mongoSettings.DatabaseName,
+    mongoSettings.UsersCollectionName);
+
+var usersCollection = database
     .GetCollection<User>(mongoSettings.UsersCollectionName);
 usersCollection.Indexes.CreateOne(new CreateIndexModel<User>(
     Builders<User>.IndexKeys.Ascending(user => user.Nic),
-    new CreateIndexOptions
+    new CreateIndexOptions<User>
     {
         Name = "unique_non_empty_nic",
-        Unique = true,
-        PartialFilterExpression = Builders<User>.Filter.Ne(user => user.Nic, string.Empty)
+        Unique = true
     }));
 app.UseCors();
 app.UseAuthentication();

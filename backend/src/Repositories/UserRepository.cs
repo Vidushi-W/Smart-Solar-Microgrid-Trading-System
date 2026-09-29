@@ -31,9 +31,9 @@ public sealed class UserRepository : IUserRepository
             .ToListAsync(cancellationToken);
     }
 
-    public Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken)
+    public async Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken)
     {
-        return users.Find(user => user.Id == id).FirstOrDefaultAsync(cancellationToken);
+        return await users.Find(user => user.Id == id).FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<bool> ExistsByUsernameOrNicAsync(
