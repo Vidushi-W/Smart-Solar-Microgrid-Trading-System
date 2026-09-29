@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import LoginPage from './pages/auth/LoginPage.jsx';
+import UserManagementPage from './pages/users/UserManagementPage.jsx';
 import { getCurrentUser } from './services/authService.js';
 
 function RoleHome({ session, onLogout }) {
@@ -17,6 +18,10 @@ function RoleHome({ session, onLogout }) {
       onLogout();
     });
   }, []);
+
+  if (session.role === 'Backoffice') {
+    return <UserManagementPage onLogout={onLogout} />;
+  }
 
   return (
     <main className="workspace-shell">

@@ -31,15 +31,17 @@ Planned MongoDB concepts: `Users`, `SolarStationInfo`, `EnergyBookingSlots`, `En
 
 Controllers stay thin. Services own authoritative decisions such as permissions, availability, reservation changes and transfer finalization. Repositories perform persistence; they do not replace the service layer. Clients must never receive MongoDB credentials or access the database directly.
 
-## Initialization TODO
+## User management API
 
-- Select the .NET SDK and generate the Web API project into `src/`.
-- Configure MongoDB through local configuration or environment variables.
-- Define REST contracts, authentication and role policies.
-- Add a test project under `tests/`.
-- Document local run commands and IIS deployment after implementation.
+Backoffice-only endpoints manage Web application users with the `Backoffice` and `GridOperator` roles:
 
-No project file, endpoints, configuration secrets or deployment files are supplied by this scaffold.
+- `GET /api/users` - list users without password hashes.
+- `GET /api/users/{id}` - view one user.
+- `POST /api/users` - create a user and securely hash the password.
+- `PUT /api/users/{id}` - update permitted profile fields, role, and optionally password.
+- `PATCH /api/users/{id}/status` - activate or deactivate an account.
+
+The API validates required fields, email format, password length, allowed Web roles, and duplicate usernames. MongoDB operations and password hashing remain in backend services; the Web client never accesses MongoDB directly.
 
 ## Login API
 
