@@ -16,12 +16,26 @@ Desktop.ini
 # .NET outputs and test artifacts
 [Bb]in/
 [Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+publish/
 TestResults/
 *.trx
 *.coverage
 *.coveragexml
 *.nupkg
 *.snupkg
+*.binlog
+project.lock.json
+project.fragment.lock.json
+*.nuget.props
+*.nuget.targets
+*.pubxml
+*.azurePubxml
+*.publishproj
+ScaffoldingReadMe.txt
+iisexpress/
 
 # JavaScript dependencies and generated outputs
 node_modules/
