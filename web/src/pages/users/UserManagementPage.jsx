@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createUser, getUsers, updateUser, updateUserStatus } from '../../services/userService.js';
+import { activateProsumer, createUser, deactivateProsumer, getPendingProsumers, getUsers, reactivateProsumer, updateUser, updateUserStatus } from '../../services/userService.js';
 
 const emptyForm = {
   name: '',
@@ -12,6 +12,7 @@ const emptyForm = {
 
 export default function UserManagementPage({ onLogout }) {
   const [users, setUsers] = useState([]);
+  const [prosumers, setProsumers] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState('');
@@ -29,8 +30,17 @@ export default function UserManagementPage({ onLogout }) {
     }
   }
 
+  async function loadProsumers() {
+    try {
+      setProsumers(await getPendingProsumers());
+    } catch (loadError) {
+      setError(loadError.message);
+    }
+  }
+
   useEffect(() => {
     loadUsers();
+    loadProsumers();
   }, []);
 
   function updateField(event) {
@@ -92,6 +102,31 @@ export default function UserManagementPage({ onLogout }) {
     } catch (statusError) {
       setError(statusError.message);
     }
+  }
+
+  async function processProsumer(user) {
+    setError('');
+    try {
+      if (user.accountStatus === 'Deactivated') {
+        await reactivateProsumer(user.id);
+        setMessage(`${user.username} was reactivated.`);
+      } else if (user.accountStatus === 'DeactivationRequested') {
+        await deactivateProsumer(user.id);
+        setMessage(`${user.username} was deactivated.`);
+      } else {
+        await activateProsumer(user.id);
+        setMessage(`${user.username} was activated.`);
+      }
+      await loadProsumers();
+    } catch (actionError) {
+      setError(actionError.message);
+    }
+  }
+
+  function prosumerActionLabel(status) {
+    if (status === 'Deactivated') return 'Reactivate';
+    if (status === 'DeactivationRequested') return 'Process deactivation';
+    return 'Activate';
   }
 
   return (
@@ -157,6 +192,20 @@ export default function UserManagementPage({ onLogout }) {
           </form>
         </section>
       </div>
+
+      <section className="prosumer-queue-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Account lifecycle</p>
+            <h2>Prosumer status queue</h2>
+          </div>
+          <span className="muted">{prosumers.length} awaiting action</span>
+        </div>
+        {prosumers.length === 0 && <p className="muted">No prosumer status actions are waiting.</p>}
+        {prosumers.length > 0 && <div className="user-table-wrap"><table><thead><tr><th>Name</th><th>NIC</th><th>Status</th><th /></tr></thead><tbody>
+          {prosumers.map((user) => <tr key={user.id}><td><strong>{user.name}</strong><small>{user.email}</small></td><td>{user.username}</td><td><span className="status-label">{user.accountStatus}</span></td><td><button className="link-button" onClick={() => processProsumer(user)}>{prosumerActionLabel(user.accountStatus)}</button></td></tr>)}
+        </tbody></table></div>}
+      </section>
     </main>
   );
 }

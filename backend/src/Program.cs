@@ -28,6 +28,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 builder.Services.AddScoped<IProsumerRegistrationService, ProsumerRegistrationService>();
+builder.Services.AddScoped<IProsumerStatusService, ProsumerStatusService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 var jwtKey = builder.Configuration["Jwt:Key"]

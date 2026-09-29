@@ -8,4 +8,5 @@ public sealed record UserSummaryResponse(
     string ContactNumber,
     string Role,
     bool IsActive,
+    string AccountStatus,
     DateTime CreatedAtUtc);

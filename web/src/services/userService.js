@@ -29,6 +29,26 @@ export async function updateUserStatus(id, isActive) {
   return response.json();
 }
 
+export async function getPendingProsumers() {
+  const response = await fetchWithAuth('/api/prosumers/pending');
+  return response.json();
+}
+
+export async function activateProsumer(id) {
+  const response = await fetchWithAuth(`/api/prosumers/${id}/activate`, { method: 'POST' });
+  return response.json();
+}
+
+export async function deactivateProsumer(id) {
+  const response = await fetchWithAuth(`/api/prosumers/${id}/deactivate`, { method: 'POST' });
+  return response.json();
+}
+
+export async function reactivateProsumer(id) {
+  const response = await fetchWithAuth(`/api/prosumers/${id}/reactivate`, { method: 'POST' });
+  return response.json();
+}
+
 async function fetchWithAuth(path, options = {}) {
   const token = localStorage.getItem('authToken');
   const headers = new Headers(options.headers);

@@ -43,6 +43,38 @@ Backoffice-only endpoints manage Web application users with the `Backoffice` and
 
 The API validates required fields, email format, password length, allowed Web roles, and duplicate usernames. MongoDB operations and password hashing remain in backend services; the Web client never accesses MongoDB directly.
 
+## Prosumer account lifecycle
+
+Prosumer status is stored centrally in `AccountStatus`:
+
+`PendingActivation` -> `Active` -> `DeactivationRequested` -> `Deactivated` -> `Active`
+
+- `GET /api/prosumers/pending` - Backoffice queue for pending, requested-deactivation, and deactivated prosumers.
+- `POST /api/prosumers/{id}/activate` - Backoffice activates a pending prosumer.
+- `POST /api/prosumers/{id}/deactivate` - Backoffice processes a deactivation request.
+- `POST /api/prosumers/{id}/reactivate` - Backoffice reactivates a deactivated prosumer.
+- `POST /api/prosumers/me/deactivation` - An authenticated Prosumer requests deactivation.
+
+Only `AccountStatus = Active` and `IsActive = true` can authenticate. Invalid state transitions are rejected by the API, and Backoffice authorization is required for activation, deactivation processing, and reactivation.
+
+## Prosumer registration API
+
+`POST /api/prosumers/register` is public and is called by Android.
+
+```json
+{
+	"nic": "200012345678",
+	"fullName": "Example Prosumer",
+	"email": "prosumer@example.com",
+	"phoneNumber": "+94111234567",
+	"address": "Example address",
+	"password": "password123",
+	"confirmPassword": "password123"
+}
+```
+
+The API accepts either 12-digit NICs or legacy 9-digit NICs ending in `V`/`X`, normalizes them to uppercase, and enforces a MongoDB unique index. New accounts are always created with role `Prosumer`, `IsActive = false`, and `AccountStatus = PendingActivation`. Duplicate NICs return `409 Conflict`; validation errors return `400 Bad Request`; successful submissions return `202 Accepted`.
+
 ## Login API
 
 `POST /api/auth/login`

@@ -55,6 +55,8 @@ td small { display: block; color: #607064; margin-top: 0.25rem; }
 .form-actions .secondary-button { margin-top: 1rem; }
 .muted { color: #607064; font: 0.9rem Arial, sans-serif; }
 .success { color: #2f7e59; font: 0.85rem Arial, sans-serif; margin: 0.4rem 0; }
+.prosumer-queue-panel { margin-top: 3rem; border-top: 1px solid #bdcbbd; padding-top: 1.2rem; }
+.status-label { color: #164a3a; font-weight: 700; }
 
 @media (max-width: 900px) {
   .management-grid { grid-template-columns: 1fr; }

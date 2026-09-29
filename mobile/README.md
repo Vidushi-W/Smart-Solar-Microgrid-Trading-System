@@ -75,3 +75,5 @@ For a physical device, change `API_BASE_URL` in `app/build.gradle.kts` to the ho
 
 The login screen links to Prosumer registration. The form sends NIC, full name, email, phone number, address, password, and confirmation to `POST /api/prosumers/register`. A successful submission displays the pending-activation response; Android does not activate the account locally.
 
+Prosumer account status is controlled by the API. An authenticated Prosumer can request deactivation through `POST /api/prosumers/me/deactivation`; Android cannot activate, deactivate, or reactivate an account itself.
+

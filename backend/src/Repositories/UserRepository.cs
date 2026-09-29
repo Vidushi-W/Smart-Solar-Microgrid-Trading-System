@@ -58,6 +58,18 @@ public sealed class UserRepository : IUserRepository
         return users.Find(user => user.Nic == nic).Limit(1).AnyAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<User>> GetByRoleAndStatusesAsync(
+        string role,
+        IReadOnlyCollection<string> statuses,
+        CancellationToken cancellationToken)
+    {
+        var filter = Builders<User>.Filter.Eq(user => user.Role, role)
+            & Builders<User>.Filter.In(user => user.AccountStatus, statuses);
+        return await users.Find(filter)
+            .SortBy(user => user.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+    }
+
     public Task CreateAsync(User user, CancellationToken cancellationToken)
     {
         return users.InsertOneAsync(user, cancellationToken: cancellationToken);

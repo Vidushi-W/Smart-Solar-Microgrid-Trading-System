@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using SolarMicrogridTrading.Api.Constants;
 using SolarMicrogridTrading.Api.DTOs;
 using SolarMicrogridTrading.Api.Interfaces;
 using SolarMicrogridTrading.Api.Models;
@@ -35,7 +36,10 @@ public sealed class AuthService : IAuthService
     public async Task<LoginResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
     {
         var user = await userRepository.FindByIdentifierAsync(request.Identifier, cancellationToken);
-        if (user is null || !user.IsActive || !SupportedRoles.Contains(user.Role))
+        if (user is null
+            || !user.IsActive
+            || user.AccountStatus != AccountStatuses.Active
+            || !SupportedRoles.Contains(user.Role))
         {
             return null;
         }

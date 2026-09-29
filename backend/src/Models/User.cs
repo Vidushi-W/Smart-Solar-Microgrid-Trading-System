@@ -18,6 +18,6 @@ public sealed class User
     public string Email { get; set; } = string.Empty;
     public string ContactNumber { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
-    public string AccountStatus { get; set; } = "PendingActivation";
+    public string AccountStatus { get; set; } = "Active";
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }

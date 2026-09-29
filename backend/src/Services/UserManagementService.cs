@@ -1,6 +1,7 @@
 using System.Net.Mail;
 using Microsoft.AspNetCore.Identity;
 using MongoDB.Bson;
+using SolarMicrogridTrading.Api.Constants;
 using SolarMicrogridTrading.Api.DTOs;
 using SolarMicrogridTrading.Api.Interfaces;
 using SolarMicrogridTrading.Api.Models;
@@ -64,6 +65,7 @@ public sealed class UserManagementService : IUserManagementService
             ContactNumber = request.ContactNumber.Trim(),
             Role = request.Role.Trim(),
             IsActive = true,
+            AccountStatus = AccountStatuses.Active,
             CreatedAtUtc = DateTime.UtcNow
         };
         user.PasswordHash = passwordHasher.HashPassword(user, request.Password);
@@ -118,6 +120,7 @@ public sealed class UserManagementService : IUserManagementService
         }
 
         user.IsActive = isActive;
+        user.AccountStatus = isActive ? AccountStatuses.Active : AccountStatuses.Deactivated;
         return await userRepository.UpdateAsync(user, cancellationToken)
             ? Map(user)
             : null;
@@ -178,5 +181,6 @@ public sealed class UserManagementService : IUserManagementService
         user.ContactNumber,
         user.Role,
         user.IsActive,
+        user.AccountStatus,
         user.CreatedAtUtc);
 }
