@@ -17,4 +17,7 @@ public sealed class MongoDbSettings
 
     [Required]
     public string SlotsCollectionName { get; init; } = "EnergyBookingSlots";
+
+    [Required]
+    public string ReservationsCollectionName { get; init; } = "EnergyReservation";
 }
