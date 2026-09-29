@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import LoginPage from './pages/auth/LoginPage.jsx';
+import { getCurrentUser } from './services/authService.js';
 
 function RoleHome({ session, onLogout }) {
   const titles = {
@@ -9,6 +10,13 @@ function RoleHome({ session, onLogout }) {
   };
   const title = titles[session.role] ?? 'Access unavailable';
   const isWebRole = session.role === 'Backoffice' || session.role === 'GridOperator';
+
+  useEffect(() => {
+    getCurrentUser().catch(() => {
+      localStorage.removeItem('authToken');
+      onLogout();
+    });
+  }, []);
 
   return (
     <main className="workspace-shell">

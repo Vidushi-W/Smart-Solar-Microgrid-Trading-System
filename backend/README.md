@@ -66,6 +66,14 @@ Successful response:
 
 The API accepts `Username` or `Nic`, rejects missing or incorrect credentials, rejects inactive accounts, and signs a JWT containing the user's role.
 
+Protected requests must include:
+
+```text
+Authorization: Bearer <token>
+```
+
+`GET /api/auth/me` is a protected verification endpoint. It returns the authenticated user ID, username, and role only when the JWT signature, issuer, audience, and expiry are valid. Role policies are available as `BackofficeOnly`, `GridOperatorOnly`, and `ProsumerOnly` for protected feature endpoints.
+
 Set secrets through environment variables before running the API:
 
 ```powershell

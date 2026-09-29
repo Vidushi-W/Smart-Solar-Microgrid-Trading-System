@@ -98,8 +98,9 @@ class MainActivity : AppCompatActivity() {
         messageView.text = getString(R.string.signing_in)
         executor.execute {
             try {
-                val response = AuthenticationApiClient(BuildConfig.API_BASE_URL)
-                    .login(LoginRequest(identifier, password))
+                val apiClient = AuthenticationApiClient(BuildConfig.API_BASE_URL)
+                val response = apiClient.login(LoginRequest(identifier, password))
+                apiClient.getCurrentUser(response.token)
                 runOnUiThread { handleLoginSuccess(response) }
             } catch (error: Exception) {
                 runOnUiThread {

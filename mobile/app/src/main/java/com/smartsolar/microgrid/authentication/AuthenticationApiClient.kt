@@ -47,6 +47,35 @@ class AuthenticationApiClient(
         }
     }
 
+    fun getCurrentUser(token: String): AuthenticatedUser {
+        val connection = (URL("${baseUrl.trimEnd('/')}/api/auth/me").openConnection() as HttpURLConnection).apply {
+            requestMethod = "GET"
+            connectTimeout = 10_000
+            readTimeout = 10_000
+            setRequestProperty("Accept", "application/json")
+            setRequestProperty("Authorization", "Bearer $token")
+        }
+
+        return try {
+            val responseText = (if (connection.responseCode in 200..299) {
+                connection.inputStream
+            } else {
+                connection.errorStream
+            })?.bufferedReader()?.use { it.readText() }.orEmpty()
+            val response = JSONObject(responseText.ifBlank { "{}" })
+            if (connection.responseCode !in 200..299) {
+                throw IOException(response.optString("message", "Authentication expired."))
+            }
+            AuthenticatedUser(
+                userId = response.getString("userId"),
+                username = response.getString("username"),
+                role = parseRole(response.getString("role"))
+            )
+        } finally {
+            connection.disconnect()
+        }
+    }
+
     private fun parseRole(value: String): UserRole = when (value) {
         "Prosumer" -> UserRole.PROSUMER
         "GridOperator" -> UserRole.GRID_OPERATOR

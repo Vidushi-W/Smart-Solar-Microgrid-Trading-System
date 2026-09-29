@@ -65,6 +65,8 @@ The Android client should call the backend `POST /api/auth/login` endpoint. Mong
 
 `AuthenticationApiClient` provides the initial REST call. Invoke its blocking `login` method from a background thread, persist the returned token using the app's local storage choice, and use `LoginRouter` to select the role-specific home screen.
 
+After login, the client calls `GET /api/auth/me` with `Authorization: Bearer <token>` before opening the role home screen. The role is read from the server response; Android does not infer administrator or operator privileges locally.
+
 ## Run the Android client
 
 Open the `mobile/` directory in Android Studio, allow Gradle to sync, and run the `app` configuration on an emulator. The debug build uses `http://10.0.2.2:5000` so the emulator can reach an API running on the host machine at port `5000`.

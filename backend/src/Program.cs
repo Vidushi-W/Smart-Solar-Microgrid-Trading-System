@@ -30,6 +30,10 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? Environment.GetEnvironmentVariable("JWT_KEY")
     ?? throw new InvalidOperationException("JWT_KEY is not configured.");
+if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
+{
+    throw new InvalidOperationException("JWT_KEY must be at least 32 bytes long.");
+}
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "SolarMicrogridTrading.Api";
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
