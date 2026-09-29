@@ -1,4 +1,4 @@
-const DATA_VERSION = 1;
+const DATA_VERSION = 2;
 
 function at(dayOffset, hour, minute = 0) {
   const date = new Date();
@@ -56,6 +56,30 @@ export function createSeed() {
         password: "demo1234",
         role: "GridOperator",
         status: "Deactivated",
+      },
+      {
+        id: "p-ishara",
+        name: "Ishara Jayawardena",
+        email: "ishara@example.com",
+        password: "demo1234",
+        role: "Prosumer",
+        status: "Active",
+      },
+      {
+        id: "p-fathima",
+        name: "Fathima Rizwan",
+        email: "fathima@example.com",
+        password: "demo1234",
+        role: "Prosumer",
+        status: "Active",
+      },
+      {
+        id: "p-nuwan",
+        name: "Nuwan Bandara",
+        email: "nuwan@example.com",
+        password: "demo1234",
+        role: "Prosumer",
+        status: "Active",
       },
     ],
     prosumers: [

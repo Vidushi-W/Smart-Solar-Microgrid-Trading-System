@@ -1,28 +1,45 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DataTable from "../../components/tables/DataTable";
 import StatusBadge from "../../components/common/StatusBadge";
-import { useData } from "../../context/DataContext";
-import { formatDateTime } from "../../utils/format";
+import { useAuth } from "../../context/AuthContext";
+import { fetchProsumers } from "../../services/prosumersApi";
 
 export default function ProsumersPage() {
-  const { prosumers, setProsumerStatus } = useData();
+  const { user } = useAuth();
+  const [prosumers, setProsumers] = useState([]);
   const [filter, setFilter] = useState("All");
   const [query, setQuery] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError("");
+    fetchProsumers(user)
+      .then((rows) => {
+        if (active) setProsumers(rows);
+      })
+      .catch((reason) => {
+        if (!active) return;
+        setProsumers([]);
+        setError(reason.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user.id]);
 
   const rows = useMemo(() => {
     return prosumers.filter((person) => {
-      const hay = `${person.name} ${person.nic} ${person.email}`.toLowerCase();
-      if (query && !hay.includes(query.toLowerCase())) return false;
+      if (query && !person.name.toLowerCase().includes(query.toLowerCase())) return false;
       if (filter !== "All" && person.status !== filter) return false;
       return true;
     });
   }, [prosumers, filter, query]);
-
-  function actionFor(person) {
-    if (person.status === "Pending") return { label: "Activate", status: "Active" };
-    if (person.status === "Deactivated") return { label: "Reactivate", status: "Active" };
-    return { label: "Deactivate", status: "Deactivated" };
-  }
 
   return (
     <div className="page">
@@ -41,21 +58,15 @@ export default function ProsumersPage() {
             <strong>{prosumers.filter((item) => item.status === "Active").length}</strong>
           </div>
         </article>
-        <article className="stat-card">
-          <span className="stat-icon rose">D</span>
-          <div>
-            <span>Deactivated</span>
-            <strong>{prosumers.filter((item) => item.status === "Deactivated").length}</strong>
-          </div>
-        </article>
       </section>
+      {error ? <p className="form-error">{error}</p> : null}
       <section className="filter-card">
         <header className="panel-head">
           <h2>Search and filters</h2>
         </header>
         <div className="filter-grid">
           <label>
-            Name, NIC, or email
+            Name
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
           </label>
           <label>
@@ -64,7 +75,6 @@ export default function ProsumersPage() {
               <option value="All">All status</option>
               <option value="Pending">Pending</option>
               <option value="Active">Active</option>
-              <option value="Deactivated">Deactivated</option>
             </select>
           </label>
         </div>
@@ -72,26 +82,11 @@ export default function ProsumersPage() {
       <DataTable
         rowKey={(row) => row.id}
         rows={rows}
-        emptyTitle="No prosumers match"
+        emptyTitle={loading ? "Loading prosumers" : "No prosumers stored"}
+        emptyText={loading ? "Reading the prosumer records." : "MongoDB has no prosumer records for this filter."}
         columns={[
           { key: "name", label: "Name" },
-          { key: "nic", label: "NIC" },
-          { key: "email", label: "Email" },
-          { key: "phone", label: "Phone" },
-          { key: "registered", label: "Registered", render: (row) => formatDateTime(row.registeredAt) },
           { key: "status", label: "Status", render: (row) => <StatusBadge value={row.status} /> },
-          {
-            key: "action",
-            label: "Action",
-            render: (row) => {
-              const action = actionFor(row);
-              return (
-                <button type="button" className="btn ghost" onClick={() => setProsumerStatus(row.id, action.status)}>
-                  {action.label}
-                </button>
-              );
-            },
-          },
         ]}
       />
     </div>
