@@ -127,13 +127,13 @@ Current authorization boundaries include:
 
 The protected workflow endpoints currently return `501 Not Implemented` after authorization succeeds because their business services and repositories belong to later component slices. An authenticated user with the wrong role is rejected with `403 Forbidden` before the controller action runs.
 
-Set secrets through environment variables before running the API:
+For local development, store the connection string and signing key with .NET User Secrets. They are kept outside the repository and persist across terminals. Run these setup commands once from the `backend` directory, replacing the MongoDB value with your local or Atlas connection string:
 
 ```powershell
-$env:MONGODB_CONNECTION_STRING = "your-mongodb-connection-string"
-$env:JWT_KEY = "a-long-local-signing-key-at-least-32-characters"
+dotnet user-secrets set "MongoDb:ConnectionString" "your-mongodb-connection-string" --project .\src\SolarMicrogridTrading.Api.csproj
+dotnet user-secrets set "Jwt:Key" "a-long-local-signing-key-at-least-32-characters" --project .\src\SolarMicrogridTrading.Api.csproj
 dotnet run --project .\src\SolarMicrogridTrading.Api.csproj
 ```
 
-Do not commit the MongoDB URI or JWT key. Passwords must be stored as ASP.NET Core `PasswordHasher<User>` hashes, never plaintext.
+The values are then available whenever you run the API using its Development launch profile. Environment variables (`MONGODB_CONNECTION_STRING` and `JWT_KEY`) remain supported for deployment. Do not commit the MongoDB URI or JWT key. Passwords must be stored as ASP.NET Core `PasswordHasher<User>` hashes, never plaintext.
 
