@@ -61,3 +61,29 @@ Station deactivation uses `IStationReservationChecker`. Its temporary implementa
 - Add backend tests under `tests/`.
 - Document deployment and IIS hosting once those settings are implemented.
 
+## QR energy-transfer foundation
+
+The backend now exposes token issuance, QR verification and explicit transfer completion.
+See [the QR implementation and testing guide](QR-ENERGY-TRANSFER.md) for the repository
+findings, schema assumptions, contracts, security decisions and manual examples.
+
+- `POST /api/reservations/{id}/qr`: issue/rotate a QR for an Approved or Scheduled reservation.
+- `POST /api/transactions/verify`: verify against MongoDB and return an operator-bound confirmation receipt.
+- `POST /api/transactions/{id}/complete`: consume that receipt and atomically mark a Scheduled reservation Completed.
+
+These routes require a trusted authenticated identity. With the current scaffold,
+they return 403 until Member 1 connects shared authentication. There is no development
+authentication bypass in the application. The new minimal `EnergyReservation` projection
+must be aligned with Member 3 before integrating the reservation lifecycle; no reservation
+creation, approval or scheduling endpoints were added.
+
+Run the isolated MongoDB/HTTP checks from the repository root with .NET 8 and MongoDB running:
+
+```powershell
+dotnet build backend/src/SmartSolar.Microgrid.Api.csproj
+dotnet run --project backend/tests/QrTransfer.IntegrationChecks/QrTransfer.IntegrationChecks.csproj
+```
+
+The test executable creates and removes its own uniquely named database ending in `_test`.
+Its fixed test identities run only inside the test host; they do not enable login in the API.
+

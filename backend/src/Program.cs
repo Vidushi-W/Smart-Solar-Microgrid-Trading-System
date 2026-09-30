@@ -38,6 +38,8 @@ builder.Services.AddScoped<IStationService, StationService>();
 builder.Services.AddScoped<IEnergyBookingSlotRepository, MongoEnergyBookingSlotRepository>();
 builder.Services.AddScoped<ISlotReservationChecker, UnconfiguredSlotReservationChecker>();
 builder.Services.AddScoped<IEnergyBookingSlotService, EnergyBookingSlotService>();
+builder.Services.AddScoped<IQrTransferRepository, MongoQrTransferRepository>();
+builder.Services.AddScoped<IQrTransferService, QrTransferService>();
 
 var app = builder.Build();
 app.UseExceptionHandler();
