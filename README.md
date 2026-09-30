@@ -14,7 +14,9 @@ Initial repository scaffold for a four-member team building a solar microgrid en
 
 ## Current status
 
-This is a directory-and-documentation scaffold only. No application implementation, dependency manifests, generated framework projects, database connections, or build tooling are included yet. There are no runnable applications or automated tests at this stage.
+The web console in `web/` can be run locally. It is a shared React interface for the Backoffice Officer and the Grid Operator, backed by demonstration data in the browser. See [web/README.md](web/README.md) for the run commands.
+
+The C# API, MongoDB connection, and native Android application are still scaffolds. The web screens do not replace those parts.
 
 Empty directories contain `.gitkeep` placeholders so Git preserves the complete structure. Remove a placeholder when real files occupy its directory.
 

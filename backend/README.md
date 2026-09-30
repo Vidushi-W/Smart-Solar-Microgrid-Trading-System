@@ -137,3 +137,59 @@ dotnet run --project .\src\SolarMicrogridTrading.Api.csproj
 
 The values are then available whenever you run the API using its Development launch profile. Environment variables (`MONGODB_CONNECTION_STRING` and `JWT_KEY`) remain supported for deployment. Do not commit the MongoDB URI or JWT key. Passwords must be stored as ASP.NET Core `PasswordHasher<User>` hashes, never plaintext.
 
+## Station API (initial implementation)
+
+The ASP.NET Core API project is `src/SmartSolar.Microgrid.Api.csproj`. Run it from the repository root with:
+
+```powershell
+dotnet run --project backend/src/SmartSolar.Microgrid.Api.csproj
+```
+
+The default local configuration targets `mongodb://localhost:27017/solar_microgrid_dev`. Override settings with environment variables for another development/test deployment:
+
+```powershell
+$env:MongoDB__ConnectionString = "mongodb://localhost:27017"
+$env:MongoDB__DatabaseName = "solar_microgrid_dev"
+$env:Stations__NearbyRadiusKilometers = "25"
+```
+
+The nearby radius defaults to 25 km and is configurable through `Stations:NearbyRadiusKilometers`. The API exposes station creation, listing, nearby search, update, and deactivation under `/api/stations`.
+
+Energy booking slots are created under `/api/stations/{stationId}/slots`, updated/deleted under `/api/slots/{slotId}`, and listed for a station/date under `/api/stations/{stationId}/slots?date=yyyy-MM-dd`. The API rejects overlapping windows for the same station and date. Slot deletion uses `ISlotReservationChecker` and returns 503 until Member 3 implements that contract; it does not guess the reservation schema.
+
+The existing account endpoints retain their JWT and role policies. The incoming station, slot, and QR controllers do not yet declare authorization policies; keep those routes on a trusted development network until their authorization is wired.
+
+Station deactivation uses `IStationReservationChecker`. Its temporary implementation fails closed with HTTP 503 because the Reservations model/collection contract is not present yet. Replace it with Member 3's reservation query before enabling deactivation. A detected Pending or Approved reservation returns HTTP 409.
+
+## Remaining backend initialization
+
+- Agree and implement shared authentication, role policies, and the Reservations model/query contract.
+- Add backend tests under `tests/`.
+- Document deployment and IIS hosting once those settings are implemented.
+
+## QR energy-transfer foundation
+
+The backend now exposes token issuance, QR verification and explicit transfer completion.
+See [the QR implementation and testing guide](QR-ENERGY-TRANSFER.md) for the repository
+findings, schema assumptions, contracts, security decisions and manual examples.
+
+- `POST /api/reservations/{id}/qr`: issue/rotate a QR for an Approved or Scheduled reservation.
+- `POST /api/transactions/verify`: verify against MongoDB and return an operator-bound confirmation receipt.
+- `POST /api/transactions/{id}/complete`: consume that receipt and atomically mark a Scheduled reservation Completed.
+
+These routes require a trusted authenticated identity. With the current scaffold,
+they return 403 until Member 1 connects shared authentication. There is no development
+authentication bypass in the application. The new minimal `EnergyReservation` projection
+must be aligned with Member 3 before integrating the reservation lifecycle; no reservation
+creation, approval or scheduling endpoints were added.
+
+Run the isolated MongoDB/HTTP checks from the repository root with .NET 8 and MongoDB running:
+
+```powershell
+dotnet build backend/src/SmartSolar.Microgrid.Api.csproj
+dotnet run --project backend/tests/QrTransfer.IntegrationChecks/QrTransfer.IntegrationChecks.csproj
+```
+
+The test executable creates and removes its own uniquely named database ending in `_test`.
+Its fixed test identities run only inside the test host; they do not enable login in the API.
+

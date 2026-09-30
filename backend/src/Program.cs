@@ -1,8 +1,10 @@
 using System.Security.Authentication;
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using SolarMicrogridTrading.Api.Configuration;
@@ -34,6 +36,15 @@ builder.Services.AddSingleton<IMongoClient>(_ =>
     return new MongoClient(clientSettings);
 });
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(mongoSettings.DatabaseName));
+builder.Services.AddOptions<SmartSolar.Microgrid.Configuration.MongoDbSettings>()
+    .Bind(builder.Configuration.GetSection(SmartSolar.Microgrid.Configuration.MongoDbSettings.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddOptions<SmartSolar.Microgrid.Configuration.StationOptions>()
+    .Bind(builder.Configuration.GetSection(SmartSolar.Microgrid.Configuration.StationOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
@@ -41,6 +52,14 @@ builder.Services.AddScoped<IProsumerRegistrationService, ProsumerRegistrationSer
 builder.Services.AddScoped<IProsumerStatusService, ProsumerStatusService>();
 builder.Services.AddScoped<IProsumerProfileService, ProsumerProfileService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddScoped<SmartSolar.Microgrid.Interfaces.IStationRepository, SmartSolar.Microgrid.Repositories.MongoStationRepository>();
+builder.Services.AddScoped<SmartSolar.Microgrid.Interfaces.IStationReservationChecker, SmartSolar.Microgrid.Services.UnconfiguredStationReservationChecker>();
+builder.Services.AddScoped<SmartSolar.Microgrid.Interfaces.IStationService, SmartSolar.Microgrid.Services.StationService>();
+builder.Services.AddScoped<SmartSolar.Microgrid.Interfaces.IEnergyBookingSlotRepository, SmartSolar.Microgrid.Repositories.MongoEnergyBookingSlotRepository>();
+builder.Services.AddScoped<SmartSolar.Microgrid.Interfaces.ISlotReservationChecker, SmartSolar.Microgrid.Services.UnconfiguredSlotReservationChecker>();
+builder.Services.AddScoped<SmartSolar.Microgrid.Interfaces.IEnergyBookingSlotService, SmartSolar.Microgrid.Services.EnergyBookingSlotService>();
+builder.Services.AddScoped<SmartSolar.Microgrid.Interfaces.IQrTransferRepository, SmartSolar.Microgrid.Repositories.MongoQrTransferRepository>();
+builder.Services.AddScoped<SmartSolar.Microgrid.Interfaces.IQrTransferService, SmartSolar.Microgrid.Services.QrTransferService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? Environment.GetEnvironmentVariable("JWT_KEY")
@@ -72,11 +91,14 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(AuthorizationPolicies.GridOperatorOnly, policy => policy.RequireRole("GridOperator"));
     options.AddPolicy(AuthorizationPolicies.ProsumerOnly, policy => policy.RequireRole("Prosumer"));
 });
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+builder.Services.AddProblemDetails();
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
     policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
 var app = builder.Build();
+app.UseExceptionHandler();
 var database = app.Services.GetRequiredService<IMongoDatabase>();
 database.RunCommand<BsonDocument>(new BsonDocument("ping", 1));
 app.Logger.LogInformation(

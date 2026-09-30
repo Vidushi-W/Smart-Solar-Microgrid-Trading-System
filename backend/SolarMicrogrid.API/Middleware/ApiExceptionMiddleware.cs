@@ -1,0 +1,44 @@
+using MongoDB.Driver;
+using SolarMicrogrid.API.Services;
+
+namespace SolarMicrogrid.API.Middleware;
+
+public class ApiExceptionMiddleware
+{
+    private readonly RequestDelegate _next;
+    private readonly ILogger<ApiExceptionMiddleware> _logger;
+
+    public ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExceptionMiddleware> logger)
+    {
+        _next = next;
+        _logger = logger;
+    }
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        try
+        {
+            await _next(context);
+        }
+        catch (ReservationRuleException exception)
+        {
+            await Write(context, exception.StatusCode, exception.Message);
+        }
+        catch (MongoException)
+        {
+            _logger.LogWarning("MongoDB request failed.");
+            await Write(context, StatusCodes.Status503ServiceUnavailable, "The database request could not be completed.");
+        }
+    }
+
+    private static Task Write(HttpContext context, int statusCode, string message)
+    {
+        if (context.Response.HasStarted)
+        {
+            return Task.CompletedTask;
+        }
+
+        context.Response.StatusCode = statusCode;
+        return context.Response.WriteAsJsonAsync(new { message });
+    }
+}
