@@ -53,3 +53,29 @@ Configure the REST endpoint, Google Maps integration and QR implementation durin
 
 This scaffold has no Gradle project, Android manifest or runnable application yet.
 
+## Authentication starter
+
+The Kotlin contracts under `app/src/main/java/com/smartsolar/microgrid/authentication/` model the shared login request and response, supported roles, and initial routing destinations:
+
+- `PROSUMER` -> Prosumer Home
+- `GRID_OPERATOR` -> Operator Home
+- `BACKOFFICE` -> Backoffice Home, if enabled by the team
+
+The Android client should call the backend `POST /api/auth/login` endpoint. MongoDB credentials and account rules remain on the backend.
+
+`AuthenticationApiClient` provides the initial REST call. Invoke its blocking `login` method from a background thread, persist the returned token using the app's local storage choice, and use `LoginRouter` to select the role-specific home screen.
+
+After login, the client calls `GET /api/auth/me` with `Authorization: Bearer <token>` before opening the role home screen. The role is read from the server response; Android does not infer administrator or operator privileges locally.
+
+## Run the Android client
+
+Open the `mobile/` directory in Android Studio, allow Gradle to sync, and run the `app` configuration on an emulator. The debug build uses `http://10.0.2.2:5000` so the emulator can reach an API running on the host machine at port `5000`.
+
+For a physical device, change `API_BASE_URL` in `app/build.gradle.kts` to the host machine's LAN address and keep the phone and host on the same network. Do not commit local SDK paths, signing keys, generated APKs, Gradle caches, or API secrets; the repository root `.gitignore` excludes them.
+
+The login screen links to Prosumer registration. The form sends NIC, full name, email, phone number, address, password, and confirmation to `POST /api/prosumers/register`. A successful submission displays the pending-activation response; Android does not activate the account locally.
+
+Prosumer account status is controlled by the API. An authenticated Prosumer can request deactivation through `POST /api/prosumers/me/deactivation`; Android cannot activate, deactivate, or reactivate an account itself.
+
+The Prosumer Home screen opens `My Profile`, which reads the profile through `GET /api/prosumers/me/profile`. NIC and account status are read-only; permitted fields are saved through `PUT /api/prosumers/me/profile` with the bearer token.
+

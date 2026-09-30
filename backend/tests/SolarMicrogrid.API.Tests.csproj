@@ -17,4 +17,8 @@
     <ProjectReference Include="..\SolarMicrogrid.API\SolarMicrogrid.API.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="QrTransfer.IntegrationChecks\**\*.cs" />
+  </ItemGroup>
+
 </Project>
