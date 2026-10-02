@@ -1,7 +1,9 @@
 export const NAV_ITEMS = [
-  { to: "/", label: "Dashboard", icon: "dashboard", roles: ["Backoffice", "GridOperator", "Prosumer"], end: true },
+  { to: "/dashboard", label: "Dashboard", icon: "dashboard", roles: ["Backoffice", "GridOperator", "Prosumer"], end: true },
   { to: "/users", label: "Users", icon: "users", roles: ["Backoffice"] },
-  { to: "/prosumers", label: "Prosumers", icon: "prosumers", roles: ["Backoffice"] },
+  { to: "/prosumers/pending", label: "Pending activations", icon: "prosumers", roles: ["Backoffice"] },
+  { to: "/prosumers/deactivated", label: "Deactivated prosumers", icon: "users", roles: ["Backoffice"] },
+  { to: "/profile", label: "My profile", icon: "users", roles: ["Backoffice", "GridOperator", "Prosumer"] },
   { to: "/stations", label: "Stations", icon: "stations", roles: ["Backoffice", "GridOperator"] },
   { to: "/slots", label: "Energy slots", icon: "slots", roles: ["Backoffice", "GridOperator"] },
   { to: "/reservations", label: "Reservations", icon: "reservations", roles: ["Backoffice", "GridOperator", "Prosumer"] },
@@ -9,6 +11,12 @@ export const NAV_ITEMS = [
 ];
 
 export function titleForPath(pathname) {
+  if (pathname === "/dashboard") return "Dashboard";
+  if (pathname === "/profile") return "My profile";
+  if (pathname === "/users/new") return "Create user";
+  if (pathname.startsWith("/users/") && pathname.endsWith("/edit")) return "Edit user";
+  if (pathname.startsWith("/prosumers/deactivated")) return "Deactivated prosumers";
+  if (pathname.startsWith("/prosumers")) return "Pending activations";
   if (pathname === "/reservations/new") return "New reservation";
   if (pathname.startsWith("/reservations/")) return "Reservation";
   if (pathname.startsWith("/transactions/")) return "Transfer";
