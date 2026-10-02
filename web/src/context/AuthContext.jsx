@@ -1,53 +1,58 @@
 import { createContext, useCallback, useContext, useState } from "react";
-import { useData } from "./DataContext";
+import { useEffect } from "react";
+import { getCurrentUser, login as loginRequest } from "../services/authService";
 
 const AuthContext = createContext(null);
-const AUTH_KEY = "solar-grid-session";
-
-function loadSession() {
-  try {
-    const raw = sessionStorage.getItem(AUTH_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
 
 export function AuthProvider({ children }) {
-  const { users } = useData();
-  const [user, setUser] = useState(loadSession);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = useCallback((email, password) => {
-    const account = users.find(
-      (item) => item.email.toLowerCase() === email.trim().toLowerCase()
-    );
-    if (!account || account.password !== password) {
-      return { ok: false, message: "Email or password does not match." };
+  useEffect(() => {
+    if (!localStorage.getItem("authToken")) {
+      setLoading(false);
+      return;
     }
-    if (account.status !== "Active") {
-      return {
-        ok: false,
-        message: "This account is deactivated. A Backoffice Officer can reactivate it.",
+    getCurrentUser()
+      .then((identity) => setUser({
+        id: identity.userId,
+        name: identity.username || identity.userId,
+        username: identity.username,
+        role: identity.role,
+      }))
+      .catch(() => {
+        localStorage.removeItem("authToken");
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const login = useCallback(async (identifier, password) => {
+    const result = await loginRequest(identifier, password);
+    localStorage.setItem("authToken", result.token);
+    try {
+      const identity = await getCurrentUser();
+      const session = {
+        id: identity.userId,
+        name: identity.username || identity.userId,
+        username: identity.username,
+        role: identity.role || result.role,
       };
+      setUser(session);
+      return session;
+    } catch (error) {
+      localStorage.removeItem("authToken");
+      throw error;
     }
-    const session = {
-      id: account.id,
-      name: account.name,
-      email: account.email,
-      role: account.role,
-    };
-    sessionStorage.setItem(AUTH_KEY, JSON.stringify(session));
-    setUser(session);
-    return { ok: true };
-  }, [users]);
+  }, []);
 
   const logout = useCallback(() => {
-    sessionStorage.removeItem(AUTH_KEY);
+    localStorage.removeItem("authToken");
     setUser(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>
   );
 }
 

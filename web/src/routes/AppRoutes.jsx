@@ -1,7 +1,5 @@
-import { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useData } from "../context/DataContext";
 import AppShell from "../components/layout/AppShell";
 import LoginPage from "../pages/auth/LoginPage";
 import DashboardPage from "../pages/dashboard/DashboardPage";
@@ -17,22 +15,16 @@ import TransactionsPage from "../pages/transactions/TransactionsPage";
 import TransactionDetailPage from "../pages/transactions/TransactionDetailPage";
 
 function GuestOnly() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return <main className="boot-screen">Checking secure session…</main>;
   if (user) return <Navigate to="/" replace />;
   return <LoginPage />;
 }
 
 function Protected({ roles, children }) {
-  const { user, logout } = useAuth();
-  const { users } = useData();
-  const record = user ? users.find((item) => item.id === user.id) : null;
-  const sessionEnded = Boolean(user) && (!record || record.status !== "Active");
-
-  useEffect(() => {
-    if (sessionEnded) logout();
-  }, [sessionEnded, logout]);
-
-  if (!user || sessionEnded) return <Navigate to="/login" replace />;
+  const { user, loading } = useAuth();
+  if (loading) return <main className="boot-screen">Checking secure session…</main>;
+  if (!user) return <Navigate to="/login" replace />;
   if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />;
   return children;
 }

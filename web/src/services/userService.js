@@ -1,5 +1,10 @@
 const usersPath = '/api/users';
 
+export async function getUser(id) {
+  const response = await fetchWithAuth(`${usersPath}/${encodeURIComponent(id)}`);
+  return response.json();
+}
+
 export async function getUsers() {
   const response = await fetchWithAuth(usersPath);
   return response.json();
@@ -54,6 +59,24 @@ export async function reactivateProsumer(id) {
   return response.json();
 }
 
+export async function getProsumerProfile() {
+  const response = await fetchWithAuth('/api/prosumers/me/profile');
+  return response.json();
+}
+
+export async function updateProsumerProfile(profile) {
+  const response = await fetchWithAuth('/api/prosumers/me/profile', {
+    method: 'PUT',
+    body: JSON.stringify(profile)
+  });
+  return response.json();
+}
+
+export async function requestProsumerDeactivation() {
+  const response = await fetchWithAuth('/api/prosumers/me/deactivation', { method: 'POST' });
+  return response.json();
+}
+
 async function fetchWithAuth(path, options = {}) {
   const token = localStorage.getItem('authToken');
   const headers = new Headers(options.headers);
@@ -63,13 +86,16 @@ async function fetchWithAuth(path, options = {}) {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(`${import.meta.env.VITE_API_URL ?? 'http://localhost:5000'}${path}`, {
+  const configuredBase = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
+  const normalizedBase = configuredBase.endsWith('/api') ? configuredBase : configuredBase.replace(/\/$/, '');
+  const normalizedPath = configuredBase.endsWith('/api') ? path.replace(/^\/api/, '') : path;
+  const response = await fetch(`${normalizedBase}${normalizedPath}`, {
     ...options,
     headers
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    throw new Error(body.message ?? `Request failed with status ${response.status}.`);
+    throw new Error(body.message ?? body.detail ?? body.title ?? `Request failed with status ${response.status}.`);
   }
   return response;
 }

@@ -1,4 +1,8 @@
 import { useEffect, useState } from 'react';
+import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { DataProvider } from './context/DataContext';
+import AppRoutes from './routes/AppRoutes';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import UserManagementPage from './pages/users/UserManagementPage.jsx';
 import { getCurrentUser } from './services/authService.js';
@@ -44,14 +48,13 @@ function RoleHome({ session, onLogout }) {
 }
 
 export default function App() {
-  const [session, setSession] = useState(null);
-
-  if (!session) {
-    return <LoginPage onLogin={setSession} />;
-  }
-
-  return <RoleHome session={session} onLogout={() => {
-    localStorage.removeItem('authToken');
-    setSession(null);
-  }} />;
+  return (
+    <DataProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>
+    </DataProvider>
+  );
 }

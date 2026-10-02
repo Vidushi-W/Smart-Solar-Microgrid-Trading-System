@@ -12,10 +12,14 @@ export class ApiError extends Error {
 export async function apiRequest(path, { method = "GET", body, signal } = {}) {
   let response;
   try {
+    const headers = new Headers(body === undefined ? {} : { "Content-Type": "application/json" });
+    const token = localStorage.getItem("authToken");
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    headers.set("Accept", "application/json");
     response = await fetch(`${API_BASE}${path}`, {
       method,
       signal,
-      headers: body === undefined ? {} : { "Content-Type": "application/json" },
+      headers,
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch (error) {
@@ -30,7 +34,7 @@ export async function apiRequest(path, { method = "GET", body, signal } = {}) {
       ? Object.values(payload.errors).flat().join(" ")
       : "";
     throw new ApiError(
-      payload?.detail || validation || payload?.title || `Request failed (${response.status}).`,
+      payload?.message || payload?.detail || validation || payload?.title || `Request failed (${response.status}).`,
       response.status,
       payload
     );
