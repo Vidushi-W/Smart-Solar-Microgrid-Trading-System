@@ -1,3 +1,5 @@
+// HTTP surface for reservation search, create, change, cancel, approve, reject, and schedule.
+// Rules live in ReservationService.
 using Microsoft.AspNetCore.Mvc;
 using SolarMicrogrid.API.DTOs;
 using SolarMicrogrid.API.Interfaces;

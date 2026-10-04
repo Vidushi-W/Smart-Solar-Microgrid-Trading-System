@@ -1,3 +1,6 @@
+/**
+ * Slots for one station on one date. Create, update, and delete go through stationsApi.
+ */
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import EmptyState from "../../components/common/EmptyState";

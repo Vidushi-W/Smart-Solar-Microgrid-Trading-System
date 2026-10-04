@@ -1,3 +1,4 @@
+// HTTP surface for energy slots on the reservation API.
 using Microsoft.AspNetCore.Mvc;
 using SolarMicrogrid.API.DTOs;
 using SolarMicrogrid.API.Interfaces;

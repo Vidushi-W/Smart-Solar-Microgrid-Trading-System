@@ -1,5 +1,9 @@
+/**
+ * Station and energy-slot calls for the reservation API (default http://localhost:5251/api). Identity is sent as X-User-Id and X-User-Role because that API does not read the JWT.
+ */
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5251/api";
 
+// The reservation API on port 5251 trusts these headers in Development. It does not read the JWT.
 function authHeaders(user) {
   return {
     "X-User-Id": user.id,

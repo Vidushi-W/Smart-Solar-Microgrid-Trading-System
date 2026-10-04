@@ -1,3 +1,6 @@
+/**
+ * Role ids must match the strings the APIs expect. ROLE_LABELS are display text only.
+ */
 export const ROLES = {
   BACKOFFICE: "Backoffice",
   OPERATOR: "GridOperator",

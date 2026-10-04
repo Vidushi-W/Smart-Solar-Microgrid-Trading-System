@@ -1,3 +1,6 @@
+/**
+ * Reservation detail. Approve, reject, schedule, cancel, and modify all update the browser session in DataContext.
+ */
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Modal from "../../components/common/Modal";

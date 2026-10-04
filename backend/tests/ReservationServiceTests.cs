@@ -1,3 +1,5 @@
+// Reservation rule tests.
+// The clock is fixed so the seven-day window and the 12-hour notice do not depend on the current time.
 using SolarMicrogrid.API.Constants;
 using SolarMicrogrid.API.DTOs;
 using SolarMicrogrid.API.Helpers;

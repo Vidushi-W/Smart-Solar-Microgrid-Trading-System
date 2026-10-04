@@ -1,3 +1,6 @@
+/**
+ * Colored label for a status string such as Active, Requested, or Deactivated.
+ */
 const TONES = {
   Requested: "sun",
   Approved: "teal",

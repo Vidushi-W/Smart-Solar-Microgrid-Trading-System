@@ -1,3 +1,6 @@
+/**
+ * One screen for two Backoffice queues. mode="pending" activates or processes deactivation. mode="deactivated" reactivates an account.
+ */
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {

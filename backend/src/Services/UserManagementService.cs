@@ -1,3 +1,5 @@
+// Creates Backoffice and Grid Operator users and stores a hashed password.
+// A blank password on update leaves the current password in place.
 using System.Net.Mail;
 using Microsoft.AspNetCore.Identity;
 using MongoDB.Bson;

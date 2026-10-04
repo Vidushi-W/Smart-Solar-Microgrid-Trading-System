@@ -1,3 +1,5 @@
+// Issues a JWT only for an active user whose role is Backoffice, GridOperator, or Prosumer.
+// Inactive and pending accounts are rejected the same way as a wrong password.
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;

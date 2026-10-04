@@ -1,3 +1,6 @@
+/**
+ * Title block used at the top of a page, with an optional action such as Add station.
+ */
 export default function PageHeader({ eyebrow, title, description, actions }) {
   return (
     <header className="page-header">

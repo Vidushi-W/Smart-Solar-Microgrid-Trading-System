@@ -1,3 +1,5 @@
+// Turns a reservation rule failure into its HTTP status and message.
+// A MongoDB failure becomes 503 so the client does not see a driver exception.
 using MongoDB.Driver;
 using SolarMicrogrid.API.Services;
 

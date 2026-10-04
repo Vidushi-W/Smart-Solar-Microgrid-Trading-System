@@ -1,3 +1,7 @@
+// Account and station API host.
+// Login uses JWT.
+// MongoDB holds users, stations, and slots.
+// The reservation API in SolarMicrogrid.API is a separate process.
 using System.Security.Authentication;
 using System.Text;
 using System.Text.Json.Serialization;

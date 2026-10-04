@@ -1,3 +1,6 @@
+/**
+ * QR transfer list read from the browser session, not from the transfer API.
+ */
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import StatusBadge from "../../components/common/StatusBadge";

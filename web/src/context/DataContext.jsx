@@ -1,3 +1,6 @@
+/**
+ * Browser session for reservations and QR transfers that those screens still edit locally. If the saved version does not match seed.js, the old session is discarded and the sample data is loaded again.
+ */
 import { createContext, useContext, useState } from "react";
 import { createSeed, DATA_VERSION } from "../data/seed";
 import {
@@ -21,6 +24,7 @@ function loadState() {
     const raw = sessionStorage.getItem(DATA_KEY);
     if (!raw) return createSeed();
     const parsed = JSON.parse(raw);
+    // Drop a session saved by an older seed shape so the screens do not read missing fields.
     if (parsed?.version !== DATA_VERSION || !Array.isArray(parsed.reservations)) {
       return createSeed();
     }

@@ -1,6 +1,8 @@
+/**
+ * Page title for the current path, a local clock, and a link to the profile.
+ */
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { titleForPath } from "../../constants/navigation";
 import { useAuth } from "../../context/AuthContext";
 

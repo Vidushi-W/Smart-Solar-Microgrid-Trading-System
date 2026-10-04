@@ -1,3 +1,6 @@
+/**
+ * Account and prosumer calls. Request paths already start with /api. If VITE_API_URL also ends with /api, that prefix is stripped so the URL is not /api/api.
+ */
 const usersPath = '/api/users';
 
 export async function getUser(id) {
@@ -86,6 +89,7 @@ async function fetchWithAuth(path, options = {}) {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
+  // Paths in this file already include /api. Drop a second /api from the base so the request is not sent to /api/api.
   const configuredBase = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
   const normalizedBase = configuredBase.endsWith('/api') ? configuredBase : configuredBase.replace(/\/$/, '');
   const normalizedPath = configuredBase.endsWith('/api') ? path.replace(/^\/api/, '') : path;

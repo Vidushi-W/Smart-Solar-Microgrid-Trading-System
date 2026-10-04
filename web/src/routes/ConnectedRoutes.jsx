@@ -1,3 +1,6 @@
+/**
+ * Route table. The landing page and login are public. Every other screen sits inside AppShell. GuestOnly waits until a stored token has been checked. Protected sends anonymous visitors to login and the wrong role back to the dashboard.
+ */
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import AppShell from "../components/layout/AppShell";

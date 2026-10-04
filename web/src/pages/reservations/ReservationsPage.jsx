@@ -1,3 +1,6 @@
+/**
+ * Reservation search. Station names come from catalogApi. Reservation rows come from reservationsApi.
+ */
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import StatusBadge from "../../components/common/StatusBadge";

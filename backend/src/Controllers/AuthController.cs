@@ -1,3 +1,5 @@
+// POST /api/auth/login checks a username or NIC plus password.
+// GET /api/auth/me reads the user id, username, and role from the JWT.
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using SolarMicrogridTrading.Api.DTOs;

@@ -1,3 +1,6 @@
+/**
+ * Sample users, stations, reservations, and transfers. DataContext loads this when the browser has no saved session.
+ */
 const DATA_VERSION = 2;
 
 function at(dayOffset, hour, minute = 0) {

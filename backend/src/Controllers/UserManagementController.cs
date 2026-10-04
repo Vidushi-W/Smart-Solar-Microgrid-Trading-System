@@ -1,3 +1,4 @@
+// Backoffice endpoints for creating web users and turning accounts on or off.
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;

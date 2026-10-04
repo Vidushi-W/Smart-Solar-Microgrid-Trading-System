@@ -1,5 +1,7 @@
-import { createContext, useCallback, useContext, useState } from "react";
-import { useEffect } from "react";
+/**
+ * Signed-in user for the console. The JWT is kept in localStorage under authToken. On refresh, /auth/me rebuilds the user. A rejected token is deleted so a stale login does not stick.
+ */
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { getCurrentUser, login as loginRequest } from "../services/authService";
 
 const AuthContext = createContext(null);

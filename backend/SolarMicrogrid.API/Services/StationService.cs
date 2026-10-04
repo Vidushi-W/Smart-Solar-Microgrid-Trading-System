@@ -1,3 +1,4 @@
+// Station create, update, nearby search, and status changes for the reservation API.
 using SolarMicrogrid.API.Constants;
 using SolarMicrogrid.API.DTOs;
 using SolarMicrogrid.API.Helpers;
