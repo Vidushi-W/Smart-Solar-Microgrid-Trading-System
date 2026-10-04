@@ -1,23 +1,34 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace SmartSolar.Microgrid.Configuration;
-
-public sealed class MongoDbSettings
+namespace SolarMicrogridTrading.Api.Configuration
 {
-    public const string SectionName = "MongoDB";
+    public sealed class MongoDbSettings
+    {
+        public string ConnectionString { get; init; } = string.Empty;
+        public string DatabaseName { get; init; } = "SolarMicrogridDB";
+        public string UsersCollectionName { get; init; } = "UserDetails";
+    }
+}
 
-    [Required]
-    public string ConnectionString { get; init; } = string.Empty;
+namespace SmartSolar.Microgrid.Configuration
+{
+    public sealed class MongoDbSettings
+    {
+        public const string SectionName = "MongoDB";
 
-    [Required]
-    public string DatabaseName { get; init; } = string.Empty;
+        [Required]
+        public string ConnectionString { get; init; } = string.Empty;
 
-    [Required]
-    public string StationsCollectionName { get; init; } = "SolarStationInfo";
+        [Required]
+        public string DatabaseName { get; init; } = string.Empty;
 
-    [Required]
-    public string SlotsCollectionName { get; init; } = "EnergyBookingSlots";
+        [Required]
+        public string StationsCollectionName { get; init; } = "SolarStationInfo";
 
-    [Required]
-    public string ReservationsCollectionName { get; init; } = "EnergyReservation";
+        [Required]
+        public string SlotsCollectionName { get; init; } = "EnergyBookingSlots";
+
+        [Required]
+        public string ReservationsCollectionName { get; init; } = "EnergyReservation";
+    }
 }

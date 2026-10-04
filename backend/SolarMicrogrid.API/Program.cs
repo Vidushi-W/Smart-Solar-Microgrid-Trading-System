@@ -1,3 +1,6 @@
+// Reservation API host, normally http://localhost:5251.
+// CORS allows the Vite app.
+// The current user is read from request headers in Development, not from a JWT.
 using SolarMicrogrid.API.Configuration;
 using SolarMicrogrid.API.Helpers;
 using SolarMicrogrid.API.Interfaces;

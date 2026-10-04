@@ -1,7 +1,10 @@
+/**
+ * Page title for the current path, a local clock, and a link to the profile.
+ */
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { titleForPath } from "../../constants/navigation";
-import { useData } from "../../context/DataContext";
+import { useAuth } from "../../context/AuthContext";
 
 function formatClock(date) {
   return new Intl.DateTimeFormat("en-LK", {
@@ -16,7 +19,7 @@ function formatClock(date) {
 
 export default function Topbar({ onMenu }) {
   const location = useLocation();
-  const { resetDemo } = useData();
+  const { user } = useAuth();
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -32,9 +35,10 @@ export default function Topbar({ onMenu }) {
       <h1 className="top-title">{titleForPath(location.pathname)}</h1>
       <div className="top-meta">
         <span className="clock">{formatClock(now)}</span>
-        <button type="button" className="btn ghost light" onClick={resetDemo}>
-          Reset
-        </button>
+        <Link className="top-profile" to="/profile">
+          <span className="top-profile-avatar">{(user.name || "S").slice(0, 1).toUpperCase()}</span>
+          <span>{user.name || user.username}</span>
+        </Link>
       </div>
     </header>
   );

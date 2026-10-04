@@ -1,3 +1,5 @@
+// Station writes for this API.
+// Deactivation stops when a reservation checker reports an active reservation.
 using Microsoft.Extensions.Options;
 using SmartSolar.Microgrid.Configuration;
 using SmartSolar.Microgrid.DTOs;

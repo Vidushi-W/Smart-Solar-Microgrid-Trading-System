@@ -1,3 +1,6 @@
+/**
+ * Navigation filtered by the signed-in role. Sign out clears the JWT and returns the user to the public pages.
+ */
 import { NavLink } from "react-router-dom";
 import { NAV_ITEMS } from "../../constants/navigation";
 import { ROLE_LABELS } from "../../constants/roles";

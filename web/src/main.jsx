@@ -1,10 +1,14 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App";
-import "./styles/global.css";
+/**
+ * Browser entry. This file mounts the connected console (ConnectedApp), which is the only frontend Vite starts.
+ */
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './ConnectedApp.jsx';
+import './styles/global.css';
+import './styles/brand.css';
 
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
     <App />
-  </React.StrictMode>
+  </StrictMode>
 );

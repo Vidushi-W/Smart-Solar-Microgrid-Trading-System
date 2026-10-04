@@ -1,3 +1,6 @@
+/**
+ * Inline SVG icons referenced by name from the sidebar.
+ */
 const paths = {
   dashboard: (
     <>

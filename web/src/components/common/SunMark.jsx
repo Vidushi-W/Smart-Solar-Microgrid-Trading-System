@@ -1,3 +1,6 @@
+/**
+ * Small sun mark used in the sidebar and on the landing page.
+ */
 export default function SunMark({ size = 36 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">

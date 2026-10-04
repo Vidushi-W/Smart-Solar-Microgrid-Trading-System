@@ -1,3 +1,6 @@
+/**
+ * Frame around signed-in pages: sidebar, top bar, and the session notice banner. The mobile menu closes when the route changes.
+ */
 import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { useData } from "../../context/DataContext";

@@ -41,16 +41,11 @@ npm run dev
 
 On Windows PowerShell, use `Copy-Item .env.example .env` for the first command. Run the backend with `dotnet run --project backend/src/SmartSolar.Microgrid.Api.csproj --urls http://localhost:5000` from the repository root.
 
-Open http://localhost:5173
+Open http://localhost:5173 and choose Sign in. The form sends a username or NIC and a password to `POST /api/auth/login`. The account must already exist in MongoDB and be active. This repository does not seed a web username or password.
 
-Demonstration sign-in, password `demo1234` for every sample account:
+Vite proxies `/api` to `VITE_DEV_API_PROXY_TARGET` when `VITE_API_BASE_URL` is `/api`. The checked-in example points that proxy at `http://localhost:5000`. Copy `.env.example` to `.env` before starting the console.
 
-- Backoffice Officer: `backoffice@solarmicrogrid.lk`
-- Grid Operator: `operator@solarmicrogrid.lk`
-
-Most screens use demonstration data stored in the browser session. The Stations page and Backoffice station slot manager call the C# API and save to MongoDB. To run them, start the backend and MongoDB first, then copy `.env.example` to `.env`. Vite proxies `/api` to `VITE_DEV_API_PROXY_TARGET` (default `http://localhost:5000`) so local browser requests do not need a separate CORS setup.
-
-Stations and slot management actions are shown only to the Backoffice demo role. The current backend does not yet have authentication middleware, so this client-side role gate is for the UI only and is not server authorization. Deactivation and deletion can return 503 until Member 3's reservation checker is connected.
+Stations and slot management actions are shown only to the Backoffice role. Deactivation and deletion can return 503 until the reservation checker is connected.
 
 `npm run build` produces a static bundle in `dist/`. `npm run preview` serves that bundle locally.
 

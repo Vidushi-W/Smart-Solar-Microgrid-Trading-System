@@ -40,11 +40,13 @@ iisexpress/
 # JavaScript dependencies and generated outputs
 node_modules/
 dist/
+web/dist/
 build/
 coverage/
 .npm/
 .eslintcache
 .vite/
+web/.vite/
 *.local
 *.tsbuildinfo
 npm-debug.log*
@@ -72,7 +74,13 @@ local.properties
 !.env.*.example
 appsettings.Local.json
 appsettings.*.Local.json
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+*.local.json
 secrets.json
+secrets.*
+*.secret
 keystore.properties
 *.jks
 *.keystore

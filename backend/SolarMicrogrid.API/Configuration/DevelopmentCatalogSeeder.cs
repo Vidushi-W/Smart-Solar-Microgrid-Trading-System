@@ -1,3 +1,5 @@
+// Inserts demo stations, slots, and prosumers when those collections are empty.
+// It does not create login users.
 using MongoDB.Driver;
 using SolarMicrogrid.API.Constants;
 using SolarMicrogrid.API.Helpers;

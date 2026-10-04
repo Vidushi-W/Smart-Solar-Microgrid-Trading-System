@@ -1,3 +1,6 @@
+/**
+ * Dialog overlay. Escape and the backdrop both call onClose.
+ */
 import { useEffect } from "react";
 
 export default function Modal({ title, children, onClose, wide = false }) {

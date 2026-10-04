@@ -1,3 +1,6 @@
+/**
+ * Energy-slot screen for the reservation API on port 5251, using catalogApi rather than stationsApi.
+ */
 import { useEffect, useState } from "react";
 import StatusBadge from "../../components/common/StatusBadge";
 import DataTable from "../../components/tables/DataTable";

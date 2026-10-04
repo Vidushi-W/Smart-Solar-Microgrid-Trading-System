@@ -1,3 +1,6 @@
+/**
+ * Verify and complete one transfer in the browser session. Grid Operator is the role that can finish a transfer.
+ */
 import { Link, useParams } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";
 import StatusBadge from "../../components/common/StatusBadge";
