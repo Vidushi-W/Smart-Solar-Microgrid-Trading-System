@@ -1,5 +1,8 @@
+/**
+ * Sidebar links and the title shown in the top bar. Dashboard uses an exact match so it is not highlighted on every other page.
+ */
 export const NAV_ITEMS = [
-  { to: "/", label: "Dashboard", icon: "dashboard", roles: ["Backoffice", "GridOperator", "Prosumer"], end: true },
+  { to: "/dashboard", label: "Dashboard", icon: "dashboard", roles: ["Backoffice", "GridOperator", "Prosumer"], end: true },
   { to: "/users", label: "Users", icon: "users", roles: ["Backoffice"] },
   { to: "/prosumers", label: "Prosumers", icon: "prosumers", roles: ["Backoffice"] },
   { to: "/stations", label: "Stations", icon: "stations", roles: ["Backoffice", "GridOperator"] },
@@ -9,7 +12,7 @@ export const NAV_ITEMS = [
 ];
 
 export function titleForPath(pathname) {
-  if (pathname === "/" || pathname === "/dashboard") return "Dashboard";
+  if (pathname === "/dashboard") return "Dashboard";
   if (pathname === "/profile") return "My profile";
   if (pathname === "/users/new") return "Create user";
   if (pathname.startsWith("/users/") && pathname.endsWith("/edit")) return "Edit user";

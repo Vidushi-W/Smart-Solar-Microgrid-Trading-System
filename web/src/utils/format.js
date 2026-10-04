@@ -1,3 +1,6 @@
+/**
+ * Display helpers for Sri Lanka dates, time ranges, and map coordinates.
+ */
 export function formatDateTime(iso) {
   return new Intl.DateTimeFormat("en-LK", {
     weekday: "short",

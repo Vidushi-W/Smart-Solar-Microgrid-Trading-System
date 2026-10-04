@@ -1,3 +1,4 @@
+// Allowed status moves: PendingActivation to Active, then DeactivationRequested, Deactivated, and back to Active.
 using SolarMicrogridTrading.Api.Constants;
 using SolarMicrogridTrading.Api.DTOs;
 using SolarMicrogridTrading.Api.Interfaces;

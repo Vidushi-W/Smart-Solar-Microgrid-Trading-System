@@ -1,3 +1,6 @@
+/**
+ * Reservation list, create, and status changes against the same reservation API and the same header identity as catalogApi.
+ */
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5251/api";
 
 function authHeaders(user) {

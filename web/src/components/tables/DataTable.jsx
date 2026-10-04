@@ -1,3 +1,6 @@
+/**
+ * Simple table renderer. Columns declare a key and a label; rows are plain objects.
+ */
 import EmptyState from "../common/EmptyState";
 
 export default function DataTable({ columns, rows, rowKey, onRowClick, emptyTitle, emptyText }) {

@@ -40,11 +40,13 @@ iisexpress/
 # JavaScript dependencies and generated outputs
 node_modules/
 dist/
+web/dist/
 build/
 coverage/
 .npm/
 .eslintcache
 .vite/
+web/.vite/
 *.local
 *.tsbuildinfo
 npm-debug.log*

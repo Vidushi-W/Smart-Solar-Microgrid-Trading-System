@@ -1,3 +1,6 @@
+/**
+ * Creates a reservation through the reservation API. The slot must fall inside the seven-day window.
+ */
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";

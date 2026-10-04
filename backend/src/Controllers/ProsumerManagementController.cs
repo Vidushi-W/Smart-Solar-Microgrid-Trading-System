@@ -1,3 +1,5 @@
+// Backoffice queue for pending activation, deactivation, and reactivation.
+// A prosumer can sign in only after the account is Active.
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

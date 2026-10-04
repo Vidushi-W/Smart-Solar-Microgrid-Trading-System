@@ -1,3 +1,6 @@
+/**
+ * Signed-in user's profile. A prosumer loads /prosumers/me/profile, Backoffice loads their user record, and a Grid Operator sees the token identity. Only a prosumer or Backoffice user can save changes.
+ */
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getCurrentUser } from "../../services/authService";

@@ -1,3 +1,6 @@
+/**
+ * Backoffice list of web users. Activate and deactivate call the account API; they do not change the browser demo data.
+ */
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getUsers, updateUserStatus } from "../../services/userService";

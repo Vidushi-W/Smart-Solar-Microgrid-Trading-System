@@ -1,3 +1,5 @@
+// Reservation rules: an active prosumer, an open slot, a known service type, the seven-day window, no double booking, and 12 hours' notice before a change or cancellation.
+// Requested, Approved, and Scheduled reservations hold slot capacity.
 using SolarMicrogrid.API.Constants;
 using SolarMicrogrid.API.DTOs;
 using SolarMicrogrid.API.Helpers;

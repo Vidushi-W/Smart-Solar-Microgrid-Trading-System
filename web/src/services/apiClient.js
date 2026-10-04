@@ -1,3 +1,6 @@
+/**
+ * Shared fetch for the station and slot screens. Attaches the JWT when one exists. ASP.NET validation errors are flattened into one ApiError message.
+ */
 import { API_BASE } from "./contracts";
 
 export class ApiError extends Error {

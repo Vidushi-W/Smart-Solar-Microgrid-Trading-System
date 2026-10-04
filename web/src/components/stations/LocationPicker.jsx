@@ -1,3 +1,6 @@
+/**
+ * Map click target for a station. The parent form stores the latitude and longitude it reports.
+ */
 import { useEffect, useRef, useState } from "react";
 
 const TILE_SIZE = 256;

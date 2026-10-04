@@ -1,5 +1,9 @@
 node_modules/
 dist/
+.vite/
+coverage/
+*.local
+npm-debug.log*
 .env
 .env.*
 !.env.example

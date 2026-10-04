@@ -1,3 +1,6 @@
+/**
+ * Public home page. Sign in goes to /login; it does not accept credentials itself.
+ */
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import SunMark from "../components/common/SunMark";

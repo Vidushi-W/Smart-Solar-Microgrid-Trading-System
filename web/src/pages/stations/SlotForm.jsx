@@ -1,3 +1,6 @@
+/**
+ * Dialog for one energy slot: date, time window, capacity, and status.
+ */
 import { useState } from "react";
 import Modal from "../../components/common/Modal";
 

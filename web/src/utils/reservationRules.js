@@ -1,3 +1,6 @@
+/**
+ * Client-side reservation checks: which statuses still hold a slot, the 12-hour change notice, and the seven-day booking window. The API remains the authority for the same rules.
+ */
 export const HOLDING_STATUSES = ["Requested", "Approved", "Scheduled"];
 
 export function holdsCapacity(status) {

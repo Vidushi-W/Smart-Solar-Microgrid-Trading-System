@@ -1,3 +1,6 @@
+/**
+ * Add or edit a station inside a dialog, including the map location and weekly operating hours.
+ */
 import { useState } from "react";
 import Modal from "../../components/common/Modal";
 import LocationPicker from "../../components/stations/LocationPicker";

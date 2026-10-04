@@ -1,3 +1,6 @@
+/**
+ * Sign-in form. Submits a username or NIC and a password, then opens the dashboard after AuthContext stores the session.
+ */
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";

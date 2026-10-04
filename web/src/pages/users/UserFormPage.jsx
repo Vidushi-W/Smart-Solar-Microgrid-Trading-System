@@ -1,3 +1,6 @@
+/**
+ * Create a web user, or edit one. On edit, the password field is optional and is omitted when left blank.
+ */
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { createUser, getUser, updateUser } from "../../services/userService";

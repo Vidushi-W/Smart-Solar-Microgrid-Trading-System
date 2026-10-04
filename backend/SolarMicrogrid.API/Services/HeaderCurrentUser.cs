@@ -1,3 +1,5 @@
+// Development stand-in for authentication.
+// A request is treated as signed in only when X-User-Id and X-User-Role are present and the role is Backoffice, GridOperator, or Prosumer.
 using SolarMicrogrid.API.Constants;
 using SolarMicrogrid.API.Interfaces;
 
@@ -10,6 +12,7 @@ public class HeaderCurrentUser : ICurrentUser
 
     public HeaderCurrentUser(IHttpContextAccessor accessor, IHostEnvironment environment)
     {
+        // Outside Development the headers are ignored, so the request stays anonymous.
         if (!environment.IsDevelopment() || accessor.HttpContext is null)
         {
             return;

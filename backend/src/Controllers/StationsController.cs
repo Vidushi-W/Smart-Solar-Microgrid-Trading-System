@@ -1,3 +1,5 @@
+// Station list, nearby search, update, and deactivation for this API.
+// The web station screens call these routes through stationsApi.
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using SmartSolar.Microgrid.DTOs;

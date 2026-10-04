@@ -1,3 +1,6 @@
+/**
+ * Home screen after login. Counts come from the account API: staff users, the pending prosumer queue, and deactivated prosumers.
+ */
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
