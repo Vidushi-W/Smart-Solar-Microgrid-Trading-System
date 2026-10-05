@@ -1,5 +1,5 @@
 /**
- * Sign-in form. Submits a username or NIC and a password, then opens the dashboard after AuthContext stores the session.
+ * Sign-in form. Submits a username, email, or NIC and a password, then opens the role-aware dashboard after AuthContext stores the session.
  */
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -11,6 +11,7 @@ export default function ConnectedLoginPage() {
   const { login } = useAuth();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -44,17 +45,29 @@ export default function ConnectedLoginPage() {
         <div className="auth-card">
           <p className="eyebrow">Secure access</p>
           <h2>Welcome back</h2>
-          <p className="auth-intro">Use your assigned username or NIC to continue.</p>
+          <p className="auth-intro">Use your assigned username, email, or NIC to continue.</p>
           <form onSubmit={submit} className="auth-form">
-            <label htmlFor="auth-identifier">Username or NIC</label>
+            <label htmlFor="auth-identifier">Username, email, or NIC</label>
             <input id="auth-identifier" value={identifier} onChange={(event) => setIdentifier(event.target.value)} autoComplete="username" required />
             <label htmlFor="auth-password">Password</label>
-            <input id="auth-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
+            <div className="auth-password-field">
+              <input id="auth-password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
+              <button
+                className="auth-password-toggle"
+                type="button"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword((visible) => !visible)}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
             {error ? <p className="form-error" role="alert">{error}</p> : null}
             <button className="btn primary auth-submit" type="submit" disabled={submitting}>
               {submitting ? "Signing in…" : "Sign in"}<span aria-hidden="true">↗</span>
             </button>
           </form>
+          <p className="auth-signup-link">Don&apos;t have an account? <Link to="/signup">Sign Up</Link></p>
           <p className="auth-security">Role-based access · encrypted session</p>
         </div>
       </section>

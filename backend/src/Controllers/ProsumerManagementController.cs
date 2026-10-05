@@ -24,6 +24,24 @@ public sealed class ProsumerManagementController : ControllerBase
         this.profileService = profileService;
     }
 
+    [HttpGet]
+    [Authorize(Policy = AuthorizationPolicies.BackofficeOnly)]
+    public async Task<IActionResult> GetAllProsumers(CancellationToken cancellationToken) =>
+        Ok(await statusService.GetAllAsync(cancellationToken));
+
+    [HttpGet("{nic}")]
+    [Authorize(Policy = AuthorizationPolicies.BackofficeOnly)]
+    public async Task<IActionResult> GetProsumerByNic(string nic, CancellationToken cancellationToken) =>
+        ProfileResult(await profileService.GetByNicAsync(nic, cancellationToken));
+
+    [HttpPut("{nic}")]
+    [Authorize(Policy = AuthorizationPolicies.BackofficeOnly)]
+    public async Task<IActionResult> UpdateProsumerByNic(
+        string nic,
+        UpdateProsumerProfileRequest request,
+        CancellationToken cancellationToken) =>
+        ProfileResult(await profileService.UpdateByNicAsync(nic, request, cancellationToken));
+
     [HttpGet("pending")]
     [Authorize(Policy = AuthorizationPolicies.BackofficeOnly)]
     public async Task<IActionResult> GetPendingProsumers(CancellationToken cancellationToken) =>
@@ -34,20 +52,25 @@ public sealed class ProsumerManagementController : ControllerBase
     public async Task<IActionResult> GetDeactivatedProsumers(CancellationToken cancellationToken) =>
         Ok(await statusService.GetDeactivatedAsync(cancellationToken));
 
-    [HttpPost("{userId}/activate")]
+    [HttpPost("{identifier}/activate")]
     [Authorize(Policy = AuthorizationPolicies.BackofficeOnly)]
-    public async Task<IActionResult> ActivateProsumer(string userId, CancellationToken cancellationToken) =>
-        TransitionResult(await statusService.ActivateAsync(userId, cancellationToken));
+    public async Task<IActionResult> ActivateProsumer(string identifier, CancellationToken cancellationToken) =>
+        TransitionResult(await statusService.ActivateAsync(identifier, cancellationToken));
 
-    [HttpPost("{userId}/deactivate")]
+    [HttpPost("{identifier}/deactivate")]
     [Authorize(Policy = AuthorizationPolicies.BackofficeOnly)]
-    public async Task<IActionResult> DeactivateProsumer(string userId, CancellationToken cancellationToken) =>
-        TransitionResult(await statusService.ProcessDeactivationAsync(userId, cancellationToken));
+    public async Task<IActionResult> DeactivateProsumer(string identifier, CancellationToken cancellationToken) =>
+        TransitionResult(await statusService.ProcessDeactivationAsync(identifier, cancellationToken));
 
-    [HttpPost("{userId}/reactivate")]
+    [HttpPost("{identifier}/request-deactivation")]
     [Authorize(Policy = AuthorizationPolicies.BackofficeOnly)]
-    public async Task<IActionResult> ReactivateProsumer(string userId, CancellationToken cancellationToken) =>
-        TransitionResult(await statusService.ReactivateAsync(userId, cancellationToken));
+    public async Task<IActionResult> RequestProsumerDeactivation(string identifier, CancellationToken cancellationToken) =>
+        TransitionResult(await statusService.RequestDeactivationAsync(identifier, cancellationToken));
+
+    [HttpPost("{identifier}/reactivate")]
+    [Authorize(Policy = AuthorizationPolicies.BackofficeOnly)]
+    public async Task<IActionResult> ReactivateProsumer(string identifier, CancellationToken cancellationToken) =>
+        TransitionResult(await statusService.ReactivateAsync(identifier, cancellationToken));
 
     [HttpGet("me")]
     [Authorize]

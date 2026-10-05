@@ -17,6 +17,12 @@ const paths = {
       <path d="M20 8v6M17 11h6" />
     </>
   ),
+  profile: (
+    <>
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M5 21v-1a7 7 0 0 1 14 0v1" />
+    </>
+  ),
   prosumers: (
     <>
       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />

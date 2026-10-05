@@ -3,15 +3,19 @@
 using System.Net.Mail;
 using Microsoft.AspNetCore.Identity;
 using MongoDB.Bson;
+using MongoDB.Driver;
 using SolarMicrogridTrading.Api.Constants;
 using SolarMicrogridTrading.Api.DTOs;
 using SolarMicrogridTrading.Api.Interfaces;
+using SolarMicrogridTrading.Api.Helpers;
 using SolarMicrogridTrading.Api.Models;
 
 namespace SolarMicrogridTrading.Api.Services;
 
 public sealed class UserManagementService : IUserManagementService
 {
+    private static readonly System.Text.RegularExpressions.Regex PhonePattern =
+        new("^\\+?[0-9\\s().-]+$", System.Text.RegularExpressions.RegexOptions.Compiled);
     private static readonly HashSet<string> WebRoles = new(StringComparer.Ordinal)
     {
         "Backoffice",
@@ -51,10 +55,10 @@ public sealed class UserManagementService : IUserManagementService
             return (null, validationError);
         }
 
-        if (await userRepository.ExistsByUsernameOrNicAsync(
-                request.Username.Trim(), request.Username.Trim(), null, cancellationToken))
+        if (await userRepository.ExistsByUsernameEmailOrNicAsync(
+                request.Username.Trim(), request.Email.Trim(), request.Username.Trim(), null, cancellationToken))
         {
-            return (null, "Username already exists.");
+            return (null, "Username, email, or NIC already exists.");
         }
 
         var user = new User
@@ -72,7 +76,15 @@ public sealed class UserManagementService : IUserManagementService
         };
         user.PasswordHash = passwordHasher.HashPassword(user, request.Password);
 
-        await userRepository.CreateAsync(user, cancellationToken);
+        try
+        {
+            await userRepository.CreateAsync(user, cancellationToken);
+        }
+        catch (MongoWriteException exception) when (exception.WriteError?.Category == ServerErrorCategory.DuplicateKey)
+        {
+            return (null, "Username, email, or NIC already exists.");
+        }
+
         return (Map(user), null);
     }
 
@@ -93,9 +105,24 @@ public sealed class UserManagementService : IUserManagementService
             return (null, null);
         }
 
+        if (user.Role == "Prosumer")
+        {
+            return (null, "Prosumer accounts must be managed through Prosumer Management.");
+        }
+
+        if (await userRepository.ExistsByUsernameEmailOrNicAsync(
+                user.Username, request.Email.Trim(), user.Nic, user.Id, cancellationToken))
+        {
+            return (null, "Email already exists.");
+        }
+
         user.Name = request.Name.Trim();
         user.Email = request.Email.Trim();
         user.ContactNumber = request.ContactNumber.Trim();
+        if (request.Address is not null)
+        {
+            user.Address = request.Address.Trim();
+        }
         user.Role = request.Role.Trim();
         if (!string.IsNullOrWhiteSpace(request.Password))
         {
@@ -121,6 +148,11 @@ public sealed class UserManagementService : IUserManagementService
             return null;
         }
 
+        if (user.Role == "Prosumer")
+        {
+            return null;
+        }
+
         user.IsActive = isActive;
         user.AccountStatus = isActive ? AccountStatuses.Active : AccountStatuses.Deactivated;
         return await userRepository.UpdateAsync(user, cancellationToken)
@@ -138,7 +170,7 @@ public sealed class UserManagementService : IUserManagementService
             return "Name, username, email, and password are required.";
         }
 
-        return ValidateCommon(request.Email, request.Role, request.Password);
+        return ValidateCommon(request.Email, request.ContactNumber, request.Role, request.Password);
     }
 
     private static string? ValidateUpdate(UpdateWebUserRequest request)
@@ -148,10 +180,10 @@ public sealed class UserManagementService : IUserManagementService
             return "Name and email are required.";
         }
 
-        return ValidateCommon(request.Email, request.Role, request.Password);
+        return ValidateCommon(request.Email, request.ContactNumber, request.Role, request.Password);
     }
 
-    private static string? ValidateCommon(string email, string role, string? password)
+    private static string? ValidateCommon(string email, string contactNumber, string role, string? password)
     {
         try
         {
@@ -162,16 +194,37 @@ public sealed class UserManagementService : IUserManagementService
             return "A valid email address is required.";
         }
 
+        var phoneError = ValidatePhone(contactNumber);
+        if (phoneError is not null)
+        {
+            return phoneError;
+        }
+
         if (!WebRoles.Contains(role.Trim()))
         {
             return "Role must be Backoffice or GridOperator.";
         }
 
-        if (password is not null && password.Length > 0 && password.Length < 8)
+        if (!string.IsNullOrEmpty(password))
         {
-            return "Password must be at least 8 characters long.";
+            var passwordError = PasswordPolicy.Validate(password);
+            if (passwordError is not null)
+            {
+                return passwordError;
+            }
         }
 
+        return null;
+    }
+
+    private static string? ValidatePhone(string phone)
+    {
+        var normalized = phone.Trim();
+        var digitCount = normalized.Count(char.IsAsciiDigit);
+        if (!PhonePattern.IsMatch(normalized) || digitCount is < 7 or > 15)
+        {
+            return "Phone number must contain 7 to 15 digits and may include a leading +, spaces, parentheses, periods, or hyphens.";
+        }
         return null;
     }
 
@@ -181,6 +234,8 @@ public sealed class UserManagementService : IUserManagementService
         user.Username,
         user.Email,
         user.ContactNumber,
+        user.Nic,
+        user.Address,
         user.Role,
         user.IsActive,
         user.AccountStatus,
