@@ -1,8 +1,8 @@
 /*
- * QR Energy Transfer foundation: minimal reservation projection.
- * Member 3 must align this contract with the reservation lifecycle before integration.
- * Partial updates preserve fields owned by other components.
+ * Energy reservation document in the EnergyReservation collection.
+ * QR transfer state stays on this document so partial updates can preserve it.
  */
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace SmartSolar.Microgrid.Models;
@@ -11,17 +11,44 @@ namespace SmartSolar.Microgrid.Models;
 public sealed class EnergyReservation
 {
     [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
     public string ReservationId { get; set; } = string.Empty;
+
     [BsonElement("prosumerId")]
     public string ProsumerId { get; set; } = string.Empty;
+
     [BsonElement("stationId")]
     public string StationId { get; set; } = string.Empty;
+
     [BsonElement("slotId")]
     public string SlotId { get; set; } = string.Empty;
-    [BsonElement("energyKwh")]
-    public double EnergyKwh { get; set; }
+
+    [BsonElement("scheduledDateTime")]
+    [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
+    public DateTime ScheduledDateTime { get; set; }
+
     [BsonElement("status")]
     public string Status { get; set; } = string.Empty;
+
+    [BsonElement("createdAt")]
+    [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
+    public DateTime CreatedAt { get; set; }
+
+    [BsonElement("updatedAt")]
+    [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
+    public DateTime UpdatedAt { get; set; }
+
+    [BsonElement("cancelledAt")]
+    [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
+    public DateTime? CancelledAt { get; set; }
+
+    [BsonElement("completedAt")]
+    [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
+    public DateTime? CompletedAt { get; set; }
+
+    [BsonElement("energyKwh")]
+    public double EnergyKwh { get; set; }
+
     [BsonElement("qrTransfer")]
     public QrTransferState? QrTransfer { get; set; }
 }
