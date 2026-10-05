@@ -13,7 +13,18 @@ const DEV_TEST_USER = {
   name: "Geethma Perera",
   username: "geethma",
   role: "Backoffice",
+  profilePictureData: null,
 };
+
+function mapIdentity(identity) {
+  return {
+    id: identity.userId,
+    name: identity.name || identity.username || identity.userId,
+    username: identity.username,
+    role: identity.role,
+    profilePictureData: identity.profilePictureData || null,
+  };
+}
 
 function isDevTestLogin(identifier, password) {
   return import.meta.env.DEV
@@ -38,12 +49,7 @@ export function AuthProvider({ children }) {
       return;
     }
     getCurrentUser()
-      .then((identity) => setUser({
-        id: identity.userId,
-        name: identity.name || identity.username || identity.userId,
-        username: identity.username,
-        role: identity.role,
-      }))
+      .then((identity) => setUser(mapIdentity(identity)))
       .catch(() => {
         localStorage.removeItem("authToken");
         setUser(null);
@@ -61,12 +67,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem("authToken", result.token);
     try {
       const identity = await getCurrentUser();
-      const session = {
-        id: identity.userId,
-        name: identity.name || identity.username || identity.userId,
-        username: identity.username,
-        role: identity.role || result.role,
-      };
+      const session = { ...mapIdentity(identity), role: identity.role || result.role };
       setUser(session);
       return session;
     } catch (error) {
@@ -80,8 +81,12 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  const updateUser = useCallback((updates) => {
+    setUser((current) => current ? { ...current, ...updates } : current);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>{children}</AuthContext.Provider>
   );
 }
 

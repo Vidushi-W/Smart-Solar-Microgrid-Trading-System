@@ -8,5 +8,6 @@ data class ProsumerProfile(
     val contactNumber: String,
     val address: String,
     val accountStatus: String,
-    val createdAtUtc: String = ""
+    val createdAtUtc: String = "",
+    val profilePictureData: String? = null
 )

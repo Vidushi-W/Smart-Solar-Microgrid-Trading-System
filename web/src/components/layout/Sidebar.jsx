@@ -23,7 +23,9 @@ export default function Sidebar({ open, onNavigate }) {
         </div>
       </div>
       <div className="side-user">
-        <span className="avatar">{initial}</span>
+        {user.profilePictureData
+          ? <img className="avatar avatar-photo" src={user.profilePictureData} alt="" />
+          : <span className="avatar">{initial}</span>}
         <div>
           <strong>{user.name}</strong>
           <span>{ROLE_LABELS[user.role]}</span>

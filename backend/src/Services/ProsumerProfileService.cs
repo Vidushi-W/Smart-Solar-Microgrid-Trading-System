@@ -1,5 +1,6 @@
 using System.Net.Mail;
 using System.Text.RegularExpressions;
+using SolarMicrogridTrading.Api.Helpers;
 using SolarMicrogridTrading.Api.DTOs;
 using SolarMicrogridTrading.Api.Interfaces;
 using SolarMicrogridTrading.Api.Models;
@@ -80,6 +81,10 @@ public sealed class ProsumerProfileService : IProsumerProfileService
         user.Email = request.Email.Trim();
         user.ContactNumber = request.ContactNumber.Trim();
         user.Address = request.Address.Trim();
+        if (request.ProfilePictureData is not null)
+        {
+            user.ProfilePictureData = request.ProfilePictureData;
+        }
 
         return await userRepository.UpdateAsync(user, cancellationToken)
             ? (Map(user), null)
@@ -88,6 +93,12 @@ public sealed class ProsumerProfileService : IProsumerProfileService
 
     private static string? Validate(UpdateProsumerProfileRequest request)
     {
+        var profilePictureError = ProfilePictureValidator.Validate(request.ProfilePictureData);
+        if (profilePictureError is not null)
+        {
+            return profilePictureError;
+        }
+
         if (string.IsNullOrWhiteSpace(request.Name)
             || string.IsNullOrWhiteSpace(request.Email)
             || string.IsNullOrWhiteSpace(request.ContactNumber)
@@ -124,5 +135,6 @@ public sealed class ProsumerProfileService : IProsumerProfileService
         user.Address,
         user.AccountStatus,
         user.IsActive,
-        user.CreatedAtUtc);
+        user.CreatedAtUtc,
+        user.ProfilePictureData);
 }

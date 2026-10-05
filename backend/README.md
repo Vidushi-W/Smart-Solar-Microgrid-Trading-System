@@ -43,6 +43,8 @@ Backoffice-only endpoints manage Web application users with the `Backoffice` and
 
 The API validates required fields, email format, password length, allowed Web roles, and duplicate usernames. MongoDB operations and password hashing remain in backend services; the Web client never accesses MongoDB directly.
 
+Authenticated self-profile updates may include an optional `profilePictureData` JPEG data URL. The API rejects non-JPEG formats and decoded images larger than 750 KB; omitted values preserve the existing picture, and an empty string removes it.
+
 ### Initial Backoffice account
 
 The API intentionally has no default Backoffice credentials. The demo credentials in the Web client are local sample data and are not MongoDB accounts. To create the first real Backoffice account, run the one-time bootstrap tool from an interactive terminal in `backend/src`:

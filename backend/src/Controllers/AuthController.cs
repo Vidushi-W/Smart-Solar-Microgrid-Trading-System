@@ -70,6 +70,7 @@ public sealed class AuthController : ControllerBase
             accountStatus = user.AccountStatus,
             isActive = user.IsActive,
             createdAtUtc = user.CreatedAtUtc,
+            profilePictureData = user.ProfilePictureData,
             role = user.Role
         });
     }

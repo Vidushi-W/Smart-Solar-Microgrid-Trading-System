@@ -99,6 +99,12 @@ public sealed class UserManagementService : IUserManagementService
             return (null, validationError);
         }
 
+        var profilePictureError = ProfilePictureValidator.Validate(request.ProfilePictureData);
+        if (profilePictureError is not null)
+        {
+            return (null, profilePictureError);
+        }
+
         var user = await userRepository.GetByIdAsync(id, cancellationToken);
         if (user is null)
         {
@@ -122,6 +128,10 @@ public sealed class UserManagementService : IUserManagementService
         if (request.Address is not null)
         {
             user.Address = request.Address.Trim();
+        }
+        if (request.ProfilePictureData is not null)
+        {
+            user.ProfilePictureData = request.ProfilePictureData;
         }
         user.Role = request.Role.Trim();
         if (!string.IsNullOrWhiteSpace(request.Password))
@@ -239,5 +249,6 @@ public sealed class UserManagementService : IUserManagementService
         user.Role,
         user.IsActive,
         user.AccountStatus,
-        user.CreatedAtUtc);
+        user.CreatedAtUtc,
+        user.ProfilePictureData);
 }
