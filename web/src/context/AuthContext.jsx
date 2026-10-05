@@ -6,12 +6,34 @@ import { getCurrentUser, login as loginRequest } from "../services/authService";
 
 const AuthContext = createContext(null);
 
+// Local sign-in for building screens while the account API is not ready. Vite strips this in production builds.
+const DEV_TEST_TOKEN = "dev-test-session";
+const DEV_TEST_USER = {
+  id: "geethma-test",
+  name: "Geethma Perera",
+  username: "geethma",
+  role: "Backoffice",
+};
+
+function isDevTestLogin(identifier, password) {
+  return import.meta.env.DEV
+    && identifier.trim().toLowerCase() === "geethma"
+    && password === "geethma123";
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!localStorage.getItem("authToken")) {
+    const storedToken = localStorage.getItem("authToken");
+    if (!storedToken) {
+      setLoading(false);
+      return;
+    }
+    if (storedToken === DEV_TEST_TOKEN) {
+      if (import.meta.env.DEV) setUser(DEV_TEST_USER);
+      else localStorage.removeItem("authToken");
       setLoading(false);
       return;
     }
@@ -30,6 +52,11 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(async (identifier, password) => {
+    if (isDevTestLogin(identifier, password)) {
+      localStorage.setItem("authToken", DEV_TEST_TOKEN);
+      setUser(DEV_TEST_USER);
+      return DEV_TEST_USER;
+    }
     const result = await loginRequest(identifier, password);
     localStorage.setItem("authToken", result.token);
     try {

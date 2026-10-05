@@ -39,7 +39,25 @@ export default function AccountDashboardPage() {
   return (
     <div className="page account-page dashboard-page">
       <section className="dashboard-welcome">
-        <div><p className="eyebrow">{user.role === "Backoffice" ? "BACKOFFICE OVERVIEW" : user.role === "GridOperator" ? "GRID OPERATIONS" : "PROSUMER OVERVIEW"}</p><h1>Good day, {firstName}.</h1><p>Powered by the sun. Coordinated by your team.</p></div>
+<div>
+  <p className="eyebrow">
+    {user.role === "Backoffice"
+      ? "BACKOFFICE OVERVIEW"
+      : user.role === "GridOperator"
+      ? "GRID OPERATIONS"
+      : "PROSUMER OVERVIEW"}
+  </p>
+
+  <h1>Good day, {firstName}.</h1>
+  <p>Powered by the sun. Coordinated by your team.</p>
+
+  <Link
+    className="hero-cta dashboard-reserve"
+    to="/reservations/new"
+  >
+    Reserve Energy Slot <span aria-hidden="true">↗</span>
+  </Link>
+</div>
         <div className="dashboard-date"><span>LOCAL OPERATIONS</span><strong>{new Intl.DateTimeFormat("en-LK", { weekday: "long", day: "numeric", month: "long" }).format(new Date())}</strong></div>
       </section>
       {error ? <p className="form-error" role="alert">{error}</p> : null}
@@ -83,8 +101,24 @@ export default function AccountDashboardPage() {
         </section>
       ) : (
         <section className="dashboard-workspace operator-overview">
-          <div><p className="eyebrow">PROSUMER WORKSPACE</p><h2>Your account</h2><p>Review your profile and use the shared navigation to open connected project modules.</p></div>
-          <Link to="/profile" className="hero-cta">Review your account <span aria-hidden="true">↗</span></Link>
+<div>
+  <p className="eyebrow">PROSUMER WORKSPACE</p>
+  <h2>Your account</h2>
+  <p>
+    Review your profile and use the shared navigation to open connected
+    project modules.
+  </p>
+</div>
+
+<div className="action-row">
+  <Link to="/reservations/new" className="hero-cta">
+    Reserve Energy Slot <span aria-hidden="true">↗</span>
+  </Link>
+
+  <Link to="/profile" className="btn ghost">
+    Review your account
+  </Link>
+</div>
         </section>
       )}
     </div>
