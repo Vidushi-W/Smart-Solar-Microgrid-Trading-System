@@ -1,4 +1,5 @@
 // Allowed status moves: PendingActivation to Active, then DeactivationRequested, Deactivated, and back to Active.
+using MongoDB.Bson;
 using SolarMicrogridTrading.Api.Constants;
 using SolarMicrogridTrading.Api.DTOs;
 using SolarMicrogridTrading.Api.Interfaces;
@@ -13,6 +14,12 @@ public sealed class ProsumerStatusService : IProsumerStatusService
     public ProsumerStatusService(IUserRepository userRepository)
     {
         this.userRepository = userRepository;
+    }
+
+    public async Task<IReadOnlyList<UserSummaryResponse>> GetAllAsync(CancellationToken cancellationToken)
+    {
+        var users = await userRepository.GetAllAsync(cancellationToken);
+        return users.Where(user => user.Role == "Prosumer").Select(Map).ToList();
     }
 
     public async Task<IReadOnlyList<UserSummaryResponse>> GetPendingAsync(CancellationToken cancellationToken)
@@ -74,13 +81,15 @@ public sealed class ProsumerStatusService : IProsumerStatusService
     }
 
     private async Task<UserSummaryResponse?> TransitionAsync(
-        string userId,
+        string identifier,
         IReadOnlyCollection<string> allowedStatuses,
         string nextStatus,
         bool isActive,
         CancellationToken cancellationToken)
     {
-        var user = await userRepository.GetByIdAsync(userId, cancellationToken);
+        var user = ObjectId.TryParse(identifier, out _)
+            ? await userRepository.GetByIdAsync(identifier, cancellationToken)
+            : await userRepository.GetByNicAsync(identifier, cancellationToken);
         if (user is null
             || user.Role != "Prosumer"
             || !allowedStatuses.Contains(user.AccountStatus))
@@ -101,6 +110,8 @@ public sealed class ProsumerStatusService : IProsumerStatusService
         user.Username,
         user.Email,
         user.ContactNumber,
+        user.Nic,
+        user.Address,
         user.Role,
         user.IsActive,
         user.AccountStatus,

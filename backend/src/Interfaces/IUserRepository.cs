@@ -7,7 +7,13 @@ public interface IUserRepository
     Task<User?> FindByIdentifierAsync(string identifier, CancellationToken cancellationToken);
     Task<IReadOnlyList<User>> GetAllAsync(CancellationToken cancellationToken);
     Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken);
-    Task<bool> ExistsByUsernameOrNicAsync(string username, string nic, string? excludedId, CancellationToken cancellationToken);
+    Task<User?> GetByNicAsync(string nic, CancellationToken cancellationToken);
+    Task<bool> ExistsByUsernameEmailOrNicAsync(
+        string username,
+        string email,
+        string nic,
+        string? excludedId,
+        CancellationToken cancellationToken);
     Task<bool> ExistsByNicAsync(string nic, CancellationToken cancellationToken);
     Task<IReadOnlyList<User>> GetByRoleAndStatusesAsync(
         string role,

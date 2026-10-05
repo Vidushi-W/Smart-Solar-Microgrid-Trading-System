@@ -18,7 +18,7 @@ export function AuthProvider({ children }) {
     getCurrentUser()
       .then((identity) => setUser({
         id: identity.userId,
-        name: identity.username || identity.userId,
+        name: identity.name || identity.username || identity.userId,
         username: identity.username,
         role: identity.role,
       }))
@@ -36,7 +36,7 @@ export function AuthProvider({ children }) {
       const identity = await getCurrentUser();
       const session = {
         id: identity.userId,
-        name: identity.username || identity.userId,
+        name: identity.name || identity.username || identity.userId,
         username: identity.username,
         role: identity.role || result.role,
       };
