@@ -11,4 +11,5 @@ public sealed record UserSummaryResponse(
     string Role,
     bool IsActive,
     string AccountStatus,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    string? ProfilePictureData = null);

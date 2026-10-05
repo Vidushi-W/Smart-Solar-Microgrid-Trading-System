@@ -1,7 +1,7 @@
 /**
  * Signed-in user's profile. A prosumer loads /prosumers/me/profile, Backoffice loads their user record, and a Grid Operator sees the token identity. Only a prosumer or Backoffice user can save changes.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -13,16 +13,33 @@ import {
 } from "../../services/userService";
 import { isPasswordStrong, passwordRequirements } from "../../utils/passwordPolicy";
 
+function loadImage(fileUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(fileUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(fileUrl);
+      reject(new Error("Image could not be loaded."));
+    };
+    image.src = fileUrl;
+  });
+}
+
 export default function ProfilePage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
+  const [profilePictureData, setProfilePictureData] = useState("");
   const [form, setForm] = useState({ name: "", email: "", contactNumber: "", address: "", password: "", confirmPassword: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const pictureInput = useRef(null);
   const isStaff = user.role === "Backoffice" || user.role === "GridOperator";
   const canEdit = isStaff || user.role === "Prosumer";
   const passwordRules = passwordRequirements(form.password);
@@ -35,6 +52,7 @@ export default function ProfilePage() {
     load.then((record) => {
       if (!active) return;
       setProfile(record);
+      setProfilePictureData(record.profilePictureData || "");
       setForm({
         name: record.name || record.username || user.name,
         email: record.email || "",
@@ -50,6 +68,34 @@ export default function ProfilePage() {
 
   function updateField(event) {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+  }
+
+  async function chooseProfilePicture(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Choose an image file.");
+      return;
+    }
+
+    try {
+      const image = await loadImage(URL.createObjectURL(file));
+      const scale = Math.min(1, 512 / Math.max(image.naturalWidth, image.naturalHeight));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+      const data = canvas.toDataURL("image/jpeg", 0.78);
+      if (data.length > 1_000_000) {
+        setError("That photo is too large. Choose a smaller image.");
+        return;
+      }
+      setProfilePictureData(data);
+      setError("");
+    } catch {
+      setError("That image could not be opened. Please choose another.");
+    }
   }
 
   async function save(event) {
@@ -70,7 +116,7 @@ export default function ProfilePage() {
     setSaving(true);
     try {
       if (user.role === "Prosumer") {
-        setProfile(await updateProsumerProfile(form));
+        setProfile(await updateProsumerProfile({ ...form, profilePictureData }));
       } else {
         const updated = await updateMyStaffProfile({
           name: form.name,
@@ -79,6 +125,7 @@ export default function ProfilePage() {
           role: user.role,
           password: form.password || null,
           address: form.address,
+          profilePictureData,
         });
         setProfile(updated);
         setForm((current) => ({ ...current, password: "", confirmPassword: "" }));
@@ -120,8 +167,10 @@ export default function ProfilePage() {
       {loading ? <p className="hint">Loading profile…</p> : (
         <div className="profile-layout">
           <aside className="profile-summary">
-            <span className="profile-monogram">{(form.name || "S").slice(0, 1).toUpperCase()}</span>
-            <p className="eyebrow">{profile?.profilePictureUrl ? "PROFILE PICTURE" : "DEFAULT AVATAR"}</p>
+            {profilePictureData
+              ? <img className="profile-monogram profile-photo" src={profilePictureData} alt="Profile picture" />
+              : <span className="profile-monogram">{(form.name || "S").slice(0, 1).toUpperCase()}</span>}
+            <p className="eyebrow">{profilePictureData ? "PROFILE PICTURE" : "DEFAULT AVATAR"}</p>
             <h2>{form.name || user.name}</h2>
             <span className="status-chip active">{user.role === "GridOperator" ? "Grid Operator" : user.role}</span>
             <dl>
@@ -132,6 +181,14 @@ export default function ProfilePage() {
           </aside>
           <form className="account-form profile-form" onSubmit={save}>
             <div className="profile-form-head"><div><h2>Profile details</h2><p>Keep your contact information current.</p></div></div>
+            {canEdit ? (
+              <div className="profile-picture-controls">
+                <input ref={pictureInput} className="visually-hidden" type="file" accept="image/*" onChange={chooseProfilePicture} aria-label="Choose profile picture from gallery" />
+                <button className="btn ghost" type="button" onClick={() => pictureInput.current?.click()}>Choose profile picture</button>
+                {profilePictureData ? <button className="btn ghost" type="button" onClick={() => setProfilePictureData("")}>Remove photo</button> : null}
+                <span className="form-note">Choose an image from your device. It is resized before saving.</span>
+              </div>
+            ) : null}
             <div className="account-form-grid">
               <label>Full name<input name="name" value={form.name} onChange={updateField} disabled={!canEdit} required /></label>
               <label>Username<input value={profile?.username || user.username || ""} disabled /></label>

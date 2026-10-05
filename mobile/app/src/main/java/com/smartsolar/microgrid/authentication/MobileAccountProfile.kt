@@ -11,5 +11,6 @@ data class MobileAccountProfile(
     val role: String,
     val accountStatus: String,
     val isActive: Boolean,
-    val createdAtUtc: String
+    val createdAtUtc: String,
+    val profilePictureData: String? = null
 )

@@ -135,7 +135,8 @@ class AuthenticationApiClient(
             contactNumber = response.getString("contactNumber"),
             address = response.getString("address"),
             accountStatus = response.getString("accountStatus"),
-            createdAtUtc = response.optString("createdAtUtc")
+            createdAtUtc = response.optString("createdAtUtc"),
+            profilePictureData = response.optString("profilePictureData").takeIf(String::isNotBlank)
         )
     }
 
@@ -149,6 +150,7 @@ class AuthenticationApiClient(
                 .put("email", request.email)
                 .put("contactNumber", request.contactNumber)
                 .put("address", request.address)
+                .put("profilePictureData", request.profilePictureData)
         )
         return ProsumerProfile(
             userId = response.getString("userId"),
@@ -158,7 +160,8 @@ class AuthenticationApiClient(
             contactNumber = response.getString("contactNumber"),
             address = response.getString("address"),
             accountStatus = response.getString("accountStatus"),
-            createdAtUtc = response.optString("createdAtUtc")
+            createdAtUtc = response.optString("createdAtUtc"),
+            profilePictureData = response.optString("profilePictureData").takeIf(String::isNotBlank)
         )
     }
 
@@ -171,7 +174,8 @@ class AuthenticationApiClient(
         name: String,
         email: String,
         contactNumber: String,
-        password: String?
+        password: String?,
+        profilePictureData: String? = null
     ): MobileAccountProfile {
         val roleName = when (role) {
             UserRole.BACKOFFICE -> "Backoffice"
@@ -184,6 +188,7 @@ class AuthenticationApiClient(
             .put("contactNumber", contactNumber)
             .put("role", roleName)
             .put("password", password)
+            .put("profilePictureData", profilePictureData)
         return parseAccountProfile(authorizedRequest("/api/users/me/profile", token, "PUT", payload))
     }
 
@@ -201,7 +206,8 @@ class AuthenticationApiClient(
         role = response.optString("role", "Prosumer"),
         accountStatus = response.optString("accountStatus", if (response.optBoolean("isActive")) "Active" else "Inactive"),
         isActive = response.optBoolean("isActive"),
-        createdAtUtc = response.optString("createdAtUtc")
+        createdAtUtc = response.optString("createdAtUtc"),
+        profilePictureData = response.optString("profilePictureData").takeIf(String::isNotBlank)
     )
 
     fun requestDeactivation(token: String): String {

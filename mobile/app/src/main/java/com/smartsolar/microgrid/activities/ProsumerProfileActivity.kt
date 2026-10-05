@@ -8,22 +8,29 @@ import android.view.Gravity
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import com.smartsolar.microgrid.BuildConfig
 import com.smartsolar.microgrid.R
 import com.smartsolar.microgrid.authentication.AuthenticationApiClient
 import com.smartsolar.microgrid.authentication.ProsumerProfile
+import com.smartsolar.microgrid.authentication.ProfilePictureCodec
 import com.smartsolar.microgrid.authentication.UpdateProsumerProfileRequest
+import android.util.Base64
+import android.graphics.BitmapFactory
 import java.util.concurrent.Executors
 
 class ProsumerProfileActivity : AppCompatActivity() {
     private val executor = Executors.newSingleThreadExecutor()
     private lateinit var avatarView: TextView
+    private lateinit var photoView: ImageView
+    private lateinit var pictureButton: Button
     private lateinit var nicView: TextView
     private lateinit var statusView: TextView
     private lateinit var registeredView: TextView
@@ -40,6 +47,23 @@ class ProsumerProfileActivity : AppCompatActivity() {
     private var token: String? = null
     private var profile: ProsumerProfile? = null
     private var editing = false
+    private var profilePictureData: String? = null
+    private val picturePicker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            executor.execute {
+                try {
+                    val data = ProfilePictureCodec.encodeJpeg(contentResolver, uri)
+                    runOnUiThread {
+                        profilePictureData = data
+                        showAvatar(data)
+                        showSuccess(getString(R.string.profile_picture_selected))
+                    }
+                } catch (error: Exception) {
+                    runOnUiThread { showErrorMessage(error.message ?: getString(R.string.profile_failed)) }
+                }
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,6 +75,21 @@ class ProsumerProfileActivity : AppCompatActivity() {
         }
         setContentView(createView())
         loadProfile()
+    }
+
+    private fun showAvatar(data: String?) {
+        if (data.isNullOrBlank()) {
+            photoView.visibility = View.GONE
+            avatarView.visibility = View.VISIBLE
+            return
+        }
+        val encoded = data.substringAfter(',', "")
+        val bytes = Base64.decode(encoded, Base64.DEFAULT)
+        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            ?: throw IllegalArgumentException("The selected profile photo could not be displayed.")
+        photoView.setImageBitmap(bitmap)
+        avatarView.visibility = View.GONE
+        photoView.visibility = View.VISIBLE
     }
 
     private fun createView(): View {
@@ -80,11 +119,18 @@ class ProsumerProfileActivity : AppCompatActivity() {
             topMargin = 20
             bottomMargin = 8
         })
-        content.addView(TextView(this).apply {
-            text = getString(R.string.profile_picture_not_supported)
-            textSize = 12f
-            setTextColor(Color.rgb(96, 112, 100))
-        }, matchWidth())
+        photoView = ImageView(this).apply {
+            visibility = View.GONE
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            contentDescription = getString(R.string.my_profile)
+        }
+        content.addView(photoView, LinearLayout.LayoutParams(96, 96).apply { bottomMargin = 8 })
+        pictureButton = Button(this).apply {
+            text = getString(R.string.choose_profile_picture)
+            isEnabled = false
+            setOnClickListener { picturePicker.launch("image/*") }
+        }
+        content.addView(pictureButton, matchWidth())
         nicView = readOnlyField(R.string.nic)
         statusView = readOnlyField(R.string.account_status)
         registeredView = readOnlyField(R.string.registration_date)
@@ -137,6 +183,7 @@ class ProsumerProfileActivity : AppCompatActivity() {
                     setLoading(false)
                     showProfile(result)
                     editButton.isEnabled = true
+                    pictureButton.isEnabled = !editing
                 }
             } catch (error: Exception) {
                 runOnUiThread {
@@ -149,7 +196,11 @@ class ProsumerProfileActivity : AppCompatActivity() {
 
     private fun showProfile(value: ProsumerProfile) {
         profile = value
-        avatarView.text = value.name.firstOrNull()?.uppercase() ?: "?"
+        profilePictureData = value.profilePictureData
+        showAvatar(profilePictureData)
+        if (profilePictureData.isNullOrBlank()) {
+            avatarView.text = value.name.firstOrNull()?.uppercase() ?: "?"
+        }
         nicView.text = getString(R.string.nic_value, value.nic)
         statusView.text = getString(R.string.account_status_value, value.accountStatus)
         registeredView.text = getString(R.string.registration_date_value, value.createdAtUtc.ifBlank { "—" })
@@ -162,6 +213,7 @@ class ProsumerProfileActivity : AppCompatActivity() {
 
     private fun setEditing(value: Boolean) {
         editing = value
+        pictureButton.isEnabled = value
         listOf(nameInput, emailInput, phoneInput, addressInput).forEach { it.isEnabled = value }
         editButton.visibility = if (value) View.GONE else View.VISIBLE
         saveButton.visibility = if (value) View.VISIBLE else View.GONE
@@ -179,7 +231,7 @@ class ProsumerProfileActivity : AppCompatActivity() {
             showErrorMessage(getString(R.string.profile_update_error))
             return
         }
-        val request = UpdateProsumerProfileRequest(name, email, phone, address)
+        val request = UpdateProsumerProfileRequest(name, email, phone, address, profilePictureData)
         setLoading(true)
         executor.execute {
             try {

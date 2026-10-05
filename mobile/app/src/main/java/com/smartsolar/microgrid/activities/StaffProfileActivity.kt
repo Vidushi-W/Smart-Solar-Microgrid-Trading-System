@@ -7,21 +7,28 @@ import android.view.Gravity
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import com.smartsolar.microgrid.BuildConfig
 import com.smartsolar.microgrid.R
 import com.smartsolar.microgrid.authentication.AuthenticationApiClient
 import com.smartsolar.microgrid.authentication.MobileAccountProfile
+import com.smartsolar.microgrid.authentication.ProfilePictureCodec
 import com.smartsolar.microgrid.authentication.UserRole
+import android.util.Base64
+import android.graphics.BitmapFactory
 import java.util.concurrent.Executors
 
 class StaffProfileActivity : AppCompatActivity() {
     private val executor = Executors.newSingleThreadExecutor()
     private lateinit var avatarView: TextView
+    private lateinit var photoView: ImageView
+    private lateinit var pictureButton: Button
     private lateinit var nameInput: EditText
     private lateinit var usernameView: EditText
     private lateinit var emailInput: EditText
@@ -38,6 +45,24 @@ class StaffProfileActivity : AppCompatActivity() {
     private var token: String? = null
     private var role = UserRole.GRID_OPERATOR
     private var passwordVisible = false
+    private var profilePictureData: String? = null
+    private val picturePicker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            executor.execute {
+                try {
+                    val data = ProfilePictureCodec.encodeJpeg(contentResolver, uri)
+                    runOnUiThread {
+                        profilePictureData = data
+                        showAvatar(data)
+                        messageView.setTextColor(Color.rgb(47, 126, 89))
+                        messageView.text = getString(R.string.profile_picture_selected)
+                    }
+                } catch (error: Exception) {
+                    runOnUiThread { showErrorMessage(error.message ?: getString(R.string.profile_failed)) }
+                }
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,10 +112,23 @@ class StaffProfileActivity : AppCompatActivity() {
             topMargin = 24
             bottomMargin = 8
         })
-        content.addView(TextView(this).apply {
-            text = getString(R.string.profile_picture_not_supported)
-            textSize = 12f
-            setTextColor(Color.rgb(96, 112, 100))
+        photoView = ImageView(this).apply {
+            visibility = View.GONE
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            contentDescription = getString(R.string.my_profile)
+        }
+        content.addView(photoView, LinearLayout.LayoutParams(120, 120).apply { bottomMargin = 8 })
+        pictureButton = Button(this).apply {
+            text = getString(R.string.choose_profile_picture)
+            setOnClickListener { picturePicker.launch("image/*") }
+        }
+        content.addView(pictureButton, matchWidth())
+        content.addView(Button(this).apply {
+            text = getString(R.string.remove_profile_picture)
+            setOnClickListener {
+                profilePictureData = ""
+                showAvatar(null)
+            }
         }, matchWidth())
         nameInput = field(R.string.full_name, InputType.TYPE_CLASS_TEXT)
         usernameView = field(R.string.username, InputType.TYPE_CLASS_TEXT).apply { isEnabled = false }
@@ -156,7 +194,9 @@ class StaffProfileActivity : AppCompatActivity() {
     }
 
     private fun showProfile(profile: MobileAccountProfile) {
+        profilePictureData = profile.profilePictureData
         avatarView.text = profile.name.firstOrNull()?.uppercase() ?: "?"
+        showAvatar(profilePictureData)
         nameInput.setText(profile.name)
         usernameView.setText(profile.username)
         emailInput.setText(profile.email)
@@ -186,7 +226,13 @@ class StaffProfileActivity : AppCompatActivity() {
         executor.execute {
             try {
                 val updated = AuthenticationApiClient(BuildConfig.API_BASE_URL).updateMyStaffProfile(
-                    token!!, role, name, email, phone, password.takeIf(String::isNotEmpty)
+                    token!!,
+                    role,
+                    name,
+                    email,
+                    phone,
+                    password.takeIf(String::isNotEmpty),
+                    profilePictureData
                 )
                 runOnUiThread {
                     setLoading(false)
@@ -244,6 +290,21 @@ class StaffProfileActivity : AppCompatActivity() {
     private fun showErrorMessage(message: String) {
         messageView.setTextColor(Color.rgb(160, 53, 43))
         messageView.text = message
+    }
+
+    private fun showAvatar(data: String?) {
+        if (data.isNullOrBlank()) {
+            photoView.visibility = View.GONE
+            avatarView.visibility = View.VISIBLE
+            return
+        }
+        val encoded = data.substringAfter(',', "")
+        val bytes = Base64.decode(encoded, Base64.DEFAULT)
+        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            ?: throw IllegalArgumentException("The selected profile photo could not be displayed.")
+        photoView.setImageBitmap(bitmap)
+        avatarView.visibility = View.GONE
+        photoView.visibility = View.VISIBLE
     }
 
     private fun setLoading(loading: Boolean) {

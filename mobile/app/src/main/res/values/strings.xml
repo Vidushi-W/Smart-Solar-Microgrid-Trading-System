@@ -69,7 +69,9 @@
     <string name="qr_scanner">QR Scanner</string>
     <string name="energy_transfer">Energy Transfer</string>
     <string name="module_not_connected">This project component will be connected later.</string>
-    <string name="profile_picture_not_supported">Profile picture updates are not supported by the current account model.</string>
+    <string name="choose_profile_picture">Choose photo from gallery</string>
+    <string name="remove_profile_picture">Remove photo</string>
+    <string name="profile_picture_selected">Photo selected. Save your profile to apply it.</string>
     <string name="change_password">Change password (optional)</string>
     <string name="confirm_new_password">Confirm new password</string>
     <string name="password_update_error">Check the password requirements and confirmation.</string>

@@ -9,4 +9,5 @@ public sealed record ProsumerProfileResponse(
     string Address,
     string AccountStatus,
     bool IsActive,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    string? ProfilePictureData = null);
