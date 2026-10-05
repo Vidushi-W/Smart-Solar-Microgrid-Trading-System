@@ -1,11 +1,15 @@
 package com.smartsolar.microgrid.activities
 
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Base64
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.ScrollView
@@ -23,6 +27,7 @@ class RoleHomeActivity : AppCompatActivity() {
     private lateinit var nicView: TextView
     private lateinit var statusView: TextView
     private lateinit var avatarView: TextView
+    private lateinit var photoView: ImageView
     private lateinit var messageView: TextView
     private lateinit var progressBar: ProgressBar
     private var role: String? = null
@@ -56,15 +61,30 @@ class RoleHomeActivity : AppCompatActivity() {
             textSize = 28f
             setTextColor(Color.rgb(20, 35, 29))
         }, matchWidth())
+        val avatar = FrameLayout(this).apply {
+            contentDescription = getString(R.string.default_avatar)
+        }
         avatarView = TextView(this).apply {
             text = "?"
             textSize = 28f
             gravity = Gravity.CENTER
             setTextColor(Color.WHITE)
             setBackgroundColor(Color.rgb(169, 67, 50))
-            contentDescription = getString(R.string.default_avatar)
         }
-        content.addView(avatarView, LinearLayout.LayoutParams(88, 88).apply {
+        avatar.addView(avatarView, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        ))
+        photoView = ImageView(this).apply {
+            visibility = View.GONE
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            contentDescription = getString(R.string.my_profile)
+        }
+        avatar.addView(photoView, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        ))
+        content.addView(avatar, LinearLayout.LayoutParams(88, 88).apply {
             topMargin = 22
             bottomMargin = 8
         })
@@ -174,6 +194,25 @@ class RoleHomeActivity : AppCompatActivity() {
 
     private fun showProfile(profile: MobileAccountProfile) {
         avatarView.text = profile.name.firstOrNull()?.uppercase() ?: "?"
+        val image = profile.profilePictureData
+            ?.substringAfter(',', "")
+            ?.let { encoded ->
+                try {
+                    val bytes = Base64.decode(encoded, Base64.DEFAULT)
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                } catch (_: IllegalArgumentException) {
+                    null
+                }
+            }
+        if (image != null) {
+            photoView.setImageBitmap(image)
+            photoView.visibility = View.VISIBLE
+            avatarView.visibility = View.GONE
+        } else {
+            photoView.setImageDrawable(null)
+            photoView.visibility = View.GONE
+            avatarView.visibility = View.VISIBLE
+        }
         welcomeView.text = getString(R.string.welcome_user, profile.name)
         if (role == "Prosumer") {
             nicView.text = getString(R.string.nic_value, profile.nic)
