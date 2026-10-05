@@ -1,16 +1,14 @@
 /**
- * Frame around signed-in pages: sidebar, top bar, and the session notice banner. The mobile menu closes when the route changes.
+ * Frame around signed-in pages: sidebar and top bar. The mobile menu closes when the route changes.
  */
 import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { useData } from "../../context/DataContext";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 
 export default function AppShell() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
-  const { notice, dismissNotice } = useData();
 
   useEffect(() => {
     setOpen(false);
@@ -25,14 +23,6 @@ export default function AppShell() {
       ) : null}
       <div className="shell-main">
         <Topbar onMenu={() => setOpen(true)} />
-        {notice ? (
-          <div className={`banner ${notice.tone}`} role="status">
-            <p>{notice.text}</p>
-            <button type="button" onClick={dismissNotice}>
-              Dismiss
-            </button>
-          </div>
-        ) : null}
         <main className="content">
           <Outlet />
         </main>

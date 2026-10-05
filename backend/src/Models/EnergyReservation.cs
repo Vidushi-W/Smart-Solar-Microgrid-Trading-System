@@ -50,6 +50,13 @@ public sealed class EnergyReservation
     [BsonElement("energyKwh")]
     public double EnergyKwh { get; set; }
 
+    /// <summary>
+    /// Unique value required by the shared EnergyReservation index. The other reservation API owns that index.
+    /// </summary>
+    [BsonElement("Code")]
+    [BsonIgnoreIfNull]
+    public string? Code { get; set; }
+
     [BsonElement("qrTransfer")]
     public QrTransferState? QrTransfer { get; set; }
 }

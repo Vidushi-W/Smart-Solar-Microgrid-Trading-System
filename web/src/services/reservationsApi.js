@@ -31,6 +31,18 @@ export function createReservation(user, body) {
   }).then(read);
 }
 
+export function fetchReservation(user, id) {
+  return fetch(`${API_BASE}/reservations/${encodeURIComponent(id)}`, { headers: authHeaders(user) }).then(read);
+}
+
+export function modifyReservation(user, id, slotId) {
+  return fetch(`${API_BASE}/reservations/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { ...authHeaders(user), "Content-Type": "application/json" },
+    body: JSON.stringify({ slotId }),
+  }).then(read);
+}
+
 export function fetchReservations(user, params = {}) {
   const query = new URLSearchParams();
   if (params.status && params.status !== "All") query.set("status", params.status);

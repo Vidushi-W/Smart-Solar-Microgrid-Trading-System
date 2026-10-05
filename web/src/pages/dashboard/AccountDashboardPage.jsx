@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getDeactivatedProsumers, getPendingProsumers, getUsers } from "../../services/userService";
+import ProsumerDashboard from "./ProsumerDashboard";
 
 export default function AccountDashboardPage() {
   const { user } = useAuth();
@@ -25,6 +26,7 @@ export default function AccountDashboardPage() {
   }, [user.role]);
 
   const firstName = (user.name || "there").trim().split(/\s+/)[0];
+  if (user.role === "Prosumer") return <ProsumerDashboard name={firstName} />;
   const pendingActivations = summary.pending.filter((prosumer) =>
     ["PendingActivation", "Registered"].includes(prosumer.accountStatus)
   );
@@ -50,13 +52,6 @@ export default function AccountDashboardPage() {
 
   <h1>Good day, {firstName}.</h1>
   <p>Powered by the sun. Coordinated by your team.</p>
-
-  <Link
-    className="hero-cta dashboard-reserve"
-    to="/reservations/new"
-  >
-    Reserve Energy Slot <span aria-hidden="true">↗</span>
-  </Link>
 </div>
         <div className="dashboard-date"><span>LOCAL OPERATIONS</span><strong>{new Intl.DateTimeFormat("en-LK", { weekday: "long", day: "numeric", month: "long" }).format(new Date())}</strong></div>
       </section>
@@ -88,7 +83,7 @@ export default function AccountDashboardPage() {
             </div>
           </section>
         </>
-      ) : user.role === "GridOperator" ? (
+      ) : (
         <section className="dashboard-workspace operator-overview">
           <div className="dashboard-section-title"><div><p className="eyebrow">GRID OPERATOR</p><h2>Your operations workspace</h2></div><span>CONNECTED MODULES</span></div>
           <div className="dashboard-links">
@@ -98,27 +93,6 @@ export default function AccountDashboardPage() {
             <Link to="/transactions" className="dashboard-link"><span className="link-index">04</span><div><strong>Energy Transfer</strong><small>Open transfer operations</small></div><span className="link-arrow">↗</span></Link>
             <Link to="/profile" className="dashboard-link"><span className="link-index">05</span><div><strong>Profile</strong><small>Review and update your account</small></div><span className="link-arrow">↗</span></Link>
           </div>
-        </section>
-      ) : (
-        <section className="dashboard-workspace operator-overview">
-<div>
-  <p className="eyebrow">PROSUMER WORKSPACE</p>
-  <h2>Your account</h2>
-  <p>
-    Review your profile and use the shared navigation to open connected
-    project modules.
-  </p>
-</div>
-
-<div className="action-row">
-  <Link to="/reservations/new" className="hero-cta">
-    Reserve Energy Slot <span aria-hidden="true">↗</span>
-  </Link>
-
-  <Link to="/profile" className="btn ghost">
-    Review your account
-  </Link>
-</div>
         </section>
       )}
     </div>

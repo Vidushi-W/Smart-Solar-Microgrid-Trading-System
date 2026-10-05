@@ -1,7 +1,7 @@
 /**
- * Base URL for apiClient, plus the written API contract list. Station screens use this base; catalogApi and reservationsApi read VITE_API_BASE_URL on their own and default to port 5251.
+ * Base URL for apiClient, plus the written API contract list. Login and account calls use the account API on port 5000. catalogApi and reservationsApi keep VITE_API_BASE_URL for the reservation API on port 5251.
  */
-export const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+export const API_BASE = import.meta.env.VITE_ACCOUNT_API_BASE_URL || "http://localhost:5000/api";
 
 /**
  * Shared contracts used by the API reference screen and clients.

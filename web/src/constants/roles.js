@@ -4,7 +4,21 @@
 export const ROLES = {
   BACKOFFICE: "Backoffice",
   OPERATOR: "GridOperator",
+  PROSUMER: "Prosumer",
 };
+
+export const SIGN_IN_ROLES = [
+  { value: ROLES.BACKOFFICE, label: "Backoffice", icon: "users" },
+  { value: ROLES.OPERATOR, label: "Grid Operator", icon: "stations" },
+  { value: ROLES.PROSUMER, label: "Solar Prosumer", icon: "prosumers" },
+];
+
+export function homeForVerifiedRole(role) {
+  if (role === ROLES.BACKOFFICE || role === ROLES.OPERATOR || role === ROLES.PROSUMER) {
+    return "/dashboard";
+  }
+  return "/login";
+}
 
 export const ROLE_LABELS = {
   Backoffice: "Backoffice Officer",

@@ -17,6 +17,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.smartsolar.microgrid.BuildConfig
 import com.smartsolar.microgrid.R
+import com.smartsolar.microgrid.api.ReservationApiClient
 import com.smartsolar.microgrid.authentication.AuthenticationApiClient
 import com.smartsolar.microgrid.authentication.MobileAccountProfile
 import java.util.concurrent.Executors
@@ -30,6 +31,9 @@ class RoleHomeActivity : AppCompatActivity() {
     private lateinit var photoView: ImageView
     private lateinit var messageView: TextView
     private lateinit var progressBar: ProgressBar
+    private lateinit var activeCountView: TextView
+    private lateinit var pendingCountView: TextView
+    private lateinit var historyCountView: TextView
     private var role: String? = null
     private var sessionCheckRunning = false
 
@@ -110,13 +114,31 @@ class RoleHomeActivity : AppCompatActivity() {
 
         if (isProsumer) {
             content.addView(sectionTitle(R.string.account_summary), matchWidth())
-            content.addView(summaryCard(R.string.active_reservations, R.string.my_bookings), matchWidth())
-            content.addView(summaryCard(R.string.pending_bookings, R.string.my_bookings), matchWidth())
-            content.addView(summaryCard(R.string.booking_history, R.string.booking_history), matchWidth())
+            activeCountView = summaryCard(R.string.active_reservations) {
+                openReservations(ReservationListActivity.MODE_UPCOMING)
+            }
+            pendingCountView = summaryCard(R.string.pending_bookings) {
+                openReservations(ReservationListActivity.MODE_UPCOMING)
+            }
+            historyCountView = summaryCard(R.string.booking_history) {
+                openReservations(ReservationListActivity.MODE_HISTORY)
+            }
+            content.addView(activeCountView, matchWidth())
+            content.addView(pendingCountView, matchWidth())
+            content.addView(historyCountView, matchWidth())
             content.addView(sectionTitle(R.string.quick_actions), matchWidth())
-            addPlaceholderAction(content, R.string.find_book_energy)
-            addPlaceholderAction(content, R.string.my_bookings)
-            addPlaceholderAction(content, R.string.booking_history)
+            content.addView(Button(this).apply {
+                text = getString(R.string.find_book_energy)
+                setOnClickListener { startActivity(Intent(this@RoleHomeActivity, CreateReservationActivity::class.java)) }
+            }, matchWidth())
+            content.addView(Button(this).apply {
+                text = getString(R.string.my_bookings)
+                setOnClickListener { openReservations(ReservationListActivity.MODE_UPCOMING) }
+            }, matchWidth())
+            content.addView(Button(this).apply {
+                text = getString(R.string.booking_history)
+                setOnClickListener { openReservations(ReservationListActivity.MODE_HISTORY) }
+            }, matchWidth())
             addPlaceholderAction(content, R.string.nearby_grid_nodes)
             content.addView(Button(this).apply {
                 text = getString(R.string.my_profile)
@@ -128,7 +150,10 @@ class RoleHomeActivity : AppCompatActivity() {
             }, matchWidth())
         } else {
             content.addView(sectionTitle(R.string.operator_navigation), matchWidth())
-            addPlaceholderAction(content, R.string.operator_bookings)
+            content.addView(Button(this).apply {
+                text = getString(R.string.operator_bookings)
+                setOnClickListener { openReservations(ReservationListActivity.MODE_STAFF) }
+            }, matchWidth())
             addPlaceholderAction(content, R.string.qr_scanner)
             addPlaceholderAction(content, R.string.energy_transfer)
             content.addView(Button(this).apply {
@@ -169,9 +194,17 @@ class RoleHomeActivity : AppCompatActivity() {
                     throw SecurityException(getString(R.string.forbidden_role))
                 }
                 val profile = if (role == "Prosumer") api.getMyProsumerAccount(token) else api.getMyStaffProfile(token)
+                val counts = if (role == "Prosumer") runCatching { reservationCounts(token) } else null
                 runOnUiThread {
                     if (isFinishing) return@runOnUiThread
                     showProfile(profile)
+                    counts?.onSuccess { (active, pending, history) ->
+                        activeCountView.text = getString(R.string.count_value, getString(R.string.active_reservations), active)
+                        pendingCountView.text = getString(R.string.count_value, getString(R.string.pending_bookings), pending)
+                        historyCountView.text = getString(R.string.count_value, getString(R.string.booking_history), history)
+                    }?.onFailure { error ->
+                        messageView.text = error.message ?: getString(R.string.api_error)
+                    }
                     progressBar.visibility = View.GONE
                     sessionCheckRunning = false
                 }
@@ -220,6 +253,19 @@ class RoleHomeActivity : AppCompatActivity() {
         statusView.text = getString(R.string.account_status_value, profile.accountStatus)
     }
 
+    private fun reservationCounts(token: String): Triple<Int, Int, Int> {
+        val rows = ReservationApiClient(BuildConfig.API_BASE_URL).myReservations(token)
+        val active = rows.count { it.status == "Pending" || it.status == "Approved" }
+        val pending = rows.count { it.status == "Pending" }
+        val history = rows.count { it.status == "Completed" || it.status == "Cancelled" }
+        return Triple(active, pending, history)
+    }
+
+    private fun openReservations(mode: String) {
+        startActivity(Intent(this, ReservationListActivity::class.java)
+            .putExtra(ReservationListActivity.MODE_KEY, mode))
+    }
+
     private fun addPlaceholderAction(parent: LinearLayout, label: Int) {
         parent.addView(Button(this).apply {
             text = getString(label)
@@ -227,7 +273,7 @@ class RoleHomeActivity : AppCompatActivity() {
         }, matchWidth())
     }
 
-    private fun summaryCard(label: Int, destination: Int) = TextView(this).apply {
+    private fun summaryCard(label: Int, onOpen: () -> Unit) = TextView(this).apply {
         text = "${getString(label)}\n${getString(R.string.not_connected)}"
         textSize = 15f
         setTextColor(Color.rgb(96, 112, 100))
@@ -235,7 +281,7 @@ class RoleHomeActivity : AppCompatActivity() {
         setBackgroundColor(Color.WHITE)
         isClickable = true
         isFocusable = true
-        setOnClickListener { openModule(destination) }
+        setOnClickListener { onOpen() }
         layoutParams = matchWidth()
     }
 

@@ -1,4 +1,4 @@
-// POST /api/auth/login checks a username, email, or NIC plus password.
+// POST /api/auth/login checks a username, email, or NIC, a password, and that the selected role matches the account.
 // GET /api/auth/me reads the user id, username, and role from the JWT.
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
@@ -30,15 +30,17 @@ public sealed class AuthController : ControllerBase
         LoginRequest request,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Identifier) || string.IsNullOrWhiteSpace(request.Password))
+        if (string.IsNullOrWhiteSpace(request.Identifier)
+            || string.IsNullOrWhiteSpace(request.Password)
+            || string.IsNullOrWhiteSpace(request.Role))
         {
-            return BadRequest(new { message = "Identifier and password are required." });
+            return BadRequest(new { message = "Identifier, password, and role are required." });
         }
 
-        var response = await authService.LoginAsync(request, cancellationToken);
-        return response is null
-            ? Unauthorized(new { message = "Invalid credentials or inactive account." })
-            : Ok(response);
+        var outcome = await authService.LoginAsync(request, cancellationToken);
+        return outcome.Response is null
+            ? Unauthorized(new { message = outcome.ErrorMessage })
+            : Ok(outcome.Response);
     }
 
     [Authorize]

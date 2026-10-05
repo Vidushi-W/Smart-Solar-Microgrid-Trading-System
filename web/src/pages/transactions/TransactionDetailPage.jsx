@@ -1,100 +1,120 @@
 /**
- * Verify and complete one transfer in the browser session. Grid Operator is the role that can finish a transfer.
+ * One transfer, read from the reservation API. Scheduling uses the same reservation action as the reservations desk.
  */
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";
 import StatusBadge from "../../components/common/StatusBadge";
 import { useAuth } from "../../context/AuthContext";
-import { useData } from "../../context/DataContext";
+import { fetchReservation, postReservationAction } from "../../services/reservationsApi";
 import { formatDateTime, formatTimeRange } from "../../utils/format";
-import { canCompleteTransfer } from "../../utils/reservationRules";
 
 export default function TransactionDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
-  const data = useData();
-  const transaction = data.transactions.find((item) => item.id === id);
-  const reservation = data.reservations.find((item) => item.id === transaction?.reservationId);
-  const prosumer = data.prosumers.find((item) => item.id === reservation?.prosumerId);
-  const station = data.stations.find((item) => item.id === reservation?.stationId);
+  const [reservation, setReservation] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  if (!transaction || !reservation) {
+  async function load() {
+    setLoading(true);
+    setError("");
+    try {
+      setReservation(await fetchReservation(user, id));
+    } catch (err) {
+      setReservation(null);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, [user.id, id]);
+
+  async function schedule() {
+    setBusy(true);
+    setError("");
+    try {
+      setReservation(await postReservationAction(user, id, "schedule"));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (loading && !reservation) {
     return (
       <div>
-        <PageHeader title="Transfer not found" />
+        <PageHeader title="Loading transfer" />
+      </div>
+    );
+  }
+
+  if (!reservation) {
+    return (
+      <div>
+        <PageHeader title="Transfer not found" description={error} />
         <Link to="/transactions">Back to transfers</Link>
       </div>
     );
   }
 
-  const completeBlock = canCompleteTransfer(reservation, transaction);
-  const isOperator = user.role === "GridOperator";
+  const history = reservation.history || [];
+  const updated = history.length ? history[history.length - 1].at : reservation.start;
+  const canSchedule = (reservation.allowedActions || []).includes("schedule");
 
   return (
     <div>
-      <PageHeader title={transaction.code} actions={<StatusBadge value={transaction.tokenStatus} />} />
+      <PageHeader title={reservation.code} actions={<StatusBadge value={reservation.status} />} />
       <p className="back-link">
         <Link to="/transactions">All transfers</Link>
         {" · "}
         <Link to={`/reservations/${reservation.id}`}>{reservation.code}</Link>
       </p>
+      {error ? <p className="form-error" role="alert">{error}</p> : null}
       <article className="panel narrow">
         <dl className="kv">
           <div>
             <dt>Prosumer</dt>
-            <dd>{prosumer?.name}</dd>
+            <dd>{reservation.prosumerName}</dd>
           </div>
           <div>
             <dt>Station</dt>
-            <dd>{station?.name}</dd>
+            <dd>{reservation.stationName}</dd>
+          </div>
+          <div>
+            <dt>Slot</dt>
+            <dd>{reservation.slotLabel}</dd>
           </div>
           <div>
             <dt>Reservation window</dt>
             <dd>{formatTimeRange(reservation.start, reservation.end)}</dd>
           </div>
           <div>
-            <dt>Reservation status</dt>
-            <dd>
-              <StatusBadge value={reservation.status} />
-            </dd>
+            <dt>Service</dt>
+            <dd>{reservation.serviceType}</dd>
           </div>
           <div>
-            <dt>Token updated</dt>
-            <dd>{formatDateTime(transaction.updatedAt)}</dd>
+            <dt>Energy</dt>
+            <dd>{reservation.energyKwh} kWh</dd>
+          </div>
+          <div>
+            <dt>Reservation status</dt>
+            <dd><StatusBadge value={reservation.status} /></dd>
+          </div>
+          <div>
+            <dt>Updated</dt>
+            <dd>{formatDateTime(updated)}</dd>
           </div>
         </dl>
-        {isOperator ? (
+        {canSchedule ? (
           <div className="action-row">
-            <button
-              type="button"
-              className="btn"
-              disabled={transaction.tokenStatus !== "AwaitingQR"}
-              onClick={() => data.markQrIssued(transaction.id, user)}
-            >
-              Mark QR issued
-            </button>
-            <button
-              type="button"
-              className="btn"
-              disabled={transaction.tokenStatus !== "Issued"}
-              onClick={() => data.verifyTransaction(transaction.id, user)}
-            >
-              Mark QR verified
-            </button>
-            <button
-              type="button"
-              className="btn primary"
-              disabled={Boolean(completeBlock)}
-              onClick={() => data.completeTransfer(transaction.id, user)}
-            >
-              Complete energy transfer
-            </button>
+            <button type="button" className="btn primary" disabled={busy} onClick={schedule}>Confirm schedule</button>
           </div>
-        ) : null}
-        {isOperator && (transaction.tokenStatus === "Used" || completeBlock) ? (
-          <p className="hint">
-            {transaction.tokenStatus === "Used" ? "This token is already used." : completeBlock}
-          </p>
         ) : null}
       </article>
     </div>

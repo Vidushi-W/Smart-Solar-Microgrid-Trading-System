@@ -35,7 +35,7 @@ public sealed class AuthService : IAuthService
         this.configuration = configuration;
     }
 
-    public async Task<LoginResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
+    public async Task<LoginOutcome> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
     {
         var user = await userRepository.FindByIdentifierAsync(request.Identifier, cancellationToken);
         if (user is null
@@ -43,21 +43,29 @@ public sealed class AuthService : IAuthService
             || user.AccountStatus != AccountStatuses.Active
             || !SupportedRoles.Contains(user.Role))
         {
-            return null;
+            return Rejected("Invalid credentials or inactive account.");
         }
 
         var passwordResult = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
         if (passwordResult == PasswordVerificationResult.Failed)
         {
-            return null;
+            return Rejected("Invalid credentials or inactive account.");
         }
 
-        return new LoginResponse("Login successful", user.Role, CreateToken(user));
+        if (!string.Equals(user.Role, request.Role?.Trim(), StringComparison.Ordinal))
+        {
+            return Rejected("The selected role does not match this account.");
+        }
+
+        return new LoginOutcome(new LoginResponse("Login successful", user.Role, CreateToken(user)), null);
     }
+
+    private static LoginOutcome Rejected(string message) => new(null, message);
 
     private string CreateToken(User user)
     {
         var key = configuration["Jwt:Key"]
+            ?? Environment.GetEnvironmentVariable("JWT_KEY")
             ?? throw new InvalidOperationException("Jwt:Key is not configured.");
         var issuer = configuration["Jwt:Issuer"] ?? "SolarMicrogridTrading.Api";
         var expiresMinutes = configuration.GetValue("Jwt:ExpiresMinutes", 60);
