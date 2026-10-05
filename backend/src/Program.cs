@@ -21,8 +21,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 var mongoSettings = new MongoDbSettings
 {
-    ConnectionString = builder.Configuration["MongoDb:ConnectionString"]
-        ?? Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING")
+    ConnectionString = Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING")
+        ?? builder.Configuration["MongoDb:ConnectionString"]
         ?? throw new InvalidOperationException("MONGODB_CONNECTION_STRING is not configured."),
     DatabaseName = builder.Configuration["MongoDb:DatabaseName"] ?? "SolarMicrogridTrading",
     UsersCollectionName = builder.Configuration["MongoDb:UsersCollectionName"] ?? "Users"
