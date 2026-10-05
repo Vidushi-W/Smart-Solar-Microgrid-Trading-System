@@ -543,6 +543,8 @@ a.pd-slot:hover { border-color: #d8442d; }
 .history-dialog-head .eyebrow { color: #ffd28e; }
 .history-dialog-head h2 { margin: 0.1rem 0 0; color: white; font-size: 1.35rem; }
 .history-dialog-head .btn.ghost { color: white; background: rgba(255, 255, 255, 0.14); border-color: transparent; }
+.transfer-qr-block { display: flex; flex-direction: column; align-items: flex-start; gap: 0.8rem; margin: 1rem 0; }
+.transfer-qr { width: 220px; height: 220px; padding: 10px; background: white; border-radius: 16px; border: 1px solid var(--line); }
 .history-dialog .reserve-summary, .history-dialog .reserve-status, .history-dialog .reserve-alert { margin-left: 1.3rem; margin-right: 1.3rem; }
 .history-dialog .reserve-summary { margin-bottom: 1rem; }
 

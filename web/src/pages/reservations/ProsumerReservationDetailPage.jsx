@@ -7,6 +7,7 @@ import { Link, useParams } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";
 import StatusBadge from "../../components/common/StatusBadge";
 import ReservationActionSummary from "../../components/reservations/ReservationActionSummary";
+import TransferQr from "../../components/reservations/TransferQr";
 import { cancelReservation, fetchReservation, listStationsForReservations } from "../../services/apiClient";
 import { stationTitle, utcDateLabel, utcTimeLabel } from "./reservationTime";
 
@@ -118,6 +119,8 @@ export default function ProsumerReservationDetailPage() {
             <dt>Created</dt>
             <dd>{utcDateLabel(reservation.createdAtUtc)}</dd>
           </dl>
+
+          <TransferQr reservationId={reservation.reservationId} status={reservation.status} />
 
           <div className="reserve-actions">
             <Link className="btn primary" to={`/reservations/${reservation.reservationId}/modify`}>Modify</Link>

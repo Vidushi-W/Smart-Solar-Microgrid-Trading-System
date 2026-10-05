@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import Icon from "../../components/common/Icon";
 import SunMark from "../../components/common/SunMark";
+import { ROLE_LABELS, SIGN_UP_ROLES } from "../../constants/roles";
 import { registerProsumer } from "../../services/userService";
 import { isPasswordStrong, passwordRequirements } from "../../utils/passwordPolicy";
 
@@ -25,6 +27,7 @@ function isPhoneNumberValid(phoneNumber) {
 
 export default function SignupPage() {
   const [form, setForm] = useState(initialForm);
+  const [role, setRole] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -38,6 +41,7 @@ export default function SignupPage() {
 
   function resetForm() {
     setForm(initialForm);
+    setRole("");
     setError("");
     setShowPassword(false);
     setShowConfirmPassword(false);
@@ -63,12 +67,17 @@ export default function SignupPage() {
       setError("The passwords do not match.");
       return;
     }
+    if (!SIGN_UP_ROLES.some((choice) => choice.value === role)) {
+      setError("Choose Backoffice Officer, Grid Operator, or Solar Prosumer.");
+      return;
+    }
 
     setSubmitting(true);
     try {
-      const result = await registerProsumer({ ...form, nic });
-      setSuccess(result.message || "Registration received. Your account is awaiting Backoffice activation.");
+      const result = await registerProsumer({ ...form, nic, role });
+      setSuccess(result.message || `Registration received as ${ROLE_LABELS[role]}. Your account is awaiting activation.`);
       setForm(initialForm);
+      setRole("");
     } catch (reason) {
       setError(reason.message || "Registration could not be submitted.");
     } finally {
@@ -102,8 +111,23 @@ export default function SignupPage() {
             <>
               <p className="eyebrow">CREATE YOUR ACCOUNT</p>
               <h2>Join SolarGrid</h2>
-              <p className="auth-intro">Create a prosumer account. Backoffice activation is required before sign-in.</p>
+              <p className="auth-intro">Choose your role once. After activation, sign-in opens that role.</p>
               <form onSubmit={submit} className="auth-form signup-form">
+                <div className="role-picker" role="group" aria-label="Register as">
+                  <p className="role-picker-label">Register as</p>
+                  {SIGN_UP_ROLES.map((choice) => (
+                    <button
+                      key={choice.value}
+                      type="button"
+                      className={role === choice.value ? "role-card selected" : "role-card"}
+                      aria-pressed={role === choice.value}
+                      onClick={() => setRole(choice.value)}
+                    >
+                      <Icon name={choice.icon} size={18} />
+                      <span>{choice.label}</span>
+                    </button>
+                  ))}
+                </div>
                 <label htmlFor="signup-name">Full name</label>
                 <input id="signup-name" name="fullName" value={form.fullName} onChange={updateField} autoComplete="name" required />
                 <label htmlFor="signup-nic">National ID (NIC)</label>
@@ -135,7 +159,7 @@ export default function SignupPage() {
                 </div>
                 {error ? <p className="form-error" role="alert">{error}</p> : null}
                 <div className="signup-form-actions">
-                  <button className="btn primary auth-submit" type="submit" disabled={submitting}>
+                  <button className="btn primary auth-submit" type="submit" disabled={submitting || !role}>
                     {submitting ? "Submitting…" : "Create account"}<span aria-hidden="true">↗</span>
                   </button>
                   <button className="signup-reset" type="button" onClick={resetForm} disabled={submitting}>Clear form</button>

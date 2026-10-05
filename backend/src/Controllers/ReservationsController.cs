@@ -94,6 +94,23 @@ public sealed class ReservationsController : ControllerBase
             : Failure(outcome.Failure, outcome.Message);
     }
 
+    [HttpPost("{id}/approve")]
+    [ProducesResponseType(typeof(ReservationResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Approve(string id, CancellationToken cancellationToken)
+    {
+        if (!TryGetActor(out var actor, out var unauthorized))
+        {
+            return unauthorized!;
+        }
+
+        var outcome = await _reservations.ApproveAsync(actor, id, cancellationToken);
+        return outcome.Failure == ReservationFailure.None
+            ? Ok(outcome.Value)
+            : Failure(outcome.Failure, outcome.Message);
+    }
+
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ReservationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]

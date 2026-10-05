@@ -7,4 +7,5 @@ public sealed record RegisterProsumerRequest(
     string PhoneNumber,
     string Address,
     string Password,
-    string ConfirmPassword);
+    string ConfirmPassword,
+    string? Role = null);

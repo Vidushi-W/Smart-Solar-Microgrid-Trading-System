@@ -286,6 +286,42 @@ public sealed class ReservationService : IReservationService
         return Ok<IReadOnlyList<ReservationResponse>>(rows.Select(ToResponse).ToArray());
     }
 
+    public async Task<ReservationOutcome<ReservationResponse>> ApproveAsync(
+        ReservationActor actor,
+        string reservationId,
+        CancellationToken cancellationToken)
+    {
+        if (!IsBackoffice(actor))
+        {
+            return Forbidden<ReservationResponse>("Only Backoffice can approve a reservation.");
+        }
+
+        var reservation = await _reservations.GetByIdAsync(reservationId, cancellationToken);
+        if (reservation is null)
+        {
+            return NotFound<ReservationResponse>("Reservation not found.");
+        }
+
+        if (reservation.Status == ReservationStatus.Approved)
+        {
+            return Invalid<ReservationResponse>("This reservation is already approved.");
+        }
+
+        if (reservation.Status != ReservationStatus.Pending)
+        {
+            return Invalid<ReservationResponse>("Only a pending reservation can be approved.");
+        }
+
+        reservation.Status = ReservationStatus.Approved;
+        reservation.UpdatedAt = DateTime.UtcNow;
+        if (!await _reservations.ReplaceAsync(reservation, cancellationToken))
+        {
+            return NotFound<ReservationResponse>("Reservation not found.");
+        }
+
+        return Ok(ToResponse(reservation));
+    }
+
     private async Task<string?> RequireActiveProsumerAsync(string prosumerId, CancellationToken cancellationToken)
     {
         var user = await _users.GetByIdAsync(prosumerId, cancellationToken);

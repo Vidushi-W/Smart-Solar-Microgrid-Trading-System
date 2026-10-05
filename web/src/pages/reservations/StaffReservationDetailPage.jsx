@@ -8,7 +8,7 @@ import PageHeader from "../../components/common/PageHeader";
 import StatusBadge from "../../components/common/StatusBadge";
 import ReservationActionSummary from "../../components/reservations/ReservationActionSummary";
 import { useAuth } from "../../context/AuthContext";
-import { cancelReservation, fetchProsumerAccounts, fetchReservation, listStationsForReservations } from "../../services/apiClient";
+import { approveReservation, cancelReservation, fetchProsumerAccounts, fetchReservation, listStationsForReservations } from "../../services/apiClient";
 import { stationTitle, utcDateLabel, utcTimeLabel } from "./reservationTime";
 
 export default function StaffReservationDetailPage() {
@@ -59,6 +59,21 @@ export default function StaffReservationDetailPage() {
     if (busy) return;
     setConfirmingCancel(false);
     setError("");
+  }
+
+  async function approve() {
+    if (!reservation || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const saved = await approveReservation(reservation.reservationId);
+      const refreshed = await fetchReservation(saved.reservationId);
+      setReservation(refreshed);
+    } catch (reason) {
+      setError(reason.message || "The reservation could not be approved.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function confirmCancel() {
@@ -129,6 +144,11 @@ export default function StaffReservationDetailPage() {
 
           {canChange ? (
             <div className="reserve-actions">
+              {reservation.status === "Pending" ? (
+                <button type="button" className="btn primary" disabled={busy} onClick={approve}>
+                  {busy ? "Approving" : "Approve reservation"}
+                </button>
+              ) : null}
               <Link className="btn primary" to={`/reservations/${reservation.reservationId}/modify`}>Update reservation</Link>
               <button type="button" className="btn ghost" disabled={busy} onClick={() => { setConfirmingCancel(true); setError(""); }}>
                 Cancel Reservation

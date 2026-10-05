@@ -7,8 +7,8 @@ export const ROLES = {
   PROSUMER: "Prosumer",
 };
 
-export const SIGN_IN_ROLES = [
-  { value: ROLES.BACKOFFICE, label: "Backoffice", icon: "users" },
+export const SIGN_UP_ROLES = [
+  { value: ROLES.BACKOFFICE, label: "Backoffice Officer", icon: "users" },
   { value: ROLES.OPERATOR, label: "Grid Operator", icon: "stations" },
   { value: ROLES.PROSUMER, label: "Solar Prosumer", icon: "prosumers" },
 ];

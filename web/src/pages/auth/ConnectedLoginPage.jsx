@@ -3,15 +3,13 @@
  */
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import Icon from "../../components/common/Icon";
 import SunMark from "../../components/common/SunMark";
-import { homeForVerifiedRole, SIGN_IN_ROLES } from "../../constants/roles";
+import { homeForVerifiedRole } from "../../constants/roles";
 import { useAuth } from "../../context/AuthContext";
 
 export default function ConnectedLoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [role, setRole] = useState("");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -23,7 +21,7 @@ export default function ConnectedLoginPage() {
     setError("");
     setSubmitting(true);
     try {
-      const session = await login(identifier, password, role);
+      const session = await login(identifier, password);
       navigate(homeForVerifiedRole(session.role), { replace: true });
     } catch (reason) {
       setError(reason.message || "Unable to sign in.");
@@ -50,21 +48,6 @@ export default function ConnectedLoginPage() {
           <h2>Welcome back</h2>
           <p className="auth-intro">Use your assigned username, email, or NIC to continue.</p>
           <form onSubmit={submit} className="auth-form">
-            <div className="role-picker" role="group" aria-label="Sign in as">
-              <p className="role-picker-label">Sign in as</p>
-              {SIGN_IN_ROLES.map((choice) => (
-                <button
-                  key={choice.value}
-                  type="button"
-                  className={role === choice.value ? "role-card selected" : "role-card"}
-                  aria-pressed={role === choice.value}
-                  onClick={() => setRole(choice.value)}
-                >
-                  <Icon name={choice.icon} size={18} />
-                  <span>{choice.label}</span>
-                </button>
-              ))}
-            </div>
             <label htmlFor="auth-identifier">Username, email, or NIC</label>
             <input id="auth-identifier" value={identifier} onChange={(event) => setIdentifier(event.target.value)} autoComplete="username" required />
             <label htmlFor="auth-password">Password</label>
@@ -81,7 +64,7 @@ export default function ConnectedLoginPage() {
               </button>
             </div>
             {error ? <p className="form-error" role="alert">{error}</p> : null}
-            <button className="btn primary auth-submit" type="submit" disabled={submitting || !role}>
+            <button className="btn primary auth-submit" type="submit" disabled={submitting}>
               {submitting ? "Signing in…" : "Sign in"}<span aria-hidden="true">↗</span>
             </button>
           </form>

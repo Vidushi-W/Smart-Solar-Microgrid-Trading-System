@@ -3,6 +3,7 @@
  * Single-document compare-and-set prevents duplicate completion and lost updates.
  */
 using Microsoft.Extensions.Options;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using SmartSolar.Microgrid.Configuration;
 using SmartSolar.Microgrid.Interfaces;
@@ -19,8 +20,12 @@ public sealed class MongoQrTransferRepository : IQrTransferRepository
         _reservations = database.GetCollection<EnergyReservation>(options.Value.ReservationsCollectionName);
 
     // Read by the string _id, following the station and slot identifier convention.
-    public async Task<EnergyReservation?> GetAsync(string reservationId, CancellationToken cancellationToken) =>
-        await _reservations.Find(item => item.ReservationId == reservationId).FirstOrDefaultAsync(cancellationToken);
+    public async Task<EnergyReservation?> GetAsync(string reservationId, CancellationToken cancellationToken)
+    {
+        if (!ObjectId.TryParse(reservationId, out _)) return null;
+        return await _reservations.Find(item => item.ReservationId == reservationId)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
 
     // Compare every reservation field used in verification and the entire QR state.
     public async Task<bool> TryUpdateAsync(EnergyReservation expected, QrTransferState next,

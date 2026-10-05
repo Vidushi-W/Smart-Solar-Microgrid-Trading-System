@@ -46,4 +46,9 @@ public interface IReservationService
     Task<ReservationOutcome<IReadOnlyList<ReservationResponse>>> GetAllForStaffAsync(
         ReservationActor actor,
         CancellationToken cancellationToken);
+
+    Task<ReservationOutcome<ReservationResponse>> ApproveAsync(
+        ReservationActor actor,
+        string reservationId,
+        CancellationToken cancellationToken);
 }

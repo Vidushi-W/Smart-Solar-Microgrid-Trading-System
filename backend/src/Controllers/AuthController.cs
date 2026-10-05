@@ -31,10 +31,9 @@ public sealed class AuthController : ControllerBase
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Identifier)
-            || string.IsNullOrWhiteSpace(request.Password)
-            || string.IsNullOrWhiteSpace(request.Role))
+            || string.IsNullOrWhiteSpace(request.Password))
         {
-            return BadRequest(new { message = "Identifier, password, and role are required." });
+            return BadRequest(new { message = "Identifier and password are required." });
         }
 
         var outcome = await authService.LoginAsync(request, cancellationToken);

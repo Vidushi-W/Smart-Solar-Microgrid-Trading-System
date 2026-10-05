@@ -56,15 +56,20 @@ pnpm-debug.log*
 
 # Android / Gradle local state and outputs
 .gradle/
+**/.gradle/
 .kotlin/
 .externalNativeBuild/
 .cxx/
 captures/
 local.properties
+mobile/local.properties
+mobile/build/
+mobile/app/build/
 *.apk
 *.aab
 *.dex
 *.hprof
+*.pdb
 
 # Secrets and local configuration
 # MongoDB Atlas credentials belong in .env only. Commit .env.example, never .env.

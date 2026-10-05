@@ -154,8 +154,14 @@ class RoleHomeActivity : AppCompatActivity() {
                 text = getString(R.string.operator_bookings)
                 setOnClickListener { openReservations(ReservationListActivity.MODE_STAFF) }
             }, matchWidth())
-            addPlaceholderAction(content, R.string.qr_scanner)
-            addPlaceholderAction(content, R.string.energy_transfer)
+            content.addView(Button(this).apply {
+                text = getString(R.string.qr_scanner)
+                setOnClickListener { startActivity(Intent(this@RoleHomeActivity, QrScanActivity::class.java)) }
+            }, matchWidth())
+            content.addView(Button(this).apply {
+                text = getString(R.string.energy_transfer)
+                setOnClickListener { startActivity(Intent(this@RoleHomeActivity, QrScanActivity::class.java)) }
+            }, matchWidth())
             content.addView(Button(this).apply {
                 text = getString(R.string.my_profile)
                 setOnClickListener { startActivity(Intent(this@RoleHomeActivity, StaffProfileActivity::class.java)) }
