@@ -28,7 +28,8 @@ public sealed class EnergyReservation
     public DateTime ScheduledDateTime { get; set; }
 
     [BsonElement("status")]
-    public string Status { get; set; } = string.Empty;
+    [BsonRepresentation(BsonType.String)]
+    public ReservationStatus Status { get; set; } = ReservationStatus.Pending;
 
     [BsonElement("createdAt")]
     [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]

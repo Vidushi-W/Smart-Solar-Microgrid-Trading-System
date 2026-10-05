@@ -83,7 +83,7 @@ public sealed class QrTransferService(IQrTransferRepository repository) : IQrTra
         if (failure is not null) return failure;
         var previous = reservation!.QrTransfer!;
         var operatorId = identity.FindFirst(ClaimTypes.NameIdentifier)!.Value;
-        if (reservation.Status != "Scheduled")
+        if (reservation.Status.ToString() != "Scheduled")
             return Fail<QrTransferResponse>(QrTransferError.Conflict, "The reservation must be Scheduled before completion.");
         if (previous.TokenStatus != "Verified" || !Matches(request.VerificationToken, previous.VerificationHash)
             || previous.VerifiedBy != operatorId || previous.ReservationFingerprint != Fingerprint(reservation))
@@ -102,7 +102,7 @@ public sealed class QrTransferService(IQrTransferRepository repository) : IQrTra
         };
         if (!await repository.TryUpdateAsync(reservation, state, true, cancellationToken))
             return Changed<QrTransferResponse>();
-        reservation.Status = "Completed";
+        reservation.Status = ReservationStatus.Completed;
         return new(Response(reservation, state, null));
     }
 
@@ -118,7 +118,7 @@ public sealed class QrTransferService(IQrTransferRepository repository) : IQrTra
     }
 
     // Mirror the existing web lifecycle without adding time, billing or capacity rules.
-    private static bool Eligible(EnergyReservation r) => r.Status is "Approved" or "Scheduled"
+    private static bool Eligible(EnergyReservation r) => r.Status.ToString() is "Approved" or "Scheduled"
         && r.QrTransfer?.TokenStatus != "Used" && r.QrTransfer?.CompletedAtUtc is null
         && ValidId(r.ProsumerId) && ValidId(r.StationId) && ValidId(r.SlotId)
         && double.IsFinite(r.EnergyKwh) && r.EnergyKwh > 0;
@@ -136,12 +136,12 @@ public sealed class QrTransferService(IQrTransferRepository repository) : IQrTra
 
     // Bind confirmation to exactly the reservation details returned for operator review.
     private static string Fingerprint(EnergyReservation r) => Hash(JsonSerializer.Serialize(new
-        { r.ReservationId, r.ProsumerId, r.StationId, r.SlotId, r.EnergyKwh, r.Status }));
+        { r.ReservationId, r.ProsumerId, r.StationId, r.SlotId, r.EnergyKwh, Status = r.Status.ToString() }));
 
     // Return authoritative fields only and keep all stored hashes private.
     private static QrTransferResponse Response(EnergyReservation r, QrTransferState state, string? receipt) =>
         new(r.ReservationId, r.ReservationId, r.ProsumerId, r.StationId, r.SlotId, r.EnergyKwh,
-            r.Status, state.TokenStatus, receipt, state.CompletedAtUtc, state.CompletedBy);
+            r.Status.ToString(), state.TokenStatus, receipt, state.CompletedAtUtc, state.CompletedBy);
 
     // Preserve the existing result-oriented service/controller error boundary.
     private static QrTransferResult<T> Fail<T>(QrTransferError error, string message) where T : class => new(null, error, message);
