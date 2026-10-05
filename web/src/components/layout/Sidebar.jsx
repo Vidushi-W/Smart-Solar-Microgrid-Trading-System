@@ -39,7 +39,7 @@ export default function Sidebar({ open, onNavigate }) {
             className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
           >
             <Icon name={item.icon} />
-            {item.label}
+            {item.roleLabels?.[user.role] || item.label}
           </NavLink>
         ))}
       </nav>

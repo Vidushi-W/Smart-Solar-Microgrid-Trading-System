@@ -6,6 +6,8 @@ public sealed record UserSummaryResponse(
     string Username,
     string Email,
     string ContactNumber,
+    string Nic,
+    string Address,
     string Role,
     bool IsActive,
     string AccountStatus,

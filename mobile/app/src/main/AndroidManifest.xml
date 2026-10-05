@@ -15,6 +15,12 @@
             android:name=".activities.ProsumerProfileActivity"
             android:exported="false" />
         <activity
+            android:name=".activities.StaffProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.ModulePlaceholderActivity"
+            android:exported="false" />
+        <activity
             android:name=".activities.RoleHomeActivity"
             android:exported="false" />
         <activity

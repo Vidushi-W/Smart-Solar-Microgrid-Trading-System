@@ -45,15 +45,7 @@ Resources live under `app/src/main/res/`: `layout/`, `drawable/`, `mipmap/`, `va
 
 SQLite stores required local Android data. MongoDB remains on the server and is accessed only through the C# REST API. Local data is not authoritative for reservation approval, QR verification or transfer finalization. Android services support client behavior; central business rules remain in backend services.
 
-## Initialization TODO
-
-Generate a native Android project in this directory using package `com.smartsolar.microgrid`, preserving these folders. Agree on Kotlin or Java, SDK levels and Gradle versions. Add the manifest, build files, launcher components and resources as part of that initialization.
-
-Configure the REST endpoint, Google Maps integration and QR implementation during feature development. Keep machine-local SDK paths, signing keys and private credentials out of Git.
-
-This scaffold has no Gradle project, Android manifest or runnable application yet.
-
-## Authentication starter
+## Authentication and account screens
 
 The Kotlin contracts under `app/src/main/java/com/smartsolar/microgrid/authentication/` model the shared login request and response, supported roles, and initial routing destinations:
 
@@ -73,9 +65,12 @@ Open the `mobile/` directory in Android Studio, allow Gradle to sync, and run th
 
 For a physical device, change `API_BASE_URL` in `app/build.gradle.kts` to the host machine's LAN address and keep the phone and host on the same network. Do not commit local SDK paths, signing keys, generated APKs, Gradle caches, or API secrets; the repository root `.gitignore` excludes them.
 
-The login screen links to Prosumer registration. The form sends NIC, full name, email, phone number, address, password, and confirmation to `POST /api/prosumers/register`. A successful submission displays the pending-activation response; Android does not activate the account locally.
+The login screen accepts username, email, or NIC; the API determines the account role. Mobile access is limited to Prosumer and Grid Operator accounts. It links to Prosumer registration, which sends NIC, full name, email, phone number, address, password, and confirmation to `POST /api/prosumers/register`. A successful submission displays the pending-activation response; Android does not activate the account locally.
 
-Prosumer account status is controlled by the API. An authenticated Prosumer can request deactivation through `POST /api/prosumers/me/deactivation`; Android cannot activate, deactivate, or reactivate an account itself.
+Prosumer account status is controlled by the API. An authenticated Prosumer can request deactivation through `POST /api/prosumers/me/deactivation`; Android cannot activate, deactivate, or reactivate an account itself. The app confirms before sending the request and prevents repeated requests after the status changes.
 
-The Prosumer Home screen opens `My Profile`, which reads the profile through `GET /api/prosumers/me/profile`. NIC and account status are read-only; permitted fields are saved through `PUT /api/prosumers/me/profile` with the bearer token.
+The Prosumer Home screen displays token-authenticated account information, booking-summary placeholders, and quick actions reserved for the booking/node components. These actions currently navigate to a clearly marked integration placeholder screen rather than silently doing nothing; the owning components can replace those destinations when integrated. It opens `My Profile`, which reads through `GET /api/prosumers/me/profile`. NIC and account status are read-only; permitted fields are saved through `PUT /api/prosumers/me/profile` with the bearer token.
 
+Grid Operators receive an operator home with links to bookings, QR scanning, and energy transfer; these currently navigate to the same marked integration placeholder while their operational workflows remain owned by their respective project components. The operator profile uses `GET` and `PUT /api/users/me/profile`; the API derives the account ID and role from the JWT and accepts only Backoffice/Grid Operator roles.
+
+On launch and when returning to a role home, the app revalidates the stored JWT through `GET /api/auth/me`. The endpoint rejects accounts that have become inactive, after which Android clears its local session and returns to login. Backoffice sign-in is not enabled in the mobile client. Profile picture updates are not available because the shared user model has no picture field; the app displays a default avatar.
