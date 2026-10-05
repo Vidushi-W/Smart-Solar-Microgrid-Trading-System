@@ -16,11 +16,14 @@ import ProsumerManagementPage from "../pages/prosumers/ProsumerManagementPage";
 import ProsumerAccountPage from "../pages/prosumers/ProsumerAccountPage";
 import ProfilePage from "../pages/profile/ProfilePage";
 import StationsPage from "../pages/stations/StationsPage";
+import Member2PreviewPage from "../pages/stations/Member2PreviewPage";
 import StationSlotsPage from "../pages/stations/StationSlotsPage";
 import BookingsPage from "../pages/bookings/BookingsPage";
 import ReservationsPage from "../pages/reservations/ReservationsPage";
 import CreateReservationPage from "../pages/reservations/CreateReservationPage";
+import ModifyReservationPage from "../pages/reservations/ModifyReservationPage";
 import ReservationDetailPage from "../pages/reservations/ReservationDetailPage";
+import ReservationHistoryPage from "../pages/reservations/ReservationHistoryPage";
 import TransactionsPage from "../pages/transactions/TransactionsPage";
 import TransactionDetailPage from "../pages/transactions/TransactionDetailPage";
 
@@ -65,10 +68,13 @@ export default function ConnectedRoutes() {
         <Route path="prosumers/:nic/edit" element={<Protected roles={["Backoffice"]}><ProsumerAccountPage editing /></Protected>} />
         <Route path="prosumers/:nic" element={<Protected roles={["Backoffice"]}><ProsumerAccountPage /></Protected>} />
         <Route path="stations" element={<Protected roles={["Backoffice", "GridOperator"]}><StationsPage /></Protected>} />
+        <Route path="member2" element={<Protected roles={["Prosumer"]}><Member2PreviewPage /></Protected>} />
         <Route path="stations/:stationId/slots" element={<Protected roles={["Backoffice", "GridOperator"]}><StationSlotsPage /></Protected>} />
         <Route path="slots" element={<Protected roles={["Backoffice", "GridOperator"]}><BookingsPage /></Protected>} />
         <Route path="reservations" element={<ReservationsPage />} />
-        <Route path="reservations/new" element={<Protected roles={["Backoffice", "Prosumer"]}><CreateReservationPage /></Protected>} />
+        <Route path="reservation-history" element={<Protected roles={["Prosumer"]}><ReservationHistoryPage /></Protected>} />
+        <Route path="reservations/new" element={<Protected roles={["Prosumer"]}><CreateReservationPage /></Protected>} />
+        <Route path="reservations/:id/modify" element={<Protected roles={["Prosumer", "Backoffice"]}><ModifyReservationPage /></Protected>} />
         <Route path="reservations/:id" element={<ReservationDetailPage />} />
         <Route path="transactions" element={<Protected roles={["Backoffice", "GridOperator"]}><TransactionsPage /></Protected>} />
         <Route path="transactions/:id" element={<Protected roles={["Backoffice", "GridOperator"]}><TransactionDetailPage /></Protected>} />

@@ -1,0 +1,275 @@
+package com.smartsolar.microgrid.activities
+
+import android.app.DatePickerDialog
+import android.content.Intent
+import android.graphics.Color
+import android.os.Bundle
+import android.view.View
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.ScrollView
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import com.smartsolar.microgrid.BuildConfig
+import com.smartsolar.microgrid.R
+import com.smartsolar.microgrid.api.ReservationApiClient
+import com.smartsolar.microgrid.authentication.AuthenticationApiClient
+import com.smartsolar.microgrid.models.ReservationRecord
+import com.smartsolar.microgrid.models.SlotRecord
+import com.smartsolar.microgrid.models.StationRecord
+import com.smartsolar.microgrid.models.stationLabel
+import com.smartsolar.microgrid.models.utcDate
+import com.smartsolar.microgrid.models.utcTime
+import java.time.LocalDate
+import java.util.concurrent.Executors
+
+class CreateReservationActivity : AppCompatActivity() {
+    private val executor = Executors.newSingleThreadExecutor()
+    private lateinit var body: LinearLayout
+    private lateinit var message: TextView
+    private lateinit var progress: ProgressBar
+    private var stations: List<StationRecord> = emptyList()
+    private var slots: List<SlotRecord> = emptyList()
+    private var stationId = ""
+    private var slotId = ""
+    private var date: String = LocalDate.now().toString()
+    private var userId = ""
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(32, 28, 32, 40)
+            setBackgroundColor(Color.rgb(246, 248, 242))
+        }
+        root.addView(TextView(this).apply {
+            text = getString(R.string.find_book_energy)
+            textSize = 26f
+            setTextColor(Color.rgb(20, 35, 29))
+        })
+        message = TextView(this).apply { setTextColor(Color.rgb(160, 53, 43)) }
+        root.addView(message, wrap())
+        progress = ProgressBar(this).apply { visibility = View.GONE }
+        root.addView(progress, wrap())
+        body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        root.addView(body, wrap())
+        setContentView(ScrollView(this).apply { addView(root) })
+        loadStations()
+    }
+
+    private fun loadStations() {
+        val token = token() ?: return
+        progress.visibility = View.VISIBLE
+        executor.execute {
+            try {
+                val user = AuthenticationApiClient(BuildConfig.API_BASE_URL).getCurrentUser(token)
+                val loaded = ReservationApiClient(BuildConfig.API_BASE_URL).stations(token)
+                    .filter { it.status == "Active" }
+                runOnUiThread {
+                    userId = user.userId
+                    stations = loaded
+                    progress.visibility = View.GONE
+                    showStations()
+                }
+            } catch (error: Exception) {
+                showError(error)
+            }
+        }
+    }
+
+    private fun showStations() {
+        body.removeAllViews()
+        body.addView(heading(getString(R.string.choose_station)))
+        if (stations.isEmpty()) body.addView(note(getString(R.string.no_stations)))
+        stations.forEach { station ->
+            body.addView(Button(this).apply {
+                text = "${stationLabel(station)}\n${station.stationId}"
+                isAllCaps = false
+                setOnClickListener {
+                    stationId = station.stationId
+                    slotId = ""
+                    showDate()
+                }
+            }, wrap())
+        }
+        body.addView(backHome())
+    }
+
+    private fun showDate() {
+        body.removeAllViews()
+        body.addView(heading(stationLabel(stationId, stations)))
+        body.addView(Button(this).apply {
+            text = date
+            setOnClickListener {
+                val current = LocalDate.parse(date)
+                DatePickerDialog(this@CreateReservationActivity, { _, year, month, day ->
+                    date = LocalDate.of(year, month + 1, day).toString()
+                    text = date
+                    slotId = ""
+                }, current.year, current.monthValue - 1, current.dayOfMonth).show()
+            }
+        }, wrap())
+        body.addView(Button(this).apply {
+            text = getString(R.string.load_slots)
+            setOnClickListener { loadSlots() }
+        }, wrap())
+        body.addView(Button(this).apply {
+            text = getString(R.string.back)
+            setOnClickListener { showStations() }
+        }, wrap())
+    }
+
+    private fun loadSlots() {
+        val token = token() ?: return
+        progress.visibility = View.VISIBLE
+        message.text = ""
+        executor.execute {
+            try {
+                val loaded = ReservationApiClient(BuildConfig.API_BASE_URL).slots(token, stationId, date)
+                runOnUiThread {
+                    slots = loaded
+                    progress.visibility = View.GONE
+                    showSlots()
+                }
+            } catch (error: Exception) {
+                showError(error)
+            }
+        }
+    }
+
+    private fun showSlots() {
+        body.removeAllViews()
+        body.addView(heading(stationLabel(stationId, stations)))
+        body.addView(note(date))
+        if (slots.isEmpty()) body.addView(note(getString(R.string.no_slots)))
+        slots.forEach { slot ->
+            body.addView(Button(this).apply {
+                text = "${slot.startTime}–${slot.endTime}  ${slot.status}\n${slot.remainingCapacity} remaining"
+                isAllCaps = false
+                setOnClickListener {
+                    slotId = slot.slotId
+                    showReview()
+                }
+            }, wrap())
+        }
+        body.addView(Button(this).apply {
+            text = getString(R.string.back)
+            setOnClickListener { showDate() }
+        }, wrap())
+    }
+
+    private fun showReview() {
+        val slot = slots.find { it.slotId == slotId } ?: return
+        body.removeAllViews()
+        body.addView(heading(getString(R.string.review_reservation)))
+        body.addView(note(buildString {
+            append(getString(R.string.station_line, stationLabel(stationId, stations)))
+            append("\n")
+            append(getString(R.string.date_line, slot.date))
+            append("\n")
+            append(getString(R.string.time_line, "${slot.startTime}–${slot.endTime} UTC"))
+        }))
+        body.addView(Button(this).apply {
+            text = getString(R.string.confirm_reservation)
+            setOnClickListener { confirm(slot) }
+        }, wrap())
+        body.addView(Button(this).apply {
+            text = getString(R.string.back)
+            setOnClickListener { showSlots() }
+        }, wrap())
+    }
+
+    private fun confirm(slot: SlotRecord) {
+        val token = token() ?: return
+        progress.visibility = View.VISIBLE
+        message.text = ""
+        val whenUtc = "${slot.date.take(10)}T${slot.startTime.take(5)}:00.000Z"
+        executor.execute {
+            try {
+                val api = ReservationApiClient(BuildConfig.API_BASE_URL)
+                val created = api.create(token, userId, stationId, slot.slotId, whenUtc)
+                val saved = api.reservation(token, created.reservationId)
+                runOnUiThread {
+                    progress.visibility = View.GONE
+                    showSummary(saved)
+                }
+            } catch (error: Exception) {
+                showError(error)
+            }
+        }
+    }
+
+    private fun showSummary(reservation: ReservationRecord) {
+        body.removeAllViews()
+        body.addView(heading(getString(R.string.booking_summary)))
+        body.addView(note(summaryText(reservation, getString(R.string.result_booked))))
+        body.addView(Button(this).apply {
+            text = getString(R.string.view_reservation)
+            setOnClickListener {
+                startActivity(Intent(this@CreateReservationActivity, ReservationDetailActivity::class.java)
+                    .putExtra(ReservationDetailActivity.ID_KEY, reservation.reservationId))
+                finish()
+            }
+        }, wrap())
+        body.addView(backHome())
+    }
+
+    private fun showError(error: Exception) {
+        runOnUiThread {
+            progress.visibility = View.GONE
+            message.text = error.message ?: getString(R.string.api_error)
+        }
+    }
+
+    private fun summaryText(reservation: ReservationRecord, result: String) = buildString {
+        append(getString(R.string.result_line, result))
+        append("\n")
+        append(reservation.reservationId)
+        append("\n")
+        append(stationLabel(reservation.stationId, stations))
+        append("\n")
+        append(utcDate(reservation.scheduledAtUtc))
+        append("  ")
+        append(utcTime(reservation.scheduledAtUtc))
+        append(" UTC\n")
+        append(reservation.status)
+    }
+
+    private fun heading(text: String) = TextView(this).apply {
+        this.text = text
+        textSize = 20f
+        setTextColor(Color.rgb(20, 35, 29))
+        setPadding(0, 16, 0, 8)
+    }
+
+    private fun note(text: String) = TextView(this).apply {
+        this.text = text
+        textSize = 15f
+        setTextColor(Color.rgb(96, 112, 100))
+    }
+
+    private fun backHome() = Button(this).apply {
+        text = getString(R.string.back_to_dashboard)
+        setOnClickListener { finish() }
+    }
+
+    private fun token(): String? {
+        val value = getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE).getString(MainActivity.TOKEN_KEY, null)
+        if (value.isNullOrBlank()) {
+            finish()
+            return null
+        }
+        return value
+    }
+
+    private fun wrap() = LinearLayout.LayoutParams(
+        LinearLayout.LayoutParams.MATCH_PARENT,
+        LinearLayout.LayoutParams.WRAP_CONTENT
+    ).apply { topMargin = 12 }
+
+    override fun onDestroy() {
+        executor.shutdownNow()
+        super.onDestroy()
+    }
+}

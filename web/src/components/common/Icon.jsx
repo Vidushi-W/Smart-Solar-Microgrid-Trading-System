@@ -49,6 +49,12 @@ const paths = {
       <path d="M3 6h.01M3 12h.01M3 18h.01" />
     </>
   ),
+  history: (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 8v4l2.5 2" />
+    </>
+  ),
   transfers: (
     <>
       <rect x="4" y="4" width="6" height="6" />

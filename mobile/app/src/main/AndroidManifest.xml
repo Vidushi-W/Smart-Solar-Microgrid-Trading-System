@@ -9,6 +9,18 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".activities.ModifyReservationActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.ReservationDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.CreateReservationActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.ReservationListActivity"
+            android:exported="false" />
+        <activity
             android:name=".activities.RegisterProsumerActivity"
             android:exported="false" />
         <activity

@@ -1,53 +1,67 @@
 /**
- * Books one energy slot. Stations come from the station API. Slots are loaded again after a station is chosen.
+ * Prosumer booking flow. Stations and slots come from the station API. Confirm sends POST /api/reservations and shows that response.
  */
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";
 import StatusBadge from "../../components/common/StatusBadge";
+import ReservationActionSummary from "../../components/reservations/ReservationActionSummary";
+import SlotSelector from "../../components/reservations/SlotSelector";
 import { useAuth } from "../../context/AuthContext";
-import { fetchSlots, fetchStations } from "../../services/catalogApi";
-import { createReservation } from "../../services/reservationsApi";
-import { isInsideSevenDayWindow } from "../../utils/reservationRules";
+import { createReservation, fetchReservation, listStationsForReservations, stationsApi } from "../../services/apiClient";
+import { stationTitle as stationLabel, utcDateLabel, utcTimeLabel } from "./reservationTime";
 
-function bookingDate(iso) {
-  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(iso));
+const STEPS = [
+  { id: "station", label: "Station" },
+  { id: "slot", label: "Slot" },
+  { id: "review", label: "Review" },
+  { id: "confirmation", label: "Confirmation" },
+];
+
+function localDateValue() {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
 }
 
-function bookingTime(start, end) {
-  const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" });
-  return `${time.format(new Date(start))}–${time.format(new Date(end))}`;
+function stationTitle(station) {
+  return station?.name?.trim() || station?.stationId || "Station";
 }
 
-function placesLeft(slot) {
-  return Math.max(0, Number(slot.capacity || 0) - Number(slot.holdingCount || 0));
+function slotWhen(slot) {
+  const date = String(slot.date).slice(0, 10);
+  const start = String(slot.startTime).slice(0, 5);
+  return `${date}T${start}:00.000Z`;
 }
 
 export default function CreateReservationPage() {
   const { user } = useAuth();
-  const displayName = user.name || user.username || "";
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const createdId = searchParams.get("created") || "";
+  const [step, setStep] = useState(createdId ? "confirmation" : "station");
   const [stations, setStations] = useState([]);
   const [slots, setSlots] = useState([]);
-  const [loadingStations, setLoadingStations] = useState(true);
-  const [loadingSlots, setLoadingSlots] = useState(false);
-  const [error, setError] = useState("");
   const [stationId, setStationId] = useState("");
   const [slotId, setSlotId] = useState("");
-  const [step, setStep] = useState("choose");
+  const [date, setDate] = useState(localDateValue);
+  const [loadingStations, setLoadingStations] = useState(true);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [loadingReservation, setLoadingReservation] = useState(Boolean(createdId));
   const [submitting, setSubmitting] = useState(false);
-  const [created, setCreated] = useState(null);
+  const [error, setError] = useState("");
+  const [reservation, setReservation] = useState(null);
 
   useEffect(() => {
     let active = true;
     setLoadingStations(true);
-    setError("");
-    fetchStations(user)
+    listStationsForReservations()
       .then((rows) => {
         if (!active) return;
-        setStations((rows || []).filter((item) => !item.status || item.status === "Active"));
+        setStations((rows || []).filter((station) => station.status === "Active"));
       })
       .catch((reason) => {
-        if (active) setError(reason.message);
+        if (active) setError(reason.message || "Could not load stations.");
       })
       .finally(() => {
         if (active) setLoadingStations(false);
@@ -55,7 +69,7 @@ export default function CreateReservationPage() {
     return () => {
       active = false;
     };
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     if (!stationId) {
@@ -65,17 +79,15 @@ export default function CreateReservationPage() {
     let active = true;
     setLoadingSlots(true);
     setError("");
-    fetchSlots(user, stationId)
+    stationsApi.slots(stationId, date)
       .then((rows) => {
-        if (!active) return;
-        setSlots(
-          (rows || []).filter(
-            (item) => item.isOpen !== false && placesLeft(item) > 0 && isInsideSevenDayWindow(item.start)
-          )
-        );
+        if (active) setSlots(Array.isArray(rows) ? rows : []);
       })
       .catch((reason) => {
-        if (active) setError(reason.message);
+        if (active) {
+          setSlots([]);
+          setError(reason.message || "Could not load slots.");
+        }
       })
       .finally(() => {
         if (active) setLoadingSlots(false);
@@ -83,165 +95,201 @@ export default function CreateReservationPage() {
     return () => {
       active = false;
     };
-  }, [user, stationId]);
+  }, [stationId, date]);
 
-  const station = stations.find((item) => item.id === stationId) || null;
-  const slot = slots.find((item) => item.id === slotId) || null;
-
-  const summary = useMemo(() => {
-    if (!station || !slot) return null;
-    return {
-      prosumer: displayName,
-      station: station.name,
-      date: bookingDate(slot.start),
-      time: bookingTime(slot.start, slot.end),
-      status: "Pending",
+  useEffect(() => {
+    if (!createdId) return undefined;
+    let active = true;
+    setStep("confirmation");
+    setReservation(null);
+    setLoadingReservation(true);
+    setError("");
+    fetchReservation(createdId)
+      .then((row) => {
+        if (active) setReservation(row);
+      })
+      .catch((reason) => {
+        if (active) setError(reason.message || "Could not load the reservation.");
+      })
+      .finally(() => {
+        if (active) setLoadingReservation(false);
+      });
+    return () => {
+      active = false;
     };
-  }, [station, slot, displayName]);
+  }, [createdId]);
 
-  function chooseStation(nextStationId) {
-    setStationId(nextStationId);
+  const station = stations.find((item) => item.stationId === stationId) || null;
+  const slot = slots.find((item) => item.slotId === slotId) || null;
+  const summaryStation = stations.find((item) => item.stationId === reservation?.stationId) || station;
+
+  function selectStation(nextId) {
+    setStationId(nextId);
     setSlotId("");
     setError("");
   }
 
-  async function confirmBooking() {
+  function selectSlot(nextId) {
+    setSlotId(nextId);
+    setError("");
+  }
+
+  async function confirmReservation() {
+    if (!station || !slot) return;
     setSubmitting(true);
     setError("");
     try {
-      const saved = await createReservation(user, {
+      const saved = await createReservation({
         prosumerId: user.id,
-        slotId,
-        serviceType: "Drop-off",
-        energyKwh: 1,
+        stationId: station.stationId,
+        slotId: slot.slotId,
+        scheduledAtUtc: slotWhen(slot),
       });
-      setCreated(saved);
-      setStep("success");
+      navigate(`/reservations/new?created=${encodeURIComponent(saved.reservationId)}`, { replace: true });
     } catch (reason) {
-      setError(reason.message);
+      setError(reason.message || "The reservation could not be created.");
     } finally {
       setSubmitting(false);
     }
   }
 
+  function leaveSummary() {
+    if (createdId) navigate("/reservations/new", { replace: true });
+  }
+
+  function openStep(next) {
+    if (next === "confirmation") return;
+    if (next === "slot" && !stationId) return;
+    if (next === "review" && !slot) return;
+    setError("");
+    setReservation(null);
+    leaveSummary();
+    setStep(next);
+  }
+
   return (
-    <div className="page">
+    <div className="page reserve">
       <PageHeader
         eyebrow="Reservations"
         title="Reserve energy slot"
-        description="Stations load from the microgrid API. Slots load again after you choose a station."
-        actions={
-          <Link className="btn ghost" to="/reservations">
-            Back to reservations
-          </Link>
-        }
+        actions={<Link className="btn ghost" to="/reservations">Reservations</Link>}
       />
 
-      {error ? <p className="form-error">{error}</p> : null}
+      <ol className="reserve-steps">
+        {STEPS.map((item, index) => {
+          const currentIndex = STEPS.findIndex((entry) => entry.id === step);
+          const state = item.id === step ? "current" : index < currentIndex ? "done" : "";
+          return (
+            <li key={item.id}>
+              <button
+                type="button"
+                className={`reserve-step ${state}`}
+                disabled={item.id === "confirmation" || (item.id === "slot" && !stationId) || (item.id === "review" && !slot)}
+                aria-current={item.id === step ? "step" : undefined}
+                onClick={() => openStep(item.id)}
+              >
+                <span>0{index + 1}</span>
+                <strong>{item.label}</strong>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
 
-      {step === "choose" ? (
-        <form
-          className="panel form-stack"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setStep("confirm");
-          }}
-        >
-          <label>
-            Prosumer
-            <input value={displayName} readOnly />
-          </label>
+      {error ? <p className="reserve-alert">{error}</p> : null}
 
-          <fieldset className="slot-fieldset">
-            <legend>Station</legend>
-            {loadingStations ? <p className="hint">Loading microgrid stations…</p> : null}
-            {!loadingStations && stations.length === 0 ? (
-              <p className="hint">No active stations were returned by the API.</p>
-            ) : null}
-            <div className="station-picks">
-              {stations.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={item.id === stationId ? "station-pick selected" : "station-pick"}
-                  onClick={() => chooseStation(item.id)}
-                >
-                  <strong>{item.name}</strong>
-                  <span>{item.capacityKwh} kWh</span>
-                </button>
-              ))}
-            </div>
-          </fieldset>
-
-          {stationId ? (
-            <fieldset className="slot-fieldset">
-              <legend>Available slot</legend>
-              {loadingSlots ? <p className="hint">Loading slots for this station…</p> : null}
-              {!loadingSlots && slots.length === 0 ? (
-                <p className="hint">No open slots are inside the next 7 days.</p>
-              ) : null}
-              <div className="slot-grid">
-                {slots.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={item.id === slotId ? "slot-card selected" : "slot-card"}
-                    onClick={() => setSlotId(item.id)}
-                  >
-                    <strong>{bookingDate(item.start)}</strong>
-                    <span>{bookingTime(item.start, item.end)}</span>
-                    <em>{placesLeft(item)} {placesLeft(item) === 1 ? "place" : "places"} left</em>
-                  </button>
-                ))}
-              </div>
-            </fieldset>
+      {step === "station" ? (
+        <section className="reserve-panel">
+          <h2>Station</h2>
+          {loadingStations ? <p className="reserve-status">Loading stations</p> : null}
+          {!loadingStations && stations.length === 0 ? (
+            <p className="reserve-status">No active stations were returned.</p>
           ) : null}
-
-          <p className="hint">A change or cancellation later is allowed only when at least 12 hours remain before the slot.</p>
-          <button type="submit" className="btn primary" disabled={!summary}>
-            Review booking
-          </button>
-        </form>
-      ) : null}
-
-      {step === "confirm" && summary ? (
-        <section className="panel">
-          <h2>Booking summary</h2>
-          <dl className="kv">
-            <div><dt>Prosumer</dt><dd>{summary.prosumer}</dd></div>
-            <div><dt>Station</dt><dd>{summary.station}</dd></div>
-            <div><dt>Date</dt><dd>{summary.date}</dd></div>
-            <div><dt>Time</dt><dd>{summary.time}</dd></div>
-            <div><dt>Status</dt><dd><StatusBadge value={summary.status} /></dd></div>
-          </dl>
-          <p className="hint">Confirm sends the station slot to the API. The API checks your sign-in, the station, the slot, the 7-day window, and whether that slot is already reserved.</p>
-          <div className="action-row">
-            <button type="button" className="btn primary" disabled={submitting} onClick={confirmBooking}>
-              {submitting ? "Saving…" : "Confirm Reservation"}
-            </button>
-            <button type="button" className="btn ghost" disabled={submitting} onClick={() => setStep("choose")}>
-              Back
+          <div className="reserve-grid">
+            {stations.map((item) => (
+              <button
+                key={item.stationId}
+                type="button"
+                className={item.stationId === stationId ? "reserve-card selected" : "reserve-card"}
+                onClick={() => selectStation(item.stationId)}
+              >
+                <strong>{stationTitle(item)}</strong>
+                <StatusBadge value={item.status} />
+                {item.name?.trim() ? <span>{item.stationId}</span> : null}
+                {item.capacityKwh > 0 ? <span>{item.capacityKwh} kWh</span> : null}
+              </button>
+            ))}
+          </div>
+          <div className="reserve-actions">
+            <button type="button" className="btn primary" disabled={!stationId} onClick={() => setStep("slot")}>
+              Continue
             </button>
           </div>
         </section>
       ) : null}
 
-      {step === "success" && created && summary ? (
-        <section className="panel">
-          <h2>Reservation confirmed</h2>
-          <p className="lede">Reservation ID <strong>{created.id}</strong></p>
-          <dl className="kv">
-            <div><dt>Prosumer</dt><dd>{summary.prosumer}</dd></div>
-            <div><dt>Station</dt><dd>{summary.station}</dd></div>
-            <div><dt>Date</dt><dd>{summary.date}</dd></div>
-            <div><dt>Time</dt><dd>{summary.time}</dd></div>
-            <div><dt>Status</dt><dd><StatusBadge value="Pending" /></dd></div>
-          </dl>
-          <p className="hint">Staff approval changes this to Approved. A QR code is then issued for the Grid Operator to scan on the reservation day. A valid scan completes the transfer.</p>
-          <Link className="btn primary" to="/reservations">
-            Back to reservations
-          </Link>
+      {step === "slot" && station ? (
+        <section className="reserve-panel">
+          <h2>{stationTitle(station)}</h2>
+          <SlotSelector
+            date={date}
+            onDateChange={(nextDate) => {
+              setDate(nextDate);
+              setSlotId("");
+            }}
+            slots={slots}
+            loading={loadingSlots}
+            selectedSlotId={slotId}
+            onSelect={selectSlot}
+          />
+          <div className="reserve-actions">
+            <button type="button" className="btn ghost" onClick={() => setStep("station")}>Back</button>
+            <button type="button" className="btn primary" disabled={!slot} onClick={() => setStep("review")}>
+              Review
+            </button>
+          </div>
         </section>
+      ) : null}
+
+      {step === "review" && station && slot ? (
+        <section className="reserve-panel reserve-review">
+          <div className="reserve-review-hero">
+            <p className="eyebrow">Review</p>
+            <h2>{stationTitle(station)}</h2>
+            <p>{String(slot.date).slice(0, 10)} · {slot.startTime}–{slot.endTime} UTC</p>
+          </div>
+          <dl className="reserve-summary">
+            <dt>Station</dt>
+            <dd>{stationTitle(station)}</dd>
+            <dt>Date</dt>
+            <dd>{String(slot.date).slice(0, 10)}</dd>
+            <dt>Time</dt>
+            <dd>{slot.startTime}–{slot.endTime} UTC</dd>
+            <dt>Slot</dt>
+            <dd className="reserve-code">{slot.slotId}</dd>
+          </dl>
+          <div className="reserve-actions">
+            <button type="button" className="btn ghost" disabled={submitting} onClick={() => setStep("slot")}>Back</button>
+            <button type="button" className="btn primary" disabled={submitting} onClick={confirmReservation}>
+              {submitting ? "Confirming" : "Confirm reservation"}
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {step === "confirmation" && loadingReservation && !reservation ? (
+        <p className="reserve-status">Loading reservation</p>
+      ) : null}
+      {step === "confirmation" && reservation ? (
+        <ReservationActionSummary
+          title="Booking summary"
+          result="Booked"
+          reservationId={reservation.reservationId}
+          stationName={stationLabel(summaryStation, reservation.stationId)}
+          date={utcDateLabel(reservation.scheduledAtUtc)}
+          time={`${utcTimeLabel(reservation.scheduledAtUtc)} UTC`}
+          status={reservation.status}
+        />
       ) : null}
     </div>
   );

@@ -121,11 +121,50 @@ export default function ProfilePage() {
         setError("That photo is too large. Choose a smaller image.");
         return;
       }
-      setProfilePictureData(data);
       setError("");
+      await storePicture(data);
     } catch (reason) {
       setError(reason.message || "That image could not be opened. Please choose another.");
     }
+  }
+
+  async function storePicture(pictureData) {
+    const previous = profilePictureData;
+    setProfilePictureData(pictureData);
+    updateUser({ profilePictureData: pictureData || null });
+    setSaving(true);
+    setNotice("");
+    try {
+      const updated = await saveProfile(pictureData);
+      setProfile(updated);
+      setProfilePictureData(updated.profilePictureData || "");
+      updateUser({
+        name: updated.name || user.name,
+        profilePictureData: updated.profilePictureData || null,
+      });
+      setNotice(pictureData ? "Profile picture updated." : "Profile picture removed.");
+    } catch (reason) {
+      setProfilePictureData(previous);
+      updateUser({ profilePictureData: previous || null });
+      setError(reason.message || "Unable to save your profile picture.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function saveProfile(pictureData) {
+    if (user.role === "Prosumer") {
+      return updateProsumerProfile({ ...form, profilePictureData: pictureData });
+    }
+    return updateMyStaffProfile({
+      name: form.name,
+      email: form.email,
+      contactNumber: form.contactNumber,
+      role: user.role,
+      password: form.password || null,
+      address: form.address,
+      profilePictureData: pictureData,
+    });
   }
 
   async function save(event) {
@@ -146,17 +185,7 @@ export default function ProfilePage() {
 
     setSaving(true);
     try {
-      const updated = user.role === "Prosumer"
-        ? await updateProsumerProfile({ ...form, profilePictureData })
-        : await updateMyStaffProfile({
-          name: form.name,
-          email: form.email,
-          contactNumber: form.contactNumber,
-          role: user.role,
-          password: form.password || null,
-          address: form.address,
-          profilePictureData,
-        });
+      const updated = await saveProfile(profilePictureData);
       setProfile(updated);
       setProfilePictureData(updated.profilePictureData || "");
       updateUser({
@@ -209,9 +238,17 @@ export default function ProfilePage() {
       {loading ? <p className="hint">Loading profile…</p> : (
         <div className="profile-layout">
           <aside className="profile-summary">
-            {profilePictureData
-              ? <img className="profile-monogram profile-photo" src={profilePictureData} alt="Profile picture" />
-              : <span className="profile-monogram" aria-hidden="true">{displayName.trim().slice(0, 1).toUpperCase()}</span>}
+            <button
+              className="profile-monogram"
+              type="button"
+              onClick={() => pictureInput.current?.click()}
+              disabled={!canEdit || loading || saving}
+              aria-label="Upload profile picture"
+            >
+              {profilePictureData
+                ? <img src={profilePictureData} alt="" />
+                : displayName.trim().slice(0, 1).toUpperCase()}
+            </button>
             <p className="eyebrow">{profilePictureData ? "PROFILE PICTURE" : "SOLARGRID ACCOUNT"}</p>
             <h2>{displayName}</h2>
             <div className="profile-chips">
@@ -243,11 +280,11 @@ export default function ProfilePage() {
                   Choose profile picture
                 </button>
                 {profilePictureData ? (
-                  <button className="btn ghost" type="button" onClick={() => setProfilePictureData("")}>
+                  <button className="btn ghost" type="button" disabled={saving} onClick={() => storePicture("")}>
                     Remove photo
                   </button>
                 ) : null}
-                <span className="form-note">Choose an image from your device. It is resized before saving.</span>
+                <span className="form-note">Click the photo box, or choose an image here. It is resized and shown in the corner.</span>
               </div>
             ) : null}
 
