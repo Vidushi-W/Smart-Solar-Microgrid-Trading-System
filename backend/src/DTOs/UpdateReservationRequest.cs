@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SmartSolar.Microgrid.Models;
 
 namespace SmartSolar.Microgrid.DTOs;
 
@@ -19,7 +20,5 @@ public sealed class UpdateReservationRequest
 
     public DateTime ScheduledAtUtc { get; init; }
 
-    [Required]
-    [StringLength(50, MinimumLength = 1)]
-    public string Status { get; init; } = string.Empty;
+    public ReservationStatus Status { get; init; }
 }

@@ -37,7 +37,7 @@ public sealed class MongoQrTransferRepository : IQrTransferRepository
         var update = Builders<EnergyReservation>.Update.Set(x => x.QrTransfer, next);
         if (complete)
         {
-            update = update.Set(x => x.Status, "Completed");
+            update = update.Set(x => x.Status, ReservationStatus.Completed);
         }
         var result = await _reservations.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
         return result.ModifiedCount == 1;
