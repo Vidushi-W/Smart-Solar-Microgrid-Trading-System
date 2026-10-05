@@ -45,13 +45,13 @@ Resources live under `app/src/main/res/`: `layout/`, `drawable/`, `mipmap/`, `va
 
 SQLite stores required local Android data. MongoDB remains on the server and is accessed only through the C# REST API. Local data is not authoritative for reservation approval, QR verification or transfer finalization. Android services support client behavior; central business rules remain in backend services.
 
-## Initialization TODO
+## Operational frontend
 
-Generate a native Android project in this directory using package `com.smartsolar.microgrid`, preserving these folders. Agree on Kotlin or Java, SDK levels and Gradle versions. Add the manifest, build files, launcher components and resources as part of that initialization.
+Reservations, role dashboards, QR display and scanning use native Views and Activity navigation. Server rules remain in the C# services.
 
-Configure the REST endpoint, Google Maps integration and QR implementation during feature development. Keep machine-local SDK paths, signing keys and private credentials out of Git.
+Nearby station/maps and assignment-specific local persistence remain separate future work. Keep machine-local SDK paths, signing keys and private credentials out of Git.
 
-This scaffold has no Gradle project, Android manifest or runnable application yet.
+The native Kotlin/AppCompat application now includes Gradle configuration, a manifest, authentication/profile screens, role dashboards, reservations and QR transfer screens. See [frontend integration](../docs/frontend-integration.md) for the implemented flows and backend dependencies.
 
 ## Authentication starter
 
@@ -71,11 +71,10 @@ After login, the client calls `GET /api/auth/me` with `Authorization: Bearer <to
 
 Open the `mobile/` directory in Android Studio, allow Gradle to sync, and run the `app` configuration on an emulator. The debug build uses `http://10.0.2.2:5000` so the emulator can reach an API running on the host machine at port `5000`.
 
-For a physical device, change `API_BASE_URL` in `app/build.gradle.kts` to the host machine's LAN address and keep the phone and host on the same network. Do not commit local SDK paths, signing keys, generated APKs, Gradle caches, or API secrets; the repository root `.gitignore` excludes them.
+The reservation client separately uses `http://10.0.2.2:5251`. For a physical device, pass Gradle properties `-PaccountApiBaseUrl=http://HOST:5000 -PreservationApiBaseUrl=http://HOST:5251` and keep the phone and host on the same network. Debug reservation calls use the existing Development identity headers from `/auth/me`; release builds send JWT only and require server JWT support. Do not commit local SDK paths, signing keys, generated APKs, Gradle caches, or API secrets.
 
 The login screen links to Prosumer registration. The form sends NIC, full name, email, phone number, address, password, and confirmation to `POST /api/prosumers/register`. A successful submission displays the pending-activation response; Android does not activate the account locally.
 
 Prosumer account status is controlled by the API. An authenticated Prosumer can request deactivation through `POST /api/prosumers/me/deactivation`; Android cannot activate, deactivate, or reactivate an account itself.
 
 The Prosumer Home screen opens `My Profile`, which reads the profile through `GET /api/prosumers/me/profile`. NIC and account status are read-only; permitted fields are saved through `PUT /api/prosumers/me/profile` with the bearer token.
-

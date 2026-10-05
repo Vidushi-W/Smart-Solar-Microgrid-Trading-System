@@ -146,7 +146,7 @@ class ProsumerProfileActivity : AppCompatActivity() {
     private fun editableField(label: Int, inputTypeValue: Int, multiline: Boolean = false) = EditText(this).apply {
         hint = getString(label)
         inputType = inputTypeValue
-        singleLine = !multiline
+        setSingleLine(!multiline)
         if (multiline) minLines = 3
         layoutParams = matchWidth()
     }

@@ -1,89 +1,41 @@
-/**
- * QR transfer list read from the browser session, not from the transfer API.
- */
-import { useMemo, useState } from "react";
+// Completed reservations are the only existing persistent transfer read source.
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import PageHeader from "../../components/common/PageHeader";
 import StatusBadge from "../../components/common/StatusBadge";
+import ApiFailure from "../../components/common/ApiFailure";
 import DataTable from "../../components/tables/DataTable";
-import { useData } from "../../context/DataContext";
-import { formatDateTime } from "../../utils/format";
-
-const TOKEN_STATUSES = ["All", "AwaitingQR", "Issued", "Verified", "Used"];
+import { useAuth } from "../../context/AuthContext";
+import { fetchReservations } from "../../services/reservationsApi";
+import { formatTimeRange } from "../../utils/format";
 
 export default function TransactionsPage() {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const { transactions, reservations, prosumers } = useData();
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("All");
-
-  const rows = useMemo(() => {
-    return [...transactions]
-      .filter((item) => {
-        const reservation = reservations.find((row) => row.id === item.reservationId);
-        const prosumer = prosumers.find((person) => person.id === reservation?.prosumerId);
-        const hay = `${item.code} ${reservation?.code || ""} ${prosumer?.name || ""}`.toLowerCase();
-        if (query && !hay.includes(query.toLowerCase())) return false;
-        if (status !== "All" && item.tokenStatus !== status) return false;
-        return true;
-      })
-      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-  }, [transactions, reservations, prosumers, query, status]);
-
-  return (
-    <div className="page">
-      <section className="filter-card">
-        <header className="panel-head">
-          <h2>Search and filters</h2>
-        </header>
-        <div className="filter-grid">
-          <label>
-            Token, reservation, or prosumer
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
-          </label>
-          <label>
-            Token status
-            <select value={status} onChange={(event) => setStatus(event.target.value)}>
-              {TOKEN_STATUSES.map((item) => (
-                <option key={item} value={item}>
-                  {item === "AwaitingQR" ? "Awaiting QR" : item}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </section>
-      <DataTable
-        rowKey={(row) => row.id}
-        rows={rows}
-        onRowClick={(row) => navigate(`/transactions/${row.id}`)}
-        emptyTitle="No transfers match"
-        columns={[
-          { key: "code", label: "Token" },
-          {
-            key: "reservation",
-            label: "Reservation",
-            render: (row) => reservations.find((item) => item.id === row.reservationId)?.code,
-          },
-          {
-            key: "prosumer",
-            label: "Prosumer",
-            render: (row) => {
-              const reservation = reservations.find((item) => item.id === row.reservationId);
-              return prosumers.find((person) => person.id === reservation?.prosumerId)?.name;
-            },
-          },
-          { key: "token", label: "Token", render: (row) => <StatusBadge value={row.tokenStatus} /> },
-          {
-            key: "reservationStatus",
-            label: "Reservation",
-            render: (row) => {
-              const reservation = reservations.find((item) => item.id === row.reservationId);
-              return reservation ? <StatusBadge value={reservation.status} /> : null;
-            },
-          },
-          { key: "updated", label: "Updated", render: (row) => formatDateTime(row.updatedAt) },
-        ]}
-      />
-    </div>
-  );
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [reload, setReload] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true); setError(null);
+    fetchReservations(user, { status: "Completed", q: query }, controller.signal).then(setRows)
+      .catch((e) => { if (e.name !== "AbortError") { setRows([]); setError(e); } })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [user.id, user.role, query, reload]);
+  return <div className="page">
+    <PageHeader title="Completed transfers" description="Completed reservations from the reservation API." />
+    <section className="filter-card"><label>Reservation, station, or prosumer<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search" /></label></section>
+    <ApiFailure error={error} onRetry={() => setReload((n) => n + 1)} />
+    {loading ? <p role="status">Loading completed reservations…</p> : !error ? <DataTable rows={rows} rowKey={(r) => r.id}
+      onRowClick={(r) => navigate(`/transactions/${encodeURIComponent(r.id)}`)} emptyTitle="No completed reservations"
+      columns={[
+        { key: "code", label: "Reservation" }, { key: "prosumerName", label: "Prosumer" }, { key: "stationName", label: "Station" },
+        { key: "window", label: "Reservation window", render: (r) => formatTimeRange(r.start, r.end) },
+        { key: "energyKwh", label: "Energy (kWh)" }, { key: "status", label: "Status", render: (r) => <StatusBadge value={r.status} /> },
+      ]} /> : null}
+    <p className="hint">Token history and completion audit are unavailable through the existing read API.</p>
+  </div>;
 }

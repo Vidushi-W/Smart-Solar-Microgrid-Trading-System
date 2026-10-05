@@ -1,59 +1,47 @@
 package com.smartsolar.microgrid.activities
 
-import android.graphics.Color
+import android.content.Intent
 import android.os.Bundle
-import android.view.Gravity
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
 import com.smartsolar.microgrid.R
+import com.smartsolar.microgrid.ui.SolarActivity
+import org.json.JSONObject
 
-class RoleHomeActivity : AppCompatActivity() {
+class RoleHomeActivity : SolarActivity() {
+    private var ready = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val role = intent.getStringExtra(MainActivity.ROLE_KEY) ?: return
-        val title = when (role) {
-            "Prosumer" -> getString(R.string.prosumer_home)
-            "GridOperator" -> getString(R.string.operator_home)
-            "Backoffice" -> getString(R.string.backoffice_home)
-            else -> getString(R.string.access_unavailable)
-        }
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(48, 48, 48, 48)
-            setBackgroundColor(Color.rgb(246, 248, 242))
-        }
-        content.addView(TextView(this).apply {
-            text = title
-            textSize = 28f
-            gravity = Gravity.CENTER
-            setTextColor(Color.rgb(20, 35, 29))
+        val savedRole = getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE).getString(MainActivity.ROLE_KEY, "")
+        val title = getString(when (savedRole) {
+            "Prosumer" -> R.string.prosumer_home
+            "GridOperator" -> R.string.operator_home
+            else -> R.string.backoffice_home
         })
-        content.addView(TextView(this).apply {
-            text = getString(R.string.login_successful, role)
-            textSize = 16f
-            gravity = Gravity.CENTER
-            setPadding(0, 20, 0, 20)
-            setTextColor(Color.rgb(96, 112, 100))
-        })
-        if (role == "Prosumer") {
-            content.addView(Button(this).apply {
-                text = getString(R.string.my_profile)
-                setOnClickListener {
-                    startActivity(android.content.Intent(this@RoleHomeActivity, ProsumerProfileActivity::class.java))
-                }
-            })
+        if (!setup(title)) return
+        ready = true
+        val summary = text("")
+        button(getString(R.string.reservations)) { open(ReservationsActivity::class.java) }
+        queue(R.string.requested_reservations, "Requested")
+        queue(R.string.approved_reservations, "Approved")
+        queue(R.string.scheduled_reservations, "Scheduled")
+        button(getString(R.string.booking_history)) { startActivity(Intent(this, ReservationsActivity::class.java).putExtra("history", true).putExtra("status", "Completed")) }
+        if (role == "Prosumer" || role == "Backoffice") button(getString(R.string.create_reservation)) { open(ReservationFormActivity::class.java) }
+        if (role == "Prosumer") button(getString(R.string.my_profile)) { open(ProsumerProfileActivity::class.java) }
+        if (role == "GridOperator") button(getString(R.string.scan_qr)) { open(QrScannerActivity::class.java) }
+        button(getString(R.string.retry)) { screen.request { api.dashboard() } }
+        button(getString(R.string.logout)) {
+            getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE).edit().clear().apply()
+            startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         }
-        content.addView(Button(this).apply {
-            text = getString(R.string.logout)
-            setOnClickListener {
-                getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE).edit().clear().apply()
-                startActivity(android.content.Intent(this@RoleHomeActivity, MainActivity::class.java))
-                finish()
-            }
-        })
-        setContentView(content)
+        screen.state.observe(this) { state ->
+            status(state)
+            val counts = state.data as? JSONObject
+            summary.text = counts?.let {
+                getString(R.string.dashboard_counts, it.getInt("pending"), it.getInt("approvedFuture"), it.getInt("dueSoon"))
+            }.orEmpty()
+        }
+    }
+    override fun onResume() { super.onResume(); if (ready) screen.request { api.dashboard() } }
+    private fun queue(label: Int, status: String) {
+        button(getString(label)) { startActivity(Intent(this, ReservationsActivity::class.java).putExtra("status", status)) }
     }
 }

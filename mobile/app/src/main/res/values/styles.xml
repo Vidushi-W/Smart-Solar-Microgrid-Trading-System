@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorAccent">@color/solar_accent</item>
         <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">#C46B42</item>
+        <item name="android:colorAccent">@color/solar_accent</item>
         <item name="android:navigationBarColor">#164A3A</item>
         <item name="android:statusBarColor">#164A3A</item>
         <item name="android:windowLightStatusBar">false</item>

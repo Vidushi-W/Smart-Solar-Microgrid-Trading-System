@@ -31,11 +31,30 @@ class MainActivity : AppCompatActivity() {
         val preferences = getSharedPreferences(SESSION_PREFS, MODE_PRIVATE)
         val savedToken = preferences.getString(TOKEN_KEY, null)
         val savedRole = preferences.getString(ROLE_KEY, null)
-        if (!savedToken.isNullOrBlank() && !savedRole.isNullOrBlank()) {
-            openHome(savedRole)
-            return
-        }
         setContentView(createLoginView())
+        if (!savedToken.isNullOrBlank() && !savedRole.isNullOrBlank()) {
+            loginButton.isEnabled = false
+            messageView.text = getString(R.string.signing_in)
+            executor.execute {
+                try {
+                    val identity = com.smartsolar.microgrid.api.MicrogridApi(this).identity()
+                    runOnUiThread {
+                        if (!isDestroyed) {
+                            preferences.edit().putString(ROLE_KEY, identity.getString("role")).apply()
+                            openHome(identity.getString("role"))
+                        }
+                    }
+                } catch (error: Exception) {
+                    runOnUiThread {
+                        if (!isDestroyed) {
+                            if ((error as? com.smartsolar.microgrid.api.ApiFailure)?.status == 401) preferences.edit().clear().apply()
+                            loginButton.isEnabled = true
+                            messageView.text = error.message
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun createLoginView(): View {
@@ -60,12 +79,12 @@ class MainActivity : AppCompatActivity() {
         }
         identifierInput = EditText(this).apply {
             hint = getString(R.string.username_or_nic)
-            singleLine = true
+            setSingleLine(true)
             inputType = android.text.InputType.TYPE_CLASS_TEXT
         }
         passwordInput = EditText(this).apply {
             hint = getString(R.string.password)
-            singleLine = true
+            setSingleLine(true)
             inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
         }
         loginButton = Button(this).apply {
@@ -104,8 +123,8 @@ class MainActivity : AppCompatActivity() {
             try {
                 val apiClient = AuthenticationApiClient(BuildConfig.API_BASE_URL)
                 val response = apiClient.login(LoginRequest(identifier, password))
-                apiClient.getCurrentUser(response.token)
-                runOnUiThread { handleLoginSuccess(response) }
+                val identity = apiClient.getCurrentUser(response.token)
+                runOnUiThread { if (!isDestroyed) handleLoginSuccess(response.copy(role = identity.role)) }
             } catch (error: Exception) {
                 runOnUiThread {
                     loginButton.isEnabled = true

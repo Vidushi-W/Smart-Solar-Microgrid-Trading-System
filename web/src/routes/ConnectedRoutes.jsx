@@ -1,7 +1,7 @@
 /**
  * Route table. The landing page and login are public. Every other screen sits inside AppShell. GuestOnly waits until a stored token has been checked. Protected sends anonymous visitors to login and the wrong role back to the dashboard.
  */
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import AppShell from "../components/layout/AppShell";
 import LandingPage from "../pages/LandingPage";
@@ -34,6 +34,15 @@ function Protected({ roles, children }) {
   return children;
 }
 
+function ReservationDetailRoute() {
+  const { id } = useParams();
+  return <ReservationDetailPage key={id} />;
+}
+function TransferDetailRoute() {
+  const { id } = useParams();
+  return <TransactionDetailPage key={id} />;
+}
+
 export default function ConnectedRoutes() {
   return (
     <Routes>
@@ -52,9 +61,9 @@ export default function ConnectedRoutes() {
         <Route path="slots" element={<BookingsPage />} />
         <Route path="reservations" element={<ReservationsPage />} />
         <Route path="reservations/new" element={<Protected roles={["Backoffice", "Prosumer"]}><CreateReservationPage /></Protected>} />
-        <Route path="reservations/:id" element={<ReservationDetailPage />} />
-        <Route path="transactions" element={<TransactionsPage />} />
-        <Route path="transactions/:id" element={<TransactionDetailPage />} />
+        <Route path="reservations/:id" element={<ReservationDetailRoute />} />
+        <Route path="transactions" element={<Protected roles={["Backoffice", "GridOperator"]}><TransactionsPage /></Protected>} />
+        <Route path="transactions/:id" element={<Protected roles={["Backoffice", "GridOperator"]}><TransferDetailRoute /></Protected>} />
       </Route>
       <Route path="prosumers" element={<Navigate to="/prosumers/pending" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />

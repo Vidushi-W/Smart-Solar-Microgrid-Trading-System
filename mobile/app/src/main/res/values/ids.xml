@@ -1,0 +1,7 @@
+<resources>
+    <item name="reservation_search" type="id" />
+    <item name="reservation_date" type="id" />
+    <item name="reservation_station" type="id" />
+    <item name="reservation_status" type="id" />
+    <item name="reservation_energy" type="id" />
+</resources>
