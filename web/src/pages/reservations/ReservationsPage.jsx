@@ -164,7 +164,7 @@ export default function ReservationsPage() {
         </div>
         {canBook ? (
           <button type="button" className="desk-reserve" onClick={() => navigate("/reservations/new")}>
-            + Reserve slot
+            Reserve Energy Slot
           </button>
         ) : null}
       </header>
@@ -180,7 +180,7 @@ export default function ReservationsPage() {
           <p>Pending approval</p>
           <strong>{counts.pending}</strong>
           <span className="desk-pill amber">Awaiting backoffice</span>
-          <em>QR is created only after approval</em>
+          <em>Staff approval moves this to Approved. A QR scan on the day completes it.</em>
         </article>
         <article>
           <p>Due within 12 hours</p>

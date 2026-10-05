@@ -36,7 +36,9 @@ export default function Topbar({ onMenu }) {
       <div className="top-meta">
         <span className="clock">{formatClock(now)}</span>
         <Link className="top-profile" to="/profile">
-          <span className="top-profile-avatar">{(user.name || "S").slice(0, 1).toUpperCase()}</span>
+          {user.profilePictureData
+            ? <img className="top-profile-avatar top-profile-photo" src={user.profilePictureData} alt="" />
+            : <span className="top-profile-avatar">{(user.name || "S").slice(0, 1).toUpperCase()}</span>}
           <span>{user.name || user.username}</span>
         </Link>
       </div>
