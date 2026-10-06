@@ -52,6 +52,13 @@ public sealed class AuthService : IAuthService
             return Rejected("Invalid credentials or inactive account.");
         }
 
+        // Native clients may omit the optional role; a selected web role must match the stored account.
+        if (request.Role is not null
+            && !string.Equals(user.Role, request.Role.Trim(), StringComparison.Ordinal))
+        {
+            return Rejected("The selected role does not match this account.");
+        }
+
         return new LoginOutcome(new LoginResponse("Login successful", user.Role, CreateToken(user)), null);
     }
 

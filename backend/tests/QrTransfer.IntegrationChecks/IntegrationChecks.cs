@@ -120,10 +120,12 @@ internal static class IntegrationChecks
             await Check(http, "POST", "/api/prosumers/register", registration, null, 409);
             await Check(http, "POST", "/api/auth/login",
                 new { identifier = registration.nic, password = "WrongPassword1!", role = "Prosumer" }, null, 401);
-            var verifiedRole = await Check(http, "POST", "/api/auth/login",
-                new { identifier = registration.nic, registration.password, role = "Backoffice" }, null, 200);
-            Assert(verifiedRole.GetProperty("role").GetString() == "Prosumer",
-                "Login derives the account role from the stored user rather than the supplied role");
+            await Check(http, "POST", "/api/auth/login",
+                new { identifier = registration.nic, registration.password, role = "Backoffice" }, null, 401);
+            var nativeLogin = await Check(http, "POST", "/api/auth/login",
+                new { identifier = registration.nic, registration.password }, null, 200);
+            Assert(nativeLogin.GetProperty("role").GetString() == "Prosumer",
+                "Native login retains the stored role when the optional role is omitted");
             var userUpdates = Builders<SolarMicrogridTrading.Api.Models.User>.Update;
             await users.UpdateOneAsync(user => user.Id == registeredUser.Id, userUpdates.Set(user => user.IsActive, false));
             await Check(http, "POST", "/api/auth/login",

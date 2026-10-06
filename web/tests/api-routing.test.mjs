@@ -1,6 +1,8 @@
 // Isolated transport tests only. No test response is used by the application.
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { createServer } from "vite";
 import { bookingDateRange, isSlotWithinBookingWindow, slotBookingState } from "../src/pages/reservations/reservationTime.js";
 
@@ -37,7 +39,36 @@ test("existing API ownership, bodies and errors", async (t) => {
     const catalog = await server.ssrLoadModule("/src/services/catalogApi.js");
     const targets = await server.ssrLoadModule("/src/services/apiTargets.js");
     const accountBookings = await server.ssrLoadModule("/src/services/apiClient.js");
+    const authentication = await server.ssrLoadModule("/src/services/authService.js");
+    const roles = await server.ssrLoadModule("/src/constants/roles.js");
+    const { default: TransferQr } = await server.ssrLoadModule("/src/components/reservations/TransferQr.jsx");
     const user = { id: "transport-test-only", role: "Prosumer" };
+
+    await t.test("transfer QR waits for reservation approval and supports scheduled bookings", () => {
+      const render = (status) => renderToStaticMarkup(createElement(TransferQr, { reservationId: "qr-test-only", status }));
+      const pending = render("Pending");
+      assert.match(pending, /awaiting approval/);
+      assert.doesNotMatch(pending, /Generate a new code/);
+      for (const status of ["Approved", "Scheduled"]) {
+        assert.match(render(status), /Generate a new code/);
+      }
+      for (const status of ["Requested", "Rejected", "Cancelled", "Completed"]) {
+        assert.equal(render(status), "");
+      }
+    });
+
+    await t.test("login sends the selected role for each existing role constant", async () => {
+      for (const role of Object.values(roles.ROLES)) {
+        await authentication.login("login-test-only", "test-password-only", role);
+        const request = requests.pop();
+        assert.equal(request.url, targets.ACCOUNT_API_BASE + "/auth/login");
+        assert.equal(request.options.method, "POST");
+        assert.deepEqual(JSON.parse(request.options.body), {
+          identifier: "login-test-only", password: "test-password-only", role,
+        });
+        assert.equal(roles.homeForVerifiedRole(role), "/dashboard");
+      }
+    });
 
     await t.test("reservation reads use reservation host and encoded identifiers", async () => {
       await reservations.fetchReservation(user, "id /&");

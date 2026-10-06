@@ -1,3 +1,4 @@
+
 package com.smartsolar.microgrid.authentication
 
 import android.content.ContentResolver

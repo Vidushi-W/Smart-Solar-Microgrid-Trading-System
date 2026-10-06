@@ -70,6 +70,9 @@ export default function TransferQr({ reservationId, status, compact = false }) {
     };
   }, [reservationId, visible, local]);
 
+  if (status === "Pending") {
+    return <p className="reserve-status">Your reservation is awaiting approval. The transfer QR will be available once it is approved or scheduled.</p>;
+  }
   if (!visible) return null;
 
   async function replaceCode() {
