@@ -8,6 +8,11 @@ using SolarMicrogridTrading.Api.Interfaces;
 
 namespace SmartSolar.Microgrid.Services;
 
+// Energy slot reservations: create, update, and cancel.
+// A booking must be scheduled within the next 7 Colombo calendar days.
+// Create does not require 12 hours' notice.
+// Update and cancel do: at least 12 hours must remain before the scheduled time.
+// The API owns these rules. Web and Android only display the result.
 public sealed class ReservationService : IReservationService
 {
     private const string ProsumerRole = "Prosumer";
@@ -53,6 +58,7 @@ public sealed class ReservationService : IReservationService
             return Invalid<ReservationResponse>(prosumerError);
         }
 
+        // Seven-day window is enforced inside RequireBookableSlotAsync. Twelve hours is not required to create.
         var booking = await RequireBookableSlotAsync(request.StationId, request.SlotId, request.ScheduledAtUtc, sameSlotHold: false, cancellationToken);
         if (booking.Error is not null || booking.Slot is null)
         {
@@ -131,6 +137,7 @@ public sealed class ReservationService : IReservationService
             return Invalid<ReservationResponse>("The prosumer on a reservation cannot be changed.");
         }
 
+        // Update needs 12 hours' notice before the current scheduled time.
         if (!HasTwelveHourNotice(reservation.ScheduledDateTime))
         {
             return Invalid<ReservationResponse>("At least 12 hours must remain before the scheduled time.");
@@ -141,6 +148,12 @@ public sealed class ReservationService : IReservationService
         if (booking.Error is not null || booking.Slot is null)
         {
             return Invalid<ReservationResponse>(booking.Error ?? "The slot is not available.");
+        }
+
+        // The replacement time must also still have 12 hours' notice, and it must stay inside the 7-day window.
+        if (!HasTwelveHourNotice(booking.Start))
+        {
+            return Invalid<ReservationResponse>("At least 12 hours must remain before the scheduled time.");
         }
 
         var conflict = await FindConflictAsync(reservation.ProsumerId, booking.Slot, reservation.ReservationId, cancellationToken);
@@ -212,6 +225,7 @@ public sealed class ReservationService : IReservationService
             return Invalid<ReservationResponse>(statusError);
         }
 
+        // Cancel needs 12 hours' notice before the scheduled time. Inside that window the reservation stays unchanged.
         if (!HasTwelveHourNotice(reservation.ScheduledDateTime))
         {
             return Invalid<ReservationResponse>("At least 12 hours must remain before the scheduled time.");
@@ -382,6 +396,11 @@ public sealed class ReservationService : IReservationService
             return BookableSlot.Fail("The scheduled time must match the selected slot.");
         }
 
+        if (start <= DateTime.UtcNow)
+        {
+            return BookableSlot.Fail("This slot has already started. Choose a later time.");
+        }
+
         if (!IsWithinNextSevenDays(start))
         {
             return BookableSlot.Fail("The scheduled booking must be within the next 7 days.");
@@ -511,13 +530,45 @@ public sealed class ReservationService : IReservationService
     private static bool IsStaff(ReservationActor actor) =>
         actor.Role is BackofficeRole or GridOperatorRole && !string.IsNullOrWhiteSpace(actor.UserId);
 
-    private static bool HasTwelveHourNotice(DateTime scheduledAtUtc) =>
-        scheduledAtUtc >= DateTime.UtcNow.AddHours(12);
+    // True when the scheduled instant is at least 12 hours ahead of now, in UTC.
+    private static bool HasTwelveHourNotice(DateTime scheduledAtUtc)
+    {
+        var start = scheduledAtUtc.Kind == DateTimeKind.Local
+            ? scheduledAtUtc.ToUniversalTime()
+            : DateTime.SpecifyKind(scheduledAtUtc, DateTimeKind.Utc);
+        return start >= DateTime.UtcNow.AddHours(12);
+    }
 
+    // "Within 7 days": later than now, and no later than the end of the seventh Colombo calendar day.
     private static bool IsWithinNextSevenDays(DateTime startUtc)
     {
-        var now = DateTime.UtcNow;
-        return startUtc > now && startUtc <= now.AddDays(7);
+        var now = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+        var start = DateTime.SpecifyKind(startUtc, DateTimeKind.Utc);
+        if (start <= now)
+        {
+            return false;
+        }
+
+        var zone = ColomboZone();
+        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(now, zone);
+        var startLocal = TimeZoneInfo.ConvertTimeFromUtc(start, zone);
+        var limit = nowLocal.Date.AddDays(7).AddHours(23).AddMinutes(59).AddSeconds(59).AddMilliseconds(999);
+        return startLocal <= limit;
+    }
+
+    private static TimeZoneInfo ColomboZone()
+    {
+        if (TimeZoneInfo.TryFindSystemTimeZoneById("Sri Lanka Standard Time", out var windows))
+        {
+            return windows;
+        }
+
+        if (TimeZoneInfo.TryFindSystemTimeZoneById("Asia/Colombo", out var iana))
+        {
+            return iana;
+        }
+
+        return TimeZoneInfo.CreateCustomTimeZone("Asia/Colombo", TimeSpan.FromMinutes(330), "Asia/Colombo", "Asia/Colombo");
     }
 
     private static bool ScheduledTimeMatchesSlot(DateTime scheduledAtUtc, DateTime slotStartUtc)

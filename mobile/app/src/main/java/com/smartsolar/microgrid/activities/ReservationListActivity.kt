@@ -107,7 +107,7 @@ class ReservationListActivity : AppCompatActivity() {
         val allowed = when (mode) {
             MODE_HISTORY -> setOf("Completed", "Cancelled")
             MODE_STAFF -> null
-            else -> setOf("Pending", "Approved")
+            else -> setOf("Pending", "Approved", "Scheduled")
         }
         val visible = rows.filter { row ->
             (allowed == null || row.status in allowed) &&

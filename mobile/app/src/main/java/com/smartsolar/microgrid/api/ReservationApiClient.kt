@@ -76,6 +76,13 @@ class ReservationApiClient(private val baseUrl: String) {
     fun cancel(token: String, id: String): ReservationRecord =
         reservation(send("DELETE", "/api/reservations/${encode(id)}", token, null))
 
+    fun issueQr(token: String, id: String): String {
+        val item = send("POST", "/api/reservations/${encode(id)}/qr", token, JSONObject())
+        val payload = item.optJSONObject("qrPayload") ?: item.optJSONObject("QrPayload")
+            ?: throw IOException("The transfer QR response did not include a code.")
+        return payload.toString()
+    }
+
     private fun reservation(item: JSONObject) = ReservationRecord(
         reservationId = item.getString("reservationId"),
         prosumerId = item.optString("prosumerId"),

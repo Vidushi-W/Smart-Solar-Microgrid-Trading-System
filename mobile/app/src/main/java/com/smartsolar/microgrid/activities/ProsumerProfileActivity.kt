@@ -19,6 +19,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import com.smartsolar.microgrid.BuildConfig
 import com.smartsolar.microgrid.R
 import com.smartsolar.microgrid.authentication.AuthenticationApiClient
+import com.smartsolar.microgrid.authentication.LocalAccountStore
 import com.smartsolar.microgrid.authentication.ProsumerProfile
 import com.smartsolar.microgrid.authentication.ProfilePictureCodec
 import com.smartsolar.microgrid.authentication.UpdateProsumerProfileRequest
@@ -236,6 +237,7 @@ class ProsumerProfileActivity : AppCompatActivity() {
         executor.execute {
             try {
                 val updated = AuthenticationApiClient(BuildConfig.API_BASE_URL).updateMyProfile(token!!, request)
+                LocalAccountStore(applicationContext).save(updated)
                 runOnUiThread {
                     setLoading(false)
                     showProfile(updated)
@@ -268,7 +270,10 @@ class ProsumerProfileActivity : AppCompatActivity() {
                 runOnUiThread {
                     setLoading(false)
                     profile = profile?.copy(accountStatus = updatedStatus)
-                    profile?.let(::showProfile)
+                    profile?.let {
+                        LocalAccountStore(applicationContext).save(it)
+                        showProfile(it)
+                    }
                     deactivationButton.isEnabled = false
                     showSuccess(getString(R.string.deactivation_requested))
                 }
@@ -283,6 +288,7 @@ class ProsumerProfileActivity : AppCompatActivity() {
 
     private fun logout() {
         getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE).edit().clear().apply()
+        LocalAccountStore(applicationContext).clear()
         returnToLogin()
     }
 

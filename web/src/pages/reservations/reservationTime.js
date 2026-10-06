@@ -35,3 +35,27 @@ export function slotInstant(slot) {
   const start = String(slot.startTime).slice(0, 5);
   return `${date}T${start}:00.000Z`;
 }
+
+const COLOMBO_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+
+export function colomboDateInput(now = new Date(), dayOffset = 0) {
+  const shifted = new Date(now.getTime() + COLOMBO_OFFSET_MS);
+  const date = new Date(Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate() + dayOffset));
+  return date.toISOString().slice(0, 10);
+}
+
+export function slotBookingState(slot, now = new Date()) {
+  const start = new Date(slotInstant(slot));
+  if (Number.isNaN(start.getTime())) {
+    return { ok: false, reason: "This slot is not available." };
+  }
+  if (start <= now) {
+    return { ok: false, reason: "Already started" };
+  }
+  const shifted = new Date(now.getTime() + COLOMBO_OFFSET_MS);
+  const limit = Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate() + 7, 23, 59, 59, 999) - COLOMBO_OFFSET_MS;
+  if (start.getTime() > limit) {
+    return { ok: false, reason: "Outside the next 7 days" };
+  }
+  return { ok: true, reason: "" };
+}

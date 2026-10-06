@@ -20,6 +20,7 @@ import com.smartsolar.microgrid.R
 import com.smartsolar.microgrid.api.ReservationApiClient
 import com.smartsolar.microgrid.api.MicrogridApi
 import com.smartsolar.microgrid.authentication.AuthenticationApiClient
+import com.smartsolar.microgrid.authentication.LocalAccountStore
 import com.smartsolar.microgrid.authentication.MobileAccountProfile
 import java.util.concurrent.Executors
 
@@ -158,27 +159,11 @@ class RoleHomeActivity : AppCompatActivity() {
             }, matchWidth())
             content.addView(Button(this).apply {
                 text = getString(R.string.qr_scanner)
-setOnClickListener {
-    startActivity(
-        Intent(
-            this@RoleHomeActivity,
-            QrScannerActivity::class.java
-        )
-    )
-}
-}, matchWidth())
-
-content.addView(Button(this).apply {
-    text = getString(R.string.energy_transfer)
-
-    setOnClickListener {
-        startActivity(
-            Intent(
-                this@RoleHomeActivity,
-                QrScannerActivity::class.java
-            )
-        )
-    }
+                setOnClickListener { startActivity(Intent(this@RoleHomeActivity, QrScanActivity::class.java)) }
+            }, matchWidth())
+            content.addView(Button(this).apply {
+                text = getString(R.string.energy_transfer)
+                setOnClickListener { startActivity(Intent(this@RoleHomeActivity, QrScanActivity::class.java)) }
             }, matchWidth())
             content.addView(Button(this).apply {
                 text = getString(R.string.my_profile)
@@ -364,6 +349,7 @@ content.addView(Button(this).apply {
 
     private fun logout() {
         getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE).edit().clear().apply()
+        LocalAccountStore(applicationContext).clear()
         returnToLogin()
     }
 

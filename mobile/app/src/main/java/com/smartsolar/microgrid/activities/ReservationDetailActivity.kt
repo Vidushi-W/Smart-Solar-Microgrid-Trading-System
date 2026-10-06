@@ -5,12 +5,15 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.google.zxing.BarcodeFormat
+import com.journeyapps.barcodescanner.BarcodeEncoder
 import com.smartsolar.microgrid.BuildConfig
 import com.smartsolar.microgrid.R
 import com.smartsolar.microgrid.api.ReservationApiClient
@@ -19,6 +22,9 @@ import com.smartsolar.microgrid.models.StationRecord
 import com.smartsolar.microgrid.models.stationLabel
 import com.smartsolar.microgrid.models.utcDate
 import com.smartsolar.microgrid.models.utcTime
+import com.smartsolar.microgrid.reservations.BookingRules
+import com.smartsolar.microgrid.reservations.noticeForApi
+import com.smartsolar.microgrid.reservations.ruleNotice
 import java.util.concurrent.Executors
 
 class ReservationDetailActivity : AppCompatActivity() {
@@ -28,6 +34,8 @@ class ReservationDetailActivity : AppCompatActivity() {
     private lateinit var progress: ProgressBar
     private var stations: List<StationRecord> = emptyList()
     private var reservation: ReservationRecord? = null
+    private var qrText: String? = null
+    private var qrFor: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +56,10 @@ class ReservationDetailActivity : AppCompatActivity() {
         body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(body, wrap())
         setContentView(ScrollView(this).apply { addView(root) })
+    }
+
+    override fun onResume() {
+        super.onResume()
         load()
     }
 
@@ -89,17 +101,27 @@ class ReservationDetailActivity : AppCompatActivity() {
                 append(row.prosumerId)
             }
         }))
-        if (canChange) {
+        val open = row.status == "Pending" || row.status == "Approved" || row.status == "Scheduled"
+        if (row.status == "Approved" || row.status == "Scheduled") {
+            body.addView(Button(this).apply {
+                text = getString(R.string.show_qr)
+                setOnClickListener { loadQr(row) }
+            }, wrap())
+        }
+        if (canChange && open) {
             body.addView(Button(this).apply {
                 text = getString(R.string.modify_reservation)
                 setOnClickListener {
+                    if (!hasNotice(row)) return@setOnClickListener
                     startActivity(Intent(this@ReservationDetailActivity, ModifyReservationActivity::class.java)
                         .putExtra(ID_KEY, row.reservationId))
                 }
             }, wrap())
             body.addView(Button(this).apply {
                 text = getString(R.string.cancel_reservation)
-                setOnClickListener { confirmCancel(row) }
+                setOnClickListener {
+                    if (hasNotice(row)) confirmCancel(row)
+                }
             }, wrap())
         }
         body.addView(Button(this).apply {
@@ -108,7 +130,51 @@ class ReservationDetailActivity : AppCompatActivity() {
         }, wrap())
     }
 
+    private fun hasNotice(row: ReservationRecord): Boolean {
+        if (BookingRules.hasTwelveHourNotice(row.scheduledAtUtc)) return true
+        ruleNotice(getString(R.string.twelve_hour_notice))
+        return false
+    }
+
+    private fun loadQr(row: ReservationRecord) {
+        qrText?.takeIf { qrFor == row.reservationId }?.let {
+            showQr(it)
+            return
+        }
+        val token = token() ?: return
+        progress.visibility = View.VISIBLE
+        message.text = ""
+        executor.execute {
+            try {
+                val payload = ReservationApiClient(BuildConfig.API_BASE_URL).issueQr(token, row.reservationId)
+                qrText = payload
+                qrFor = row.reservationId
+                val bitmap = BarcodeEncoder().encodeBitmap(payload, BarcodeFormat.QR_CODE, 720, 720)
+                runOnUiThread {
+                    progress.visibility = View.GONE
+                    showQr(payload, bitmap)
+                }
+            } catch (error: Exception) {
+                showError(error)
+            }
+        }
+    }
+
+    private fun showQr(payload: String, bitmap: android.graphics.Bitmap? = null) {
+        val image = ImageView(this).apply {
+            setImageBitmap(bitmap ?: BarcodeEncoder().encodeBitmap(payload, BarcodeFormat.QR_CODE, 720, 720))
+            contentDescription = getString(R.string.show_qr)
+            setPadding(48, 24, 48, 24)
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.show_qr)
+            .setView(image)
+            .setPositiveButton(R.string.close, null)
+            .show()
+    }
+
     private fun confirmCancel(row: ReservationRecord) {
+        if (!hasNotice(row)) return
         AlertDialog.Builder(this)
             .setTitle(R.string.cancel_reservation)
             .setMessage(buildString {
@@ -119,7 +185,9 @@ class ReservationDetailActivity : AppCompatActivity() {
                 append(getString(R.string.time_line, "${utcTime(row.scheduledAtUtc)} UTC"))
             })
             .setNegativeButton(R.string.keep_reservation, null)
-            .setPositiveButton(R.string.cancel_reservation) { _, _ -> cancel(row) }
+            .setPositiveButton(R.string.cancel_reservation) { _, _ ->
+                if (hasNotice(row)) cancel(row)
+            }
             .show()
     }
 
@@ -136,6 +204,7 @@ class ReservationDetailActivity : AppCompatActivity() {
                     reservation = saved
                     progress.visibility = View.GONE
                     showSummary(saved)
+                    ruleNotice(getString(R.string.reservation_cancelled_notice))
                 }
             } catch (error: Exception) {
                 showError(error)
@@ -176,7 +245,7 @@ class ReservationDetailActivity : AppCompatActivity() {
     private fun showError(error: Exception) {
         runOnUiThread {
             progress.visibility = View.GONE
-            message.text = error.message ?: getString(R.string.api_error)
+            if (!noticeForApi(error.message)) message.text = error.message ?: getString(R.string.api_error)
         }
     }
 

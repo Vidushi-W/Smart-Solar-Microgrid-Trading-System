@@ -39,6 +39,7 @@ class ModulePlaceholderActivity : AppCompatActivity() {
             text = getString(R.string.logout)
             setOnClickListener {
                 getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE).edit().clear().apply()
+                com.smartsolar.microgrid.authentication.LocalAccountStore(applicationContext).clear()
                 startActivity(android.content.Intent(this@ModulePlaceholderActivity, MainActivity::class.java).addFlags(
                     android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK or android.content.Intent.FLAG_ACTIVITY_NEW_TASK
                 ))

@@ -1,15 +1,17 @@
 /**
  * Slot change for the prosumer stored on the reservation. PUT sends that prosumer id, then the page reloads the reservation.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import FlashNotice from "../../components/common/FlashNotice";
 import PageHeader from "../../components/common/PageHeader";
 import StatusBadge from "../../components/common/StatusBadge";
 import ReservationActionSummary from "../../components/reservations/ReservationActionSummary";
 import ReservationFacts from "../../components/reservations/ReservationFacts";
 import SlotSelector from "../../components/reservations/SlotSelector";
 import { fetchReservation, listStationsForReservations, stationsApi, updateReservation } from "../../services/apiClient";
-import { slotInstant, stationTitle, utcDateInput, utcDateLabel, utcTimeLabel } from "./reservationTime";
+import { colomboDateInput, slotBookingState, slotInstant, stationTitle, utcDateInput, utcDateLabel, utcTimeLabel } from "./reservationTime";
+import { hasTwelveHourNotice, TWELVE_HOUR_MESSAGE } from "../../utils/reservationRules";
 
 const STEPS = [
   { id: "slot", label: "Slot" },
@@ -30,7 +32,9 @@ export default function ModifyReservationPage() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [summary, setSummary] = useState(null);
+  const warned = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -43,7 +47,14 @@ export default function ModifyReservationPage() {
         setReservation(row);
         setStations(list.filter((station) => station.status === "Active" || station.stationId === row.stationId));
         setStationId(row.stationId);
-        setDate(utcDateInput(row.scheduledAtUtc));
+        const bookedDate = utcDateInput(row.scheduledAtUtc);
+        const earliest = colomboDateInput();
+        const latest = colomboDateInput(new Date(), 7);
+        setDate(bookedDate < earliest || bookedDate > latest ? earliest : bookedDate);
+        if (!hasTwelveHourNotice(row.scheduledAtUtc) && !warned.current) {
+          warned.current = true;
+          setNotice(TWELVE_HOUR_MESSAGE);
+        }
       })
       .catch((reason) => {
         if (active) setError(reason.message || "Could not load the reservation.");
@@ -83,9 +94,17 @@ export default function ModifyReservationPage() {
   const currentStation = stations.find((item) => item.stationId === reservation?.stationId) || null;
   const nextStation = stations.find((item) => item.stationId === stationId) || null;
   const selectedSlot = slots.find((item) => item.slotId === slotId) || null;
+  const earliestDate = colomboDateInput();
+  const latestDate = colomboDateInput(new Date(), 7);
+  const selectedBookable = selectedSlot ? slotBookingState(selectedSlot).ok : false;
 
   async function submitChange() {
     if (!reservation || !selectedSlot) return;
+    if (!hasTwelveHourNotice(reservation.scheduledAtUtc) || !hasTwelveHourNotice(slotInstant(selectedSlot))) {
+      setNotice("");
+      window.setTimeout(() => setNotice(TWELVE_HOUR_MESSAGE), 0);
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
@@ -97,7 +116,13 @@ export default function ModifyReservationPage() {
         status: reservation.status,
       });
     } catch (reason) {
-      setError(reason.message || "The reservation could not be updated.");
+      const message = reason.message || "The reservation could not be updated.";
+      if (message.toLowerCase().includes("12 hours")) {
+        setNotice("");
+        window.setTimeout(() => setNotice(TWELVE_HOUR_MESSAGE), 0);
+      } else {
+        setError(message);
+      }
       setSubmitting(false);
       return;
     }
@@ -152,6 +177,11 @@ export default function ModifyReservationPage() {
                 onClick={() => {
                   if (item.id === "result" || step === "result") return;
                   if (item.id === "review" && !selectedSlot) return;
+                  if (item.id === "review" && reservation && (!hasTwelveHourNotice(reservation.scheduledAtUtc) || !hasTwelveHourNotice(slotInstant(selectedSlot)))) {
+                    setNotice("");
+                    window.setTimeout(() => setNotice(TWELVE_HOUR_MESSAGE), 0);
+                    return;
+                  }
                   setError("");
                   setStep(item.id);
                 }}
@@ -165,6 +195,7 @@ export default function ModifyReservationPage() {
       </ol>
 
       {error ? <p className="reserve-alert">{error}</p> : null}
+      <FlashNotice message={notice} onClose={() => setNotice("")} />
       {loading ? <p className="reserve-status">Loading reservation</p> : null}
 
       {step === "slot" && reservation ? (
@@ -189,7 +220,11 @@ export default function ModifyReservationPage() {
           </div>
           <SlotSelector
             date={date}
+            minDate={earliestDate}
+            maxDate={latestDate}
+            bookableOnly
             onDateChange={(nextDate) => {
+              if (!nextDate || nextDate < earliestDate || nextDate > latestDate) return;
               setDate(nextDate);
               setSlotId("");
               setError("");
@@ -204,7 +239,14 @@ export default function ModifyReservationPage() {
           />
           <div className="reserve-actions">
             <Link className="btn ghost" to={`/reservations/${id}`}>Back</Link>
-            <button type="button" className="btn primary" disabled={!selectedSlot} onClick={() => setStep("review")}>
+            <button type="button" className="btn primary" disabled={!selectedSlot || !selectedBookable} onClick={() => {
+              if (!hasTwelveHourNotice(reservation.scheduledAtUtc) || !hasTwelveHourNotice(slotInstant(selectedSlot))) {
+                setNotice("");
+                window.setTimeout(() => setNotice(TWELVE_HOUR_MESSAGE), 0);
+                return;
+              }
+              setStep("review");
+            }}>
               Review change
             </button>
           </div>
