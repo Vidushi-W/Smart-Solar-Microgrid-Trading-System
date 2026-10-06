@@ -16,6 +16,9 @@
         <activity android:name=".activities.ReservationQrActivity" android:exported="false" />
         <activity android:name=".activities.QrScannerActivity" android:exported="false" />
         <activity
+            android:name=".activities.QrScanActivity"
+            android:exported="false" />
+        <activity
             android:name=".activities.ModifyReservationActivity"
             android:exported="false" />
         <activity

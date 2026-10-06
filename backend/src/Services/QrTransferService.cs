@@ -15,23 +15,27 @@ namespace SmartSolar.Microgrid.Services;
 
 public sealed class QrTransferService(IQrTransferRepository repository) : IQrTransferService
 {
-    // Only authenticated server identities qualify; the current scaffold therefore denies access.
-    private static ClaimsIdentity? Identity(ClaimsPrincipal user, params string[] roles) =>
-        user.Identities.FirstOrDefault(identity => identity.IsAuthenticated
-            && !string.IsNullOrWhiteSpace(identity.FindFirst(ClaimTypes.NameIdentifier)?.Value)
-            && roles.Any(role => identity.HasClaim(identity.RoleClaimType, role)));
+    // JWT may expose the user id as NameIdentifier or sub, and the role as Role or role.
+    private static (string UserId, string Role)? Actor(ClaimsPrincipal user, params string[] roles)
+    {
+        if (user.Identity?.IsAuthenticated != true) return null;
+        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? user.FindFirst("sub")?.Value;
+        var role = user.FindFirst(ClaimTypes.Role)?.Value ?? user.FindFirst("role")?.Value;
+        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(role) || !roles.Contains(role))
+            return null;
+        return (userId, role);
+    }
 
     // Rotate the token for an approved/scheduled reservation; the previous QR and receipt stop working.
     public async Task<QrTransferResult<IssueQrResponse>> IssueAsync(string reservationId,
         ClaimsPrincipal user, CancellationToken cancellationToken)
     {
-        var identity = Identity(user, "Prosumer", "Backoffice");
-        if (identity is null) return Fail<IssueQrResponse>(QrTransferError.Forbidden, "An authenticated Prosumer or Backoffice identity is required.");
+        var actor = Actor(user, "Prosumer", "Backoffice");
+        if (actor is null) return Fail<IssueQrResponse>(QrTransferError.Forbidden, "An authenticated Prosumer or Backoffice identity is required.");
         if (!ValidId(reservationId)) return Fail<IssueQrResponse>(QrTransferError.InvalidRequest, "Invalid reservation identifier.");
         var reservation = await repository.GetAsync(reservationId, cancellationToken);
         if (reservation is null) return Fail<IssueQrResponse>(QrTransferError.NotFound, "Reservation not found.");
-        if (!identity.HasClaim(identity.RoleClaimType, "Backoffice")
-            && identity.FindFirst(ClaimTypes.NameIdentifier)!.Value != reservation.ProsumerId)
+        if (actor.Value.Role != "Backoffice" && actor.Value.UserId != reservation.ProsumerId)
             return Fail<IssueQrResponse>(QrTransferError.Forbidden, "Only the owning prosumer can obtain this QR.");
         if (!Eligible(reservation)) return Fail<IssueQrResponse>(QrTransferError.Conflict, "An approved or scheduled, incomplete reservation is required.");
 
@@ -46,8 +50,8 @@ public sealed class QrTransferService(IQrTransferRepository repository) : IQrTra
     public async Task<QrTransferResult<QrTransferResponse>> VerifyAsync(VerifyQrRequest request,
         ClaimsPrincipal user, CancellationToken cancellationToken)
     {
-        var identity = Identity(user, "GridOperator");
-        if (identity is null) return Fail<QrTransferResponse>(QrTransferError.Forbidden, "An authenticated GridOperator identity is required.");
+        var actor = Actor(user, "GridOperator");
+        if (actor is null) return Fail<QrTransferResponse>(QrTransferError.Forbidden, "An authenticated GridOperator identity is required.");
         if (request.Version != 1 || !ValidId(request.ReservationId) || !ValidToken(request.Token))
             return Fail<QrTransferResponse>(QrTransferError.InvalidRequest, "Invalid QR payload or unsupported version.");
         var reservation = await repository.GetAsync(request.ReservationId, cancellationToken);
@@ -61,7 +65,7 @@ public sealed class QrTransferService(IQrTransferRepository repository) : IQrTra
             IssuedAtUtc = reservation.QrTransfer.IssuedAtUtc,
             TokenStatus = "Verified",
             VerificationHash = Hash(receipt),
-            VerifiedBy = identity.FindFirst(ClaimTypes.NameIdentifier)!.Value,
+            VerifiedBy = actor.Value.UserId,
             VerifiedAtUtc = DateTime.UtcNow,
             ReservationFingerprint = Fingerprint(reservation),
         };
@@ -74,17 +78,17 @@ public sealed class QrTransferService(IQrTransferRepository repository) : IQrTra
     public async Task<QrTransferResult<QrTransferResponse>> CompleteAsync(string reservationId,
         CompleteEnergyTransferRequest request, ClaimsPrincipal user, CancellationToken cancellationToken)
     {
-        var identity = Identity(user, "GridOperator");
-        if (identity is null) return Fail<QrTransferResponse>(QrTransferError.Forbidden, "An authenticated GridOperator identity is required.");
+        var actor = Actor(user, "GridOperator");
+        if (actor is null) return Fail<QrTransferResponse>(QrTransferError.Forbidden, "An authenticated GridOperator identity is required.");
         if (!ValidId(reservationId) || !ValidToken(request.Token) || !ValidToken(request.VerificationToken))
             return Fail<QrTransferResponse>(QrTransferError.InvalidRequest, "Invalid completion credentials.");
         var reservation = await repository.GetAsync(reservationId, cancellationToken);
         var failure = CheckToken(reservation, request.Token);
         if (failure is not null) return failure;
         var previous = reservation!.QrTransfer!;
-        var operatorId = identity.FindFirst(ClaimTypes.NameIdentifier)!.Value;
-        if (reservation.Status.ToString() != "Scheduled")
-            return Fail<QrTransferResponse>(QrTransferError.Conflict, "The reservation must be Scheduled before completion.");
+        var operatorId = actor.Value.UserId;
+        if (reservation.Status.ToString() is not ("Pending" or "Approved" or "Scheduled"))
+            return Fail<QrTransferResponse>(QrTransferError.Conflict, "The reservation must be approved before completion.");
         if (previous.TokenStatus != "Verified" || !Matches(request.VerificationToken, previous.VerificationHash)
             || previous.VerifiedBy != operatorId || previous.ReservationFingerprint != Fingerprint(reservation))
             return Fail<QrTransferResponse>(QrTransferError.Conflict, "Verify the current reservation with this operator before confirming transfer.");
@@ -118,10 +122,10 @@ public sealed class QrTransferService(IQrTransferRepository repository) : IQrTra
     }
 
     // Mirror the existing web lifecycle without adding time, billing or capacity rules.
-    private static bool Eligible(EnergyReservation r) => r.Status.ToString() is "Approved" or "Scheduled"
+    private static bool Eligible(EnergyReservation r) => r.Status.ToString() is "Pending" or "Approved" or "Scheduled"
         && r.QrTransfer?.TokenStatus != "Used" && r.QrTransfer?.CompletedAtUtc is null
         && ValidId(r.ProsumerId) && ValidId(r.StationId) && ValidId(r.SlotId)
-        && double.IsFinite(r.EnergyKwh) && r.EnergyKwh > 0;
+        && double.IsFinite(r.EnergyKwh) && r.EnergyKwh >= 0;
 
     // Bound input sizes and accept the exact canonical opaque-token encoding.
     private static bool ValidId(string? value) => !string.IsNullOrWhiteSpace(value) && value.Length <= 200;

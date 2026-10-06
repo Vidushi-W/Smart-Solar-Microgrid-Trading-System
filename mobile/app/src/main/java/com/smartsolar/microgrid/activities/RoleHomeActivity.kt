@@ -158,11 +158,27 @@ class RoleHomeActivity : AppCompatActivity() {
             }, matchWidth())
             content.addView(Button(this).apply {
                 text = getString(R.string.qr_scanner)
-                setOnClickListener { startActivity(Intent(this@RoleHomeActivity, QrScannerActivity::class.java)) }
-            }, matchWidth())
-            content.addView(Button(this).apply {
-                text = getString(R.string.energy_transfer)
-                setOnClickListener { startActivity(Intent(this@RoleHomeActivity, QrScannerActivity::class.java)) }
+setOnClickListener {
+    startActivity(
+        Intent(
+            this@RoleHomeActivity,
+            QrScannerActivity::class.java
+        )
+    )
+}
+}, matchWidth())
+
+content.addView(Button(this).apply {
+    text = getString(R.string.energy_transfer)
+
+    setOnClickListener {
+        startActivity(
+            Intent(
+                this@RoleHomeActivity,
+                QrScannerActivity::class.java
+            )
+        )
+    }
             }, matchWidth())
             content.addView(Button(this).apply {
                 text = getString(R.string.my_profile)

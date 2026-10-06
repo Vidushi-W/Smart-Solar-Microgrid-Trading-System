@@ -24,11 +24,12 @@ public sealed class ProsumerStatusService : IProsumerStatusService
 
     public async Task<IReadOnlyList<UserSummaryResponse>> GetPendingAsync(CancellationToken cancellationToken)
     {
-        var users = await userRepository.GetByRoleAndStatusesAsync(
-            "Prosumer",
-            new[] { AccountStatuses.PendingActivation, AccountStatuses.Registered, AccountStatuses.DeactivationRequested },
-            cancellationToken);
-        return users.Select(Map).ToList();
+        var users = await userRepository.GetAllAsync(cancellationToken);
+        return users.Where(user =>
+                user.AccountStatus is AccountStatuses.PendingActivation or AccountStatuses.Registered
+                || (user.Role == "Prosumer" && user.AccountStatus == AccountStatuses.DeactivationRequested))
+            .Select(Map)
+            .ToList();
     }
 
     public async Task<IReadOnlyList<UserSummaryResponse>> GetDeactivatedAsync(CancellationToken cancellationToken)
@@ -90,9 +91,13 @@ public sealed class ProsumerStatusService : IProsumerStatusService
         var user = ObjectId.TryParse(identifier, out _)
             ? await userRepository.GetByIdAsync(identifier, cancellationToken)
             : await userRepository.GetByNicAsync(identifier, cancellationToken);
+        var staffActivation = user is not null
+            && user.Role is "Backoffice" or "GridOperator"
+            && nextStatus == AccountStatuses.Active
+            && allowedStatuses.Contains(user.AccountStatus);
         if (user is null
-            || user.Role != "Prosumer"
-            || !allowedStatuses.Contains(user.AccountStatus))
+            || !allowedStatuses.Contains(user.AccountStatus)
+            || (user.Role != "Prosumer" && !staffActivation))
         {
             return null;
         }

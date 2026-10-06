@@ -75,6 +75,14 @@ export function cancelReservation(id) {
   return apiRequest(`/reservations/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
+export function approveReservation(id) {
+  return apiRequest(`/reservations/${encodeURIComponent(id)}/approve`, { method: "POST" });
+}
+
+export function issueReservationQr(id) {
+  return apiRequest(`/reservations/${encodeURIComponent(id)}/qr`, { method: "POST" });
+}
+
 export function listStationsForReservations() {
   return stationsApi.list().then(enrichStations);
 }

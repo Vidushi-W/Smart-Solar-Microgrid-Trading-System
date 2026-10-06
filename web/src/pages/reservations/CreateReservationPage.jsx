@@ -6,6 +6,8 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";
 import StatusBadge from "../../components/common/StatusBadge";
 import ReservationActionSummary from "../../components/reservations/ReservationActionSummary";
+import ReservationFacts from "../../components/reservations/ReservationFacts";
+import TransferQr from "../../components/reservations/TransferQr";
 import SlotSelector from "../../components/reservations/SlotSelector";
 import { useAuth } from "../../context/AuthContext";
 import { createReservation, fetchReservation, listStationsForReservations, stationsApi } from "../../services/apiClient";
@@ -172,7 +174,7 @@ export default function CreateReservationPage() {
       <PageHeader
         eyebrow="Reservations"
         title="Reserve energy slot"
-        actions={<Link className="btn ghost" to="/reservations">Reservations</Link>}
+        actions={<Link className="btn primary" to="/reservations">Reservations</Link>}
       />
 
       <ol className="reserve-steps">
@@ -256,18 +258,14 @@ export default function CreateReservationPage() {
           <div className="reserve-review-hero">
             <p className="eyebrow">Review</p>
             <h2>{stationTitle(station)}</h2>
-            <p>{String(slot.date).slice(0, 10)} · {slot.startTime}–{slot.endTime} UTC</p>
+            <p>{utcDateLabel(`${String(slot.date).slice(0, 10)}T00:00:00.000Z`)} · {slot.startTime}–{slot.endTime} UTC</p>
           </div>
-          <dl className="reserve-summary">
-            <dt>Station</dt>
-            <dd>{stationTitle(station)}</dd>
-            <dt>Date</dt>
-            <dd>{String(slot.date).slice(0, 10)}</dd>
-            <dt>Time</dt>
-            <dd>{slot.startTime}–{slot.endTime} UTC</dd>
-            <dt>Slot</dt>
-            <dd className="reserve-code">{slot.slotId}</dd>
-          </dl>
+          <ReservationFacts
+            station={stationTitle(station)}
+            date={utcDateLabel(`${String(slot.date).slice(0, 10)}T00:00:00.000Z`)}
+            time={`${slot.startTime}–${slot.endTime} UTC`}
+            slotId={slot.slotId}
+          />
           <div className="reserve-actions">
             <button type="button" className="btn ghost" disabled={submitting} onClick={() => setStep("slot")}>Back</button>
             <button type="button" className="btn primary" disabled={submitting} onClick={confirmReservation}>
@@ -281,15 +279,18 @@ export default function CreateReservationPage() {
         <p className="reserve-status">Loading reservation</p>
       ) : null}
       {step === "confirmation" && reservation ? (
-        <ReservationActionSummary
-          title="Booking summary"
-          result="Booked"
-          reservationId={reservation.reservationId}
-          stationName={stationLabel(summaryStation, reservation.stationId)}
-          date={utcDateLabel(reservation.scheduledAtUtc)}
-          time={`${utcTimeLabel(reservation.scheduledAtUtc)} UTC`}
-          status={reservation.status}
-        />
+        <>
+          <ReservationActionSummary
+            title="Booking summary"
+            result="Booked"
+            reservationId={reservation.reservationId}
+            stationName={stationLabel(summaryStation, reservation.stationId)}
+            date={utcDateLabel(reservation.scheduledAtUtc)}
+            time={`${utcTimeLabel(reservation.scheduledAtUtc)} UTC`}
+            status={reservation.status}
+          />
+          <TransferQr reservationId={reservation.reservationId} status={reservation.status} />
+        </>
       ) : null}
     </div>
   );

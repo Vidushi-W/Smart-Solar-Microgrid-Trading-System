@@ -12,6 +12,12 @@ namespace SolarMicrogridTrading.Api.Services;
 
 public sealed class ProsumerRegistrationService : IProsumerRegistrationService
 {
+    private static readonly HashSet<string> SupportedRoles = new(StringComparer.Ordinal)
+    {
+        "Backoffice",
+        "GridOperator",
+        "Prosumer"
+    };
     private static readonly Regex NicPattern = new("^(?:\\d{9}[VvXx]|\\d{12})$", RegexOptions.Compiled);
     private static readonly Regex PhonePattern = new("^\\+?[0-9\\s().-]+$", RegexOptions.Compiled);
     private readonly IUserRepository userRepository;
@@ -38,7 +44,13 @@ public sealed class ProsumerRegistrationService : IProsumerRegistrationService
 
         if (await userRepository.ExistsByNicAsync(nic, cancellationToken))
         {
-            return (null, "A prosumer with this NIC already exists.");
+            return (null, "An account with this NIC already exists.");
+        }
+
+        var role = string.IsNullOrWhiteSpace(request.Role) ? "Prosumer" : request.Role.Trim();
+        if (!SupportedRoles.Contains(role))
+        {
+            return (null, "Choose Backoffice, Grid Operator, or Solar Prosumer.");
         }
 
         var user = new User
@@ -50,7 +62,7 @@ public sealed class ProsumerRegistrationService : IProsumerRegistrationService
             Email = request.Email.Trim(),
             ContactNumber = request.PhoneNumber.Trim(),
             Address = request.Address.Trim(),
-            Role = "Prosumer",
+            Role = role,
             IsActive = false,
             AccountStatus = "PendingActivation",
             CreatedAtUtc = DateTime.UtcNow
@@ -63,7 +75,7 @@ public sealed class ProsumerRegistrationService : IProsumerRegistrationService
         }
         catch (MongoWriteException exception) when (exception.WriteError?.Category == ServerErrorCategory.DuplicateKey)
         {
-            return (null, "A prosumer with this NIC already exists.");
+            return (null, "An account with this NIC already exists.");
         }
 
         return (new ProsumerRegistrationResponse(

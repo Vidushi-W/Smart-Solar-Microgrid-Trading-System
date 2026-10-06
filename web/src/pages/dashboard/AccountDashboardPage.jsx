@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getDeactivatedProsumers, getPendingProsumers, getUsers } from "../../services/userService";
+import OperatorDashboard from "./OperatorDashboard";
 import ProsumerDashboard from "./ProsumerDashboard";
 
 export default function AccountDashboardPage() {
@@ -27,6 +28,7 @@ export default function AccountDashboardPage() {
 
   const firstName = (user.name || "there").trim().split(/\s+/)[0];
   if (user.role === "Prosumer") return <ProsumerDashboard name={firstName} />;
+  if (user.role === "GridOperator") return <OperatorDashboard name={firstName} />;
   const pendingActivations = summary.pending.filter((prosumer) =>
     ["PendingActivation", "Registered"].includes(prosumer.accountStatus)
   );
