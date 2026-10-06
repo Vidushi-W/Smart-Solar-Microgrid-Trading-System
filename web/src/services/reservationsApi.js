@@ -1,66 +1,19 @@
-/**
- * Reservation list, create, and status changes against the same reservation API and the same header identity as catalogApi.
- */
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5251/api";
-
-function authHeaders(user) {
-  return {
-    "X-User-Id": user.id,
-    "X-User-Role": user.role,
-  };
-}
-
-async function read(response) {
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.message || "The reservation request could not be completed.");
-  }
-  return data;
-}
+import { reservationRequest } from "./reservationClient";
 
 export function fetchReservationOptions(user, prosumerId) {
   const query = prosumerId ? `?prosumerId=${encodeURIComponent(prosumerId)}` : "";
-  return fetch(`${API_BASE}/reservations/options${query}`, { headers: authHeaders(user) }).then(read);
+  return reservationRequest(user, `/reservations/options${query}`);
 }
-
-export function createReservation(user, body) {
-  return fetch(`${API_BASE}/reservations`, {
-    method: "POST",
-    headers: { ...authHeaders(user), "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  }).then(read);
-}
-
-export function fetchReservation(user, id) {
-  return fetch(`${API_BASE}/reservations/${encodeURIComponent(id)}`, { headers: authHeaders(user) }).then(read);
-}
-
-export function modifyReservation(user, id, slotId) {
-  return fetch(`${API_BASE}/reservations/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    headers: { ...authHeaders(user), "Content-Type": "application/json" },
-    body: JSON.stringify({ slotId }),
-  }).then(read);
-}
-
-export function fetchReservations(user, params = {}) {
+export const createReservation = (user, body) => reservationRequest(user, "/reservations", { method: "POST", body });
+export const fetchReservation = (user, id, signal) => reservationRequest(user, `/reservations/${encodeURIComponent(id)}`, { signal });
+export const modifyReservation = (user, id, slotId) => reservationRequest(user, `/reservations/${encodeURIComponent(id)}`, { method: "PATCH", body: { slotId } });
+export function fetchReservations(user, params = {}, signal) {
   const query = new URLSearchParams();
-  if (params.status && params.status !== "All") query.set("status", params.status);
-  if (params.stationId && params.stationId !== "All") query.set("stationId", params.stationId);
-  if (params.date) query.set("date", params.date);
-  if (params.q) query.set("q", params.q);
-  const suffix = query.toString() ? `?${query}` : "";
-  return fetch(`${API_BASE}/reservations${suffix}`, { headers: authHeaders(user) }).then(read);
+  for (const key of ["status", "stationId", "date", "q"]) {
+    if (params[key] && params[key] !== "All") query.set(key, params[key]);
+  }
+  return reservationRequest(user, `/reservations${query.size ? `?${query}` : ""}`, { signal });
 }
-
-export function fetchReservationDashboard(user) {
-  return fetch(`${API_BASE}/dashboard/reservations`, { headers: authHeaders(user) }).then(read);
-}
-
-export function postReservationAction(user, id, action, body) {
-  return fetch(`${API_BASE}/reservations/${id}/${action}`, {
-    method: "POST",
-    headers: { ...authHeaders(user), "Content-Type": "application/json" },
-    body: JSON.stringify(body || {}),
-  }).then(read);
-}
+export const fetchReservationDashboard = (user) => reservationRequest(user, "/dashboard/reservations");
+export const postReservationAction = (user, id, action, body = {}) => reservationRequest(user,
+  `/reservations/${encodeURIComponent(id)}/${action}`, { method: "POST", body });

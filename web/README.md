@@ -43,9 +43,14 @@ On Windows PowerShell, use `Copy-Item .env.example .env` for the first command. 
 
 Open http://localhost:5173 and choose Sign in. The form sends a username or NIC and a password to `POST /api/auth/login`. The account must already exist in MongoDB and be active. This repository does not seed a web username or password.
 
+Vite proxies the account/QR base `/api` to port 5000 and the reservation base `/reservation-api` to port 5251, rewriting the latter to `/api` on that host. Configure `VITE_ACCOUNT_API_BASE_URL` and `VITE_RESERVATION_API_BASE_URL` independently. QR issuance always uses the account base, despite its reservation-shaped route. Existing `VITE_API_BASE_URL` remains a legacy account-base fallback; `VITE_API_URL` remains a legacy account-service override.
+
+Run the second backend with `dotnet run --project backend/SolarMicrogrid.API --urls http://localhost:5251` in Development. Reservation requests preserve that host's development identity headers; production builds send JWT only and remain blocked until the reservation host supports JWT authentication. See [integration blockers and test checklist](../docs/frontend-integration.md) before testing across hosts.
+
+Reservation detail now uses server data, history, allowed actions and action blocks. Transfers lists approved, scheduled, and completed reservations; it does not call a nonexistent transaction GET endpoint. Operators may submit scanned QR JSON to the actual verification and completion POST endpoints. Token history/completion audit after refresh remain unavailable without a backend read contract. Operational browser demo state has been removed.
+
 Signed-in users can choose a profile picture from their device on the profile page. The browser resizes it to JPEG before saving through the authenticated profile API; profile pictures are stored with the account and are limited to 750 KB.
 
-Vite proxies `/api` to `VITE_DEV_API_PROXY_TARGET` when `VITE_API_BASE_URL` is `/api`. The checked-in example points that proxy at `http://localhost:5000`. Copy `.env.example` to `.env` before starting the console.
 
 Stations and slot management actions are shown only to the Backoffice role. Deactivation and deletion can return 503 until the reservation checker is connected.
 
@@ -76,3 +81,5 @@ The Android prosumer app is not part of this web console.
 UI checks improve the demonstration. The API remains authoritative for business rules and authorization. Do not add MongoDB access or server-side business logic here.
 
 The current station and slot routes are listed in `src/services/contracts.js`. Browser-delivered configuration must contain no secrets.
+
+Account bookings retain `/reservations` and their modify/history screens. The operational reservation desk, creation, and detail screens remain available under `/operational-reservations`, linked from Energy transfers. Transfer detail retains server QR verification and completion, and main's scheduling action.

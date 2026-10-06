@@ -1,7 +1,7 @@
 /**
  * Route table. The landing page and login are public. Every other screen sits inside AppShell. GuestOnly waits until a stored token has been checked. Protected sends anonymous visitors to login and the wrong role back to the dashboard.
  */
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import AppShell from "../components/layout/AppShell";
 import LandingPage from "../pages/LandingPage";
@@ -22,7 +22,9 @@ import BookingsPage from "../pages/bookings/BookingsPage";
 import ReservationsPage from "../pages/reservations/ReservationsPage";
 import CreateReservationPage from "../pages/reservations/CreateReservationPage";
 import ModifyReservationPage from "../pages/reservations/ModifyReservationPage";
-import ReservationDetailPage from "../pages/reservations/ReservationDetailPage";
+import ReservationDetailPage, { OperationalReservationDetailPage } from "../pages/reservations/ReservationDetailPage";
+import OperationalReservationsPage from "../pages/reservations/OperationalReservationsPage";
+import OperationalCreateReservationPage from "../pages/reservations/OperationalCreateReservationPage";
 import ReservationHistoryPage from "../pages/reservations/ReservationHistoryPage";
 import TransactionsPage from "../pages/transactions/TransactionsPage";
 import TransactionDetailPage from "../pages/transactions/TransactionDetailPage";
@@ -41,6 +43,18 @@ function Protected({ roles, children }) {
   return children;
 }
 
+function ReservationDetailRoute() {
+  const { id } = useParams();
+  return <ReservationDetailPage key={id} />;
+}
+function TransferDetailRoute() {
+  const { id } = useParams();
+  return <TransactionDetailPage key={id} />;
+}
+function OperationalDetailRoute() {
+  const { id } = useParams();
+  return <OperationalReservationDetailPage key={id} />;
+}
 function GuestSignup() {
   const { user, loading } = useAuth();
   if (loading) return <main className="boot-screen">Checking secure session…</main>;
@@ -71,13 +85,16 @@ export default function ConnectedRoutes() {
         <Route path="member2" element={<Protected roles={["Prosumer"]}><Member2PreviewPage /></Protected>} />
         <Route path="stations/:stationId/slots" element={<Protected roles={["Backoffice", "GridOperator"]}><StationSlotsPage /></Protected>} />
         <Route path="slots" element={<Protected roles={["Backoffice", "GridOperator"]}><BookingsPage /></Protected>} />
+        <Route path="operational-reservations" element={<OperationalReservationsPage />} />
+        <Route path="operational-reservations/new" element={<Protected roles={["Backoffice", "Prosumer"]}><OperationalCreateReservationPage /></Protected>} />
+        <Route path="operational-reservations/:id" element={<OperationalDetailRoute />} />
         <Route path="reservations" element={<ReservationsPage />} />
         <Route path="reservation-history" element={<Protected roles={["Prosumer"]}><ReservationHistoryPage /></Protected>} />
         <Route path="reservations/new" element={<Protected roles={["Prosumer"]}><CreateReservationPage /></Protected>} />
         <Route path="reservations/:id/modify" element={<Protected roles={["Prosumer", "Backoffice"]}><ModifyReservationPage /></Protected>} />
-        <Route path="reservations/:id" element={<ReservationDetailPage />} />
+        <Route path="reservations/:id" element={<ReservationDetailRoute />} />
         <Route path="transactions" element={<Protected roles={["Backoffice", "GridOperator"]}><TransactionsPage /></Protected>} />
-        <Route path="transactions/:id" element={<Protected roles={["Backoffice", "GridOperator"]}><TransactionDetailPage /></Protected>} />
+        <Route path="transactions/:id" element={<Protected roles={["Backoffice", "GridOperator"]}><TransferDetailRoute /></Protected>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

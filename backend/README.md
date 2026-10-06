@@ -2,6 +2,8 @@
 
 C# ASP.NET Core REST Web API with MongoDB, intended for hosting on IIS.
 
+Both backend hosts and their test projects target .NET 10. Install the .NET 10 SDK to build and run them. The account/QR JWT package uses version 10.0.12, matching the reservation host's ASP.NET Core OpenAPI package. Identity is supplied by the ASP.NET Core shared framework.
+
 ## Folder responsibilities
 
 | Folder | Intended contents |

@@ -2,6 +2,8 @@
 
 ## Repository findings before implementation
 
+Current runtime: both backend hosts and the QR integration checks now target .NET 10. The .NET 8 references below describe the original implementation and validation history.
+
 The current branch is `feature/qr-energy-transfer-/-vidushi`. The initial working tree
 was clean. Repository source, structure, documentation, client contracts and lifecycle
 logic were inspected before implementation. No branch switch, merge, rebase, commit,
