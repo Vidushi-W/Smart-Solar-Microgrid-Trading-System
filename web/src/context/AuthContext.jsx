@@ -35,8 +35,8 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const login = useCallback(async (identifier, password, role) => {
-    const result = await loginRequest(identifier, password, role);
+  const login = useCallback(async (identifier, password) => {
+    const result = await loginRequest(identifier, password);
     localStorage.setItem("authToken", result.token);
     try {
       const identity = await getCurrentUser();

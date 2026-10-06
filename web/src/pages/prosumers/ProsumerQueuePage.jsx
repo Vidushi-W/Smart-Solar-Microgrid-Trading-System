@@ -119,7 +119,7 @@ export default function ProsumerQueuePage({ mode }) {
                   <td>
                     <div className="user-account-cell">
                       <span className="user-avatar" aria-label={`Default avatar for ${row.name}`}>{(row.name || "?").slice(0, 1).toUpperCase()}</span>
-                      <div><strong>{row.name}</strong><small>{row.email}</small></div>
+                      <div><strong>{row.name}</strong><small>{row.email}</small><small>{row.role}</small></div>
                     </div>
                   </td>
                   <td>{row.nic || row.username}</td>

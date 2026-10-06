@@ -1,10 +1,13 @@
 /**
- * Prosumer home filled with sample stations and bookings so the layout can be reviewed.
+ * Prosumer home. Station cards stay as the sample directory.
+ * Reservations come from the API, and a transfer QR opens only when the prosumer asks for it.
  */
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import StatusBadge from "../../components/common/StatusBadge";
-import { utcDateLabel, utcTimeLabel } from "../reservations/reservationTime";
+import TransferQr from "../../components/reservations/TransferQr";
+import { fetchMyReservations, listStationsForReservations } from "../../services/apiClient";
+import { stationTitle, utcDateLabel, utcTimeLabel } from "../reservations/reservationTime";
 
 const STATUS_COLORS = {
   Pending: "#f2a246",
@@ -21,29 +24,14 @@ const STATIONS = [
   { code: "NEG-01", name: "Negombo Lagoon Node", address: "4 Lagoon Road, Negombo", latitude: 7.2083, longitude: 79.8358, capacityKwh: 40, source: "solar", hours: "07:00–16:00", status: "Inactive" },
 ];
 
-const BOOKINGS = [
-  { id: "cmb-1", station: "Colombo Fort Microgrid", scheduledAtUtc: "2026-10-07T08:00:00Z", status: "Pending", createdAtUtc: "2026-10-05T04:10:00Z" },
-  { id: "kdy-1", station: "Kandy Lake Station", scheduledAtUtc: "2026-10-08T10:00:00Z", status: "Approved", createdAtUtc: "2026-10-04T06:00:00Z" },
-  { id: "cmb-2", station: "Colombo Fort Microgrid", scheduledAtUtc: "2026-10-06T14:00:00Z", status: "Approved", createdAtUtc: "2026-10-04T02:20:00Z" },
-  { id: "gal-1", station: "Galle Fort Station", scheduledAtUtc: "2026-10-09T07:00:00Z", status: "Pending", createdAtUtc: "2026-10-05T01:00:00Z" },
-  { id: "neg-1", station: "Negombo Lagoon Node", scheduledAtUtc: "2026-10-03T07:00:00Z", status: "Completed", createdAtUtc: "2026-10-01T03:00:00Z" },
-  { id: "gal-2", station: "Galle Fort Station", scheduledAtUtc: "2026-10-02T16:00:00Z", status: "Cancelled", createdAtUtc: "2026-09-29T08:40:00Z" },
-];
+const QR_STATUSES = ["Pending", "Approved"];
+
+function canShowQr(status) {
+  return QR_STATUSES.includes(status);
+}
 
 function utcDayStart(date) {
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-}
-
-function daysUntil(iso) {
-  return Math.round((utcDayStart(new Date(iso)) - utcDayStart(new Date())) / 86400000);
-}
-
-function remainingCopy(days) {
-  if (days > 1) return { value: String(days), unit: "days remaining" };
-  if (days === 1) return { value: "1", unit: "day remaining" };
-  if (days === 0) return { value: "Today", unit: "your slot is today" };
-  if (days === -1) return { value: "1", unit: "day ago" };
-  return { value: String(Math.abs(days)), unit: "days ago" };
 }
 
 function weekStart(now) {
@@ -86,34 +74,92 @@ function WeekChart({ points }) {
 }
 
 export default function ProsumerDashboard({ name }) {
-  const upcoming = BOOKINGS
+  const [rows, setRows] = useState([]);
+  const [stations, setStations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selected, setSelected] = useState(null);
+  const [qrBooking, setQrBooking] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([fetchMyReservations(), listStationsForReservations()])
+      .then(([reservations, stationRows]) => {
+        if (!active) return;
+        setRows(Array.isArray(reservations) ? reservations : []);
+        setStations(Array.isArray(stationRows) ? stationRows : []);
+      })
+      .catch((reason) => {
+        if (!active) return;
+        setRows([]);
+        setError(reason.message || "Could not load your reservations.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selected && !qrBooking) return undefined;
+    function onKey(event) {
+      if (event.key !== "Escape") return;
+      if (qrBooking) setQrBooking(null);
+      else setSelected(null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selected, qrBooking]);
+
+  const stationById = useMemo(() => {
+    const map = new Map();
+    stations.forEach((station) => map.set(station.stationId, station));
+    return map;
+  }, [stations]);
+
+  const bookings = useMemo(() => rows.map((row) => ({
+    id: row.reservationId,
+    reservationId: row.reservationId,
+    station: stationTitle(stationById.get(row.stationId), row.stationId),
+    slotId: row.slotId,
+    scheduledAtUtc: row.scheduledAtUtc,
+    status: row.status,
+    createdAtUtc: row.createdAtUtc,
+    updatedAtUtc: row.updatedAtUtc,
+  })), [rows, stationById]);
+
+  const upcoming = bookings
     .filter((row) => row.status === "Pending" || row.status === "Approved")
     .slice()
     .sort((left, right) => new Date(left.scheduledAtUtc) - new Date(right.scheduledAtUtc));
-  const completed = BOOKINGS.filter((row) => row.status === "Completed").length;
-  const cancelled = BOOKINGS.filter((row) => row.status === "Cancelled").length;
+  const completed = bookings.filter((row) => row.status === "Completed").length;
+  const cancelled = bookings.filter((row) => row.status === "Cancelled").length;
 
   const week = useMemo(() => {
     const start = weekStart(new Date());
     return WEEKDAYS.map((label, index) => {
       const day = new Date(start.getTime() + index * 86400000).toISOString().slice(0, 10);
-      const value = BOOKINGS.filter((row) => row.scheduledAtUtc.slice(0, 10) === day).length;
+      const value = bookings.filter((row) => String(row.scheduledAtUtc).slice(0, 10) === day).length;
       return { label, value };
     });
-  }, []);
+  }, [bookings]);
 
   const statusParts = ["Pending", "Approved", "Completed", "Cancelled"]
-    .map((status) => ({ status, count: BOOKINGS.filter((row) => row.status === status).length }))
+    .map((status) => ({ status, count: bookings.filter((row) => row.status === status).length }))
     .filter((part) => part.count > 0);
   const statusTotal = statusParts.reduce((sum, part) => sum + part.count, 0);
   let cursor = 0;
-  const donut = statusParts.map((part) => {
-    const start = cursor;
-    cursor += (part.count / statusTotal) * 100;
-    return `${STATUS_COLORS[part.status]} ${start}% ${cursor}%`;
-  }).join(", ");
+  const donut = statusTotal === 0
+    ? "#ece7e2 0% 100%"
+    : statusParts.map((part) => {
+      const start = cursor;
+      cursor += (part.count / statusTotal) * 100;
+      return `${STATUS_COLORS[part.status]} ${start}% ${cursor}%`;
+    }).join(", ");
 
-  const recent = BOOKINGS.slice().sort((left, right) => new Date(right.createdAtUtc) - new Date(left.createdAtUtc));
+  const recent = bookings.slice().sort((left, right) => new Date(right.createdAtUtc) - new Date(left.createdAtUtc));
 
   return (
     <div className="prosumer-dash">
@@ -121,37 +167,115 @@ export default function ProsumerDashboard({ name }) {
         <div>
           <p className="eyebrow">Prosumer overview</p>
           <h1>Good day, {name}.</h1>
-          <p>Sample stations and bookings, shown on this dashboard only.</p>
+          <p>Select a recent booking to open the full reservation.</p>
         </div>
         <Link className="pd-reserve" to="/reservations/new">Reserve Energy Slot</Link>
       </header>
 
-      <section className="pd-slots" aria-label="Reserved slots">
-        {upcoming.map((row, index) => {
-          const copy = remainingCopy(daysUntil(row.scheduledAtUtc));
-          return (
-            <article key={row.id} className="pd-slot">
-              <span>{index === 0 ? "Next slot" : "Reserved slot"}</span>
-              <strong>{copy.value}</strong>
-              <em>{copy.unit}</em>
-              <small>
-                {row.station}
-                {" · "}
-                {utcDateLabel(row.scheduledAtUtc)}
-                {" · "}
-                {utcTimeLabel(row.scheduledAtUtc)} UTC
-              </small>
-              <StatusBadge value={row.status} />
-            </article>
-          );
-        })}
-      </section>
+      {error ? <p className="reserve-alert">{error}</p> : null}
+      {loading ? <p className="reserve-status">Loading your reservations</p> : null}
 
       <section className="pd-metrics" aria-label="Reservation totals">
         <article><span>Upcoming</span><strong>{upcoming.length}</strong><small>Pending and approved</small></article>
         <article><span>Completed</span><strong>{completed}</strong><small>Finished bookings</small></article>
         <article><span>Cancelled</span><strong>{cancelled}</strong><small>Released slots</small></article>
         <article><span>This week</span><strong>{week.reduce((sum, day) => sum + day.value, 0)}</strong><small>Scheduled this week</small></article>
+      </section>
+
+      <section className="pd-grid">
+        <article className="pd-panel">
+          <header>
+            <div>
+              <h2>This week</h2>
+              <p>Reservations scheduled on each day.</p>
+            </div>
+          </header>
+          <WeekChart points={week} />
+        </article>
+        <article className="pd-panel">
+          <header>
+            <div>
+              <h2>By status</h2>
+              <p>How your reservations are split.</p>
+            </div>
+          </header>
+          <div className="pd-status">
+            <div className="pd-donut" style={{ background: `conic-gradient(${donut})` }} aria-hidden="true" />
+            <ul>
+              {statusParts.map((part) => (
+                <li key={part.status}>
+                  <i style={{ background: STATUS_COLORS[part.status] }} />
+                  <span>{part.status}</span>
+                  <strong>{Math.round((part.count / statusTotal) * 100)}%</strong>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section className="pd-panel">
+        <header>
+          <div>
+            <h2>Recent bookings</h2>
+            <p>Station, time, and status. Select a row for the full reservation.</p>
+          </div>
+          <Link to="/reservations">My reservations</Link>
+        </header>
+        {!loading && recent.length === 0 ? <p className="pd-muted">No reservations yet.</p> : null}
+        {recent.length > 0 ? (
+          <div className="table-wrap">
+            <table className="account-table history-table">
+              <thead>
+                <tr>
+                  <th>Station</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Status</th>
+                  <th>QR</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recent.map((row) => (
+                  <tr
+                    key={row.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${row.station}, ${utcDateLabel(row.scheduledAtUtc)}, ${row.status}`}
+                    onClick={() => setSelected(row)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelected(row);
+                      }
+                    }}
+                  >
+                    <td>{row.station}</td>
+                    <td>{utcDateLabel(row.scheduledAtUtc)}</td>
+                    <td>{utcTimeLabel(row.scheduledAtUtc)} UTC</td>
+                    <td><StatusBadge value={row.status} /></td>
+                    <td>
+                      {canShowQr(row.status) ? (
+                        <button
+                          type="button"
+                          className="pd-qr"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setQrBooking(row);
+                          }}
+                        >
+                          Show QR
+                        </button>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
       </section>
 
       <section className="pd-panel">
@@ -196,58 +320,100 @@ export default function ProsumerDashboard({ name }) {
         </div>
       </section>
 
-      <section className="pd-grid">
-        <article className="pd-panel">
-          <header>
-            <div>
-              <h2>This week</h2>
-              <p>Sample reservations scheduled on each day.</p>
-            </div>
-          </header>
-          <WeekChart points={week} />
-        </article>
-        <article className="pd-panel">
-          <header>
-            <div>
-              <h2>By status</h2>
-              <p>How the sample bookings are split.</p>
-            </div>
-          </header>
-          <div className="pd-status">
-            <div className="pd-donut" style={{ background: `conic-gradient(${donut})` }} aria-hidden="true" />
-            <ul>
-              {statusParts.map((part) => (
-                <li key={part.status}>
-                  <i style={{ background: STATUS_COLORS[part.status] }} />
-                  <span>{part.status}</span>
-                  <strong>{Math.round((part.count / statusTotal) * 100)}%</strong>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </article>
-      </section>
-
-      <section className="pd-panel">
-        <header>
-          <div>
-            <h2>Recent bookings</h2>
-            <p>Sample reservations for this dashboard.</p>
-          </div>
-          <Link to="/reservations">My reservations</Link>
-        </header>
-        <ul className="pd-activity">
-          {recent.map((row) => (
-            <li key={row.id}>
+      {selected ? (
+        <div className="confirmation-backdrop" onClick={() => setSelected(null)}>
+          <section
+            className="confirmation-dialog history-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dashboard-detail-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="history-dialog-head">
               <div>
-                <strong>{row.station}</strong>
-                <span>{utcDateLabel(row.scheduledAtUtc)} · {utcTimeLabel(row.scheduledAtUtc)} UTC</span>
+                <p className="eyebrow">Reservation</p>
+                <h2 id="dashboard-detail-title">{selected.station}</h2>
               </div>
-              <StatusBadge value={row.status} />
-            </li>
-          ))}
-        </ul>
-      </section>
+              <button className="btn ghost" type="button" onClick={() => setSelected(null)}>Close</button>
+            </div>
+            <div className="history-detail">
+              <div className="history-when">
+                <article>
+                  <span className="history-kicker">Date</span>
+                  <strong>{utcDateLabel(selected.scheduledAtUtc)}</strong>
+                </article>
+                <article>
+                  <span className="history-kicker">Time</span>
+                  <strong>{utcTimeLabel(selected.scheduledAtUtc)} UTC</strong>
+                </article>
+                <article className="history-when-status">
+                  <span className="history-kicker">Status</span>
+                  <StatusBadge value={selected.status} />
+                </article>
+              </div>
+              <p className="history-place">
+                <span className="history-kicker">Station</span>
+                <strong>{selected.station}</strong>
+              </p>
+              <section className="history-refs" aria-label="Reference numbers">
+                <div>
+                  <span className="history-kicker">Reservation ID</span>
+                  <code>{selected.reservationId}</code>
+                </div>
+                <div>
+                  <span className="history-kicker">Slot</span>
+                  <code>{selected.slotId}</code>
+                </div>
+              </section>
+              <div className="history-meta">
+                <div>
+                  <span className="history-kicker">Created</span>
+                  <strong>{utcDateLabel(selected.createdAtUtc)}</strong>
+                  <em>{utcTimeLabel(selected.createdAtUtc)} UTC</em>
+                </div>
+                <div>
+                  <span className="history-kicker">Updated</span>
+                  <strong>{utcDateLabel(selected.updatedAtUtc)}</strong>
+                  <em>{utcTimeLabel(selected.updatedAtUtc)} UTC</em>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {qrBooking ? (
+        <div className="confirmation-backdrop" onClick={() => setQrBooking(null)}>
+          <section
+            className="confirmation-dialog history-dialog qr-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dashboard-qr-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="history-dialog-head">
+              <div>
+                <p className="eyebrow">Transfer QR</p>
+                <h2 id="dashboard-qr-title">{qrBooking.station}</h2>
+              </div>
+              <button className="btn ghost" type="button" onClick={() => setQrBooking(null)}>Close</button>
+            </div>
+            <div className="history-detail qr-popup">
+              <div className="history-when">
+                <article>
+                  <span className="history-kicker">Date</span>
+                  <strong>{utcDateLabel(qrBooking.scheduledAtUtc)}</strong>
+                </article>
+                <article>
+                  <span className="history-kicker">Time</span>
+                  <strong>{utcTimeLabel(qrBooking.scheduledAtUtc)} UTC</strong>
+                </article>
+              </div>
+              <TransferQr compact reservationId={qrBooking.reservationId} status={qrBooking.status} />
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

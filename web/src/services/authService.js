@@ -3,10 +3,10 @@
  */
 import { apiRequest } from './apiClient';
 
-export async function login(identifier, password, role) {
+export async function login(identifier, password) {
   return apiRequest('/auth/login', {
     method: 'POST',
-    body: { identifier, password, role }
+    body: { identifier, password }
   });
 }
 

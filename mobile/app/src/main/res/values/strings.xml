@@ -95,6 +95,10 @@
     <string name="account_settings">Account Settings</string>
     <string name="operator_bookings">Bookings</string>
     <string name="qr_scanner">QR Scanner</string>
+    <string name="scan_transfer">Scan a transfer QR</string>
+    <string name="confirm_transfer">Confirm transfer</string>
+    <string name="scan_again">Scan again</string>
+    <string name="camera_required">Camera permission is required to scan a transfer code.</string>
     <string name="energy_transfer">Energy Transfer</string>
     <string name="module_not_connected">This project component will be connected later.</string>
     <string name="choose_profile_picture">Choose photo from gallery</string>

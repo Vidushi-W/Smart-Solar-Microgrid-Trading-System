@@ -3,9 +3,45 @@
  * Single-document compare-and-set prevents duplicate completion and lost updates.
  */
 using Microsoft.Extensions.Options;
-using System.Runtime.CompilerServices;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
+.profile-hero {
+  align-items: flex-start;
+  flex-direction: column;
+  min-height: 0;
+  padding: 1.3rem;
+}
+
+.profile-hero h1 {
+  font-size: 32px;
+}
+
+.profile-facts {
+  grid-template-columns: 1fr;
+}
+
+.profile-deactivate {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.transfer-dialog dl {
+  grid-template-columns: 1fr;
+}
+
+.user-details-list {
+  grid-template-columns: 1fr;
+}
+
+.profile-layout {
+  grid-template-columns: 1fr;
+}
+
+.edit-user-layout {
+  grid-template-columns: 1fr;
+}
+
+.profile-summary {
+  min-height: 0;
+}
 using MongoDB.Driver;
 using SmartSolar.Microgrid.Configuration;
 using SmartSolar.Microgrid.Interfaces;
@@ -22,36 +58,87 @@ public sealed class MongoQrTransferRepository : IQrTransferRepository
     public MongoQrTransferRepository(IMongoDatabase database, IOptions<MongoDbSettings> options) =>
         _reservations = database.GetCollection<BsonDocument>(options.Value.ReservationsCollectionName);
 
-    // QR reservations use string IDs; newer account reservations use BSON ObjectIds.
-    public async Task<EnergyReservation?> GetAsync(string reservationId, CancellationToken cancellationToken)
+// Supports both QR reservation string IDs and newer BSON ObjectIds.
+public async Task<EnergyReservation?> GetAsync(
+    string reservationId,
+    CancellationToken cancellationToken)
+{
+    var f = Builders<BsonDocument>.Filter;
+
+    // First check for a string-based _id.
+    var filter = f.Eq("_id", reservationId);
+
+    // If the ID is also a valid MongoDB ObjectId,
+    // check for the ObjectId version as well.
+    if (ObjectId.TryParse(reservationId, out var objectId))
     {
-        var f = Builders<BsonDocument>.Filter;
-        var filter = f.Eq("_id", reservationId);
-        if (ObjectId.TryParse(reservationId, out var objectId))
-            filter |= f.Eq("_id", objectId);
-        var document = await _reservations.Find(filter).FirstOrDefaultAsync(cancellationToken);
-        if (document is null) return null;
-        var status = document.GetValue(Field(document, "status", "Status"), "").AsString;
-        if (!Enum.TryParse<ReservationStatus>(status, out var reservationStatus)
-            || !Enum.IsDefined(reservationStatus)) return null;
-        var reservation = new EnergyReservation
-        {
-            ReservationId = document["_id"].ToString()!,
-            ProsumerId = document.GetValue(Field(document, "prosumerId", "ProsumerId"), "").AsString,
-            StationId = document.GetValue(Field(document, "stationId", "StationId"), "").AsString,
-            SlotId = document.GetValue(Field(document, "slotId", "SlotId"), "").AsString,
-            EnergyKwh = document.GetValue(Field(document, "energyKwh", "EnergyKwh"), 0).ToDouble(),
-            Status = reservationStatus,
-            QrTransfer = document.GetValue("qrTransfer", BsonNull.Value) is BsonDocument qr
-                ? BsonSerializer.Deserialize<QrTransferState>(qr) : null,
-        };
-        _snapshots.Add(reservation, document);
-        return reservation;
+        filter |= f.Eq("_id", objectId);
     }
 
-    private static string Field(BsonDocument document, string current, string legacy) =>
-        document.Contains(current) ? current : document.Contains(legacy) ? legacy : current;
+    var document = await _reservations
+        .Find(filter)
+        .FirstOrDefaultAsync(cancellationToken);
 
+    if (document is null)
+        return null;
+
+    var status = document
+        .GetValue(Field(document, "status", "Status"), "")
+        .AsString;
+
+    if (!Enum.TryParse<ReservationStatus>(
+            status,
+            true,
+            out var reservationStatus) ||
+        !Enum.IsDefined(reservationStatus))
+    {
+        return null;
+    }
+
+    var reservation = new EnergyReservation
+    {
+        ReservationId = document["_id"].ToString()!,
+
+        ProsumerId = document
+            .GetValue(Field(document, "prosumerId", "ProsumerId"), "")
+            .AsString,
+
+        StationId = document
+            .GetValue(Field(document, "stationId", "StationId"), "")
+            .AsString,
+
+        SlotId = document
+            .GetValue(Field(document, "slotId", "SlotId"), "")
+            .AsString,
+
+        EnergyKwh = document
+            .GetValue(Field(document, "energyKwh", "EnergyKwh"), 0)
+            .ToDouble(),
+
+        Status = reservationStatus,
+
+        QrTransfer = document.GetValue("qrTransfer", BsonNull.Value)
+            is BsonDocument qr
+                ? BsonSerializer.Deserialize<QrTransferState>(qr)
+                : null,
+    };
+
+    _snapshots.Add(reservation, document);
+
+    return reservation;
+}
+
+private static string Field(
+    BsonDocument document,
+    string current,
+    string legacy)
+{
+    return document.Contains(current)
+        ? current
+        : document.Contains(legacy)
+            ? legacy
+            : current;
+}
     // Compare every reservation field used in verification and the entire QR state.
     public async Task<bool> TryUpdateAsync(EnergyReservation expected, QrTransferState next,
         bool complete, CancellationToken cancellationToken)
