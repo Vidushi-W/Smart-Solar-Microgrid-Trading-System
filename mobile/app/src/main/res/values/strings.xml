@@ -179,22 +179,32 @@
     <string name="approved_reservations">Approved reservations</string>
     <string name="scheduled_reservations">Scheduled reservations</string>
     <string name="dashboard_counts">Requested: %1$d\nApproved / Scheduled ahead: %2$d\nDue soon: %3$d</string>
-    <string name="nearby_stations">Solar stations</string>
-    <string name="nearby_stations_action">View stations on map</string>
-    <string name="stations_map_subtitle">Explore active stations saved in the network. Tap a marker or open its coordinates in Maps.</string>
-    <string name="demo_map_preview">Demo map preview - tap a station to open it in Maps</string>
-    <string name="loading_stations">Loading active stations...</string>
-    <string name="no_active_stations">There are no active stations to show yet.</string>
-    <string name="no_valid_station_locations">Stations were found, but none had valid map coordinates.</string>
-    <string name="refresh_stations">Refresh stations</string>
-    <string name="open_station_in_maps">Open station in Maps</string>
-    <string name="no_maps_app">No Maps app is available on this device.</string>
-    <string name="location_permission_message">Allow device location to show your position alongside nearby solar stations.</string>
-    <string name="location_permission_denied">Location access is off. You can still browse station coordinates.</string>
-    <string name="station_marker_summary">%1$d of %2$d battery slots available - %3$.0f kWh</string>
-    <string name="station_list_summary">%1$.5f, %2$.5f - %3$d/%4$d battery slots available</string>
-    <plurals name="active_station_count">
-        <item quantity="one">Showing %1$d active station. Tap a marker for details.</item>
-        <item quantity="other">Showing %1$d active stations. Tap a marker for details.</item>
-    </plurals>
+<string name="close">Close</string>
+<string name="show_qr">Show QR</string>
+<string name="twelve_hour_notice">The remaining time must be at least 12 hours.</string>
+<string name="seven_day_notice">You can only make a reservation up to 7 days ahead.</string>
+<string name="slot_already_started">This slot has already started. Choose a later time.</string>
+<string name="reservation_successful">Reservation successful</string>
+<string name="reservation_cancelled_notice">Reservation cancelled</string>
+<string name="no_open_slots">No open slots on this date inside the next 7 days.</string>
+
+<string name="nearby_stations">Solar stations</string>
+<string name="nearby_stations_action">View stations on map</string>
+<string name="stations_map_subtitle">Explore active stations saved in the network. Tap a marker or open its coordinates in Maps.</string>
+<string name="demo_map_preview">Demo map preview - tap a station to open it in Maps</string>
+<string name="loading_stations">Loading active stations...</string>
+<string name="no_active_stations">There are no active stations to show yet.</string>
+<string name="no_valid_station_locations">Stations were found, but none had valid map coordinates.</string>
+<string name="refresh_stations">Refresh stations</string>
+<string name="open_station_in_maps">Open station in Maps</string>
+<string name="no_maps_app">No Maps app is available on this device.</string>
+<string name="location_permission_message">Allow device location to show your position alongside nearby solar stations.</string>
+<string name="location_permission_denied">Location access is off. You can still browse station coordinates.</string>
+<string name="station_marker_summary">%1$d of %2$d battery slots available - %3$.0f kWh</string>
+<string name="station_list_summary">%1$.5f, %2$.5f - %3$d/%4$d battery slots available</string>
+
+<plurals name="active_station_count">
+    <item quantity="one">Showing %1$d active station. Tap a marker for details.</item>
+    <item quantity="other">Showing %1$d active stations. Tap a marker for details.</item>
+</plurals>
 </resources>

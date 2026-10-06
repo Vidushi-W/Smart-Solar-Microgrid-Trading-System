@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.smartsolar.microgrid.BuildConfig
 import com.smartsolar.microgrid.R
 import com.smartsolar.microgrid.authentication.AuthenticationApiClient
+import com.smartsolar.microgrid.authentication.LocalAccountStore
 import com.smartsolar.microgrid.authentication.LoginRequest
 import com.smartsolar.microgrid.authentication.LoginResponse
 import com.smartsolar.microgrid.authentication.LoginRouter
@@ -132,6 +133,7 @@ class MainActivity : AppCompatActivity() {
                 if (identity.role != response.role) {
                     throw IOException(getString(R.string.login_failed))
                 }
+                LocalAccountStore(applicationContext).save(identity)
                 runOnUiThread {
                     setLoading(false)
                     handleLoginSuccess(response)
@@ -154,6 +156,7 @@ class MainActivity : AppCompatActivity() {
                 if (identity.role.apiValue != savedRole || identity.role == UserRole.BACKOFFICE) {
                     throw IOException(getString(R.string.login_failed))
                 }
+                LocalAccountStore(applicationContext).save(identity)
                 runOnUiThread {
                     setLoading(false)
                     openHome(identity.role.apiValue)
@@ -164,6 +167,7 @@ class MainActivity : AppCompatActivity() {
                     || error is SecurityException
                 if (invalidSession) {
                     getSharedPreferences(SESSION_PREFS, MODE_PRIVATE).edit().clear().apply()
+                    LocalAccountStore(applicationContext).clear()
                 }
                 runOnUiThread {
                     setLoading(false)

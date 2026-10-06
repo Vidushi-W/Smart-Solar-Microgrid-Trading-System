@@ -1,5 +1,7 @@
 /**
- * Client-side reservation checks: which statuses still hold a slot, the 12-hour change notice, and the seven-day booking window. The API remains the authority for the same rules.
+ * Display helpers for the reservation screens.
+ * The account API decides: a booking must be scheduled within the next 7 Colombo days,
+ * and only update and cancel require at least 12 hours' notice. Create does not.
  */
 export const HOLDING_STATUSES = ["Requested", "Approved", "Scheduled"];
 
@@ -15,20 +17,18 @@ export function hasTwelveHourNotice(iso, now = new Date()) {
   return hoursUntil(iso, now) >= 12;
 }
 
-/**
- * Working interpretation for the seven-day rule:
- * the start must be in the future, and no later than 23:59:59
- * on the calendar day seven days from today, in the browser's local time.
- * The team still needs to confirm this against the assignment.
- */
+export const TWELVE_HOUR_MESSAGE = "The remaining time must be at least 12 hours.";
+
+const COLOMBO_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+
+/** Same 7-day Colombo window the API enforces. Used only to label a row; the API still accepts or rejects the booking. */
 export function isInsideSevenDayWindow(iso, now = new Date()) {
   const start = new Date(iso);
-  if (start.getTime() <= now.getTime()) return false;
-  const limit = new Date(now);
-  limit.setHours(0, 0, 0, 0);
-  limit.setDate(limit.getDate() + 7);
-  limit.setHours(23, 59, 59, 999);
-  return start.getTime() <= limit.getTime();
+  if (Number.isNaN(start.getTime()) || start.getTime() <= now.getTime()) return false;
+  const colomboNow = new Date(now.getTime() + COLOMBO_OFFSET_MS);
+  const startOfToday = Date.UTC(colomboNow.getUTCFullYear(), colomboNow.getUTCMonth(), colomboNow.getUTCDate());
+  const limit = startOfToday + 8 * 24 * 60 * 60 * 1000 - 1 - COLOMBO_OFFSET_MS;
+  return start.getTime() <= limit;
 }
 
 export function isApprovedFuture(reservation, now = new Date()) {

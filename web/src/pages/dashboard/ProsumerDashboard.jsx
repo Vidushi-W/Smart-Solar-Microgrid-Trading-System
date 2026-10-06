@@ -1,6 +1,6 @@
 /**
- * Prosumer home. Station cards stay as the sample directory.
- * Reservations come from the API, and a transfer QR opens only when the prosumer asks for it.
+ * Prosumer home. Counts and the recent list come from the signed-in prosumer's reservations.
+ * A transfer QR opens only when the prosumer asks for it.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -17,14 +17,7 @@ const STATUS_COLORS = {
 };
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-const STATIONS = [
-  { code: "CMB-01", name: "Colombo Fort Microgrid", address: "4 York Street, Colombo 01", latitude: 6.9344, longitude: 79.8428, capacityKwh: 120, source: "solar + storage", hours: "06:00–18:00", status: "Active" },
-  { code: "KDY-01", name: "Kandy Lake Station", address: "4 Lake Road, Kandy", latitude: 7.2906, longitude: 80.6337, capacityKwh: 80, source: "solar", hours: "06:30–17:30", status: "Active" },
-  { code: "GAL-01", name: "Galle Fort Station", address: "4 Church Street, Galle Fort", latitude: 6.0266, longitude: 80.217, capacityKwh: 60, source: "solar", hours: "07:00–17:00", status: "Active" },
-  { code: "NEG-01", name: "Negombo Lagoon Node", address: "4 Lagoon Road, Negombo", latitude: 7.2083, longitude: 79.8358, capacityKwh: 40, source: "solar", hours: "07:00–16:00", status: "Inactive" },
-];
-
-const QR_STATUSES = ["Pending", "Approved"];
+const QR_STATUSES = ["Approved", "Scheduled"];
 
 function canShowQr(status) {
   return QR_STATUSES.includes(status);
@@ -276,48 +269,6 @@ export default function ProsumerDashboard({ name }) {
             </table>
           </div>
         ) : null}
-      </section>
-
-      <section className="pd-panel">
-        <header>
-          <div>
-            <h2>Station directory</h2>
-            <p>Sample network used on this dashboard.</p>
-          </div>
-        </header>
-        <div className="table-wrap">
-          <table className="account-table">
-            <thead>
-              <tr>
-                <th>Station</th>
-                <th>Location</th>
-                <th>Capacity</th>
-                <th>Hours</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {STATIONS.map((station) => (
-                <tr key={station.code}>
-                  <td>
-                    <strong>{station.name}</strong>
-                    <small className="table-subtitle">{station.code}</small>
-                  </td>
-                  <td>
-                    {station.address}
-                    <small className="table-subtitle">{station.latitude.toFixed(4)}, {station.longitude.toFixed(4)}</small>
-                  </td>
-                  <td>
-                    {station.capacityKwh} kWh
-                    <small className="table-subtitle">{station.source}</small>
-                  </td>
-                  <td>{station.hours}</td>
-                  <td><StatusBadge value={station.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </section>
 
       {selected ? (

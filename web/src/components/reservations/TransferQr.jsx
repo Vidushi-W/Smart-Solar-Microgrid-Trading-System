@@ -12,11 +12,25 @@ function storageKey(reservationId) {
   return `transfer-qr:${reservationId}`;
 }
 
+export function isSampleReservation(reservationId) {
+  return String(reservationId || "").startsWith("RSV-");
+}
+
+function sampleQrText(reservationId) {
+  const raw = Array.from(String(reservationId))
+    .map((char) => char.charCodeAt(0).toString(16).padStart(2, "0"))
+    .join("");
+  const token = `${raw}A1F03C7E9B2846D5`.repeat(4).replace(/[^A-F0-9]/gi, "0").slice(0, 64).toUpperCase();
+  return JSON.stringify({ version: 1, reservationId, token });
+}
+
 function issueOnce(reservationId) {
   if (!inflight.has(reservationId)) {
     const request = issueReservationQr(reservationId)
       .then((issued) => {
-        const text = JSON.stringify(issued.qrPayload);
+        const payload = issued?.qrPayload || issued?.QrPayload;
+        if (!payload) throw new Error("The transfer QR response did not include a code.");
+        const text = JSON.stringify(payload);
         sessionStorage.setItem(storageKey(reservationId), text);
         return text;
       })
@@ -30,15 +44,16 @@ export default function TransferQr({ reservationId, status, compact = false }) {
   const [image, setImage] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const visible = status === "Pending" || status === "Approved";
+  const visible = status === "Approved" || status === "Scheduled";
+  const local = isSampleReservation(reservationId);
 
   useEffect(() => {
     if (!reservationId || !visible) return undefined;
     let active = true;
-    const saved = sessionStorage.getItem(storageKey(reservationId));
-    setBusy(!saved);
+    const saved = local ? null : sessionStorage.getItem(storageKey(reservationId));
+    setBusy(!saved && !local);
     setError("");
-    const ready = saved ? Promise.resolve(saved) : issueOnce(reservationId);
+    const ready = local ? Promise.resolve(sampleQrText(reservationId)) : saved ? Promise.resolve(saved) : issueOnce(reservationId);
     ready
       .then((text) => QRCode.toDataURL(text, { margin: 1, width: 280 }))
       .then((next) => {
@@ -53,7 +68,7 @@ export default function TransferQr({ reservationId, status, compact = false }) {
     return () => {
       active = false;
     };
-  }, [reservationId, visible]);
+  }, [reservationId, visible, local]);
 
   if (!visible) return null;
 
@@ -61,8 +76,13 @@ export default function TransferQr({ reservationId, status, compact = false }) {
     setBusy(true);
     setError("");
     try {
-      sessionStorage.removeItem(storageKey(reservationId));
-      const text = await issueOnce(reservationId);
+      let text;
+      if (local) {
+        text = sampleQrText(reservationId);
+      } else {
+        sessionStorage.removeItem(storageKey(reservationId));
+        text = await issueOnce(reservationId);
+      }
       setImage(await QRCode.toDataURL(text, { margin: 1, width: 280 }));
     } catch (reason) {
       setError(reason.message || "The transfer QR could not be created.");

@@ -3,6 +3,7 @@
  */
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import FlashNotice from "../../components/common/FlashNotice";
 import PageHeader from "../../components/common/PageHeader";
 import StatusBadge from "../../components/common/StatusBadge";
 import ReservationActionSummary from "../../components/reservations/ReservationActionSummary";
@@ -11,7 +12,7 @@ import TransferQr from "../../components/reservations/TransferQr";
 import SlotSelector from "../../components/reservations/SlotSelector";
 import { useAuth } from "../../context/AuthContext";
 import { createReservation, fetchReservation, listStationsForReservations, stationsApi } from "../../services/apiClient";
-import { stationTitle as stationLabel, utcDateLabel, utcTimeLabel } from "./reservationTime";
+import { colomboDateInput, slotBookingState, stationTitle as stationLabel, utcDateLabel, utcTimeLabel } from "./reservationTime";
 
 const STEPS = [
   { id: "station", label: "Station" },
@@ -19,12 +20,6 @@ const STEPS = [
   { id: "review", label: "Review" },
   { id: "confirmation", label: "Confirmation" },
 ];
-
-function localDateValue() {
-  const now = new Date();
-  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 10);
-}
 
 function stationTitle(station) {
   return station?.name?.trim() || station?.stationId || "Station";
@@ -46,12 +41,13 @@ export default function CreateReservationPage() {
   const [slots, setSlots] = useState([]);
   const [stationId, setStationId] = useState("");
   const [slotId, setSlotId] = useState("");
-  const [date, setDate] = useState(localDateValue);
+  const [date, setDate] = useState(() => colomboDateInput());
   const [loadingStations, setLoadingStations] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [loadingReservation, setLoadingReservation] = useState(Boolean(createdId));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [reservation, setReservation] = useState(null);
 
   useEffect(() => {
@@ -108,7 +104,9 @@ export default function CreateReservationPage() {
     setError("");
     fetchReservation(createdId)
       .then((row) => {
-        if (active) setReservation(row);
+        if (!active) return;
+        setReservation(row);
+        setNotice("Reservation successful");
       })
       .catch((reason) => {
         if (active) setError(reason.message || "Could not load the reservation.");
@@ -123,12 +121,34 @@ export default function CreateReservationPage() {
 
   const station = stations.find((item) => item.stationId === stationId) || null;
   const slot = slots.find((item) => item.slotId === slotId) || null;
+  const slotState = slot ? slotBookingState(slot) : { ok: false, reason: "" };
+  const earliestDate = colomboDateInput();
+  const latestDate = colomboDateInput(new Date(), 7);
+  const furthestDate = colomboDateInput(new Date(), 30);
   const summaryStation = stations.find((item) => item.stationId === reservation?.stationId) || station;
+
+  function showNotice(text) {
+    setNotice("");
+    window.setTimeout(() => setNotice(text), 0);
+  }
 
   function selectStation(nextId) {
     setStationId(nextId);
     setSlotId("");
     setError("");
+  }
+
+  function chooseDate(nextDate) {
+    if (!nextDate || nextDate < earliestDate || nextDate > furthestDate) return;
+    setDate(nextDate);
+    setSlotId("");
+    setError("");
+    if (nextDate > latestDate) {
+      setDate(earliestDate);
+      setSlotId("");
+      showNotice("You can only make a reservation up to 7 days ahead.");
+      return;
+    }
   }
 
   function selectSlot(nextId) {
@@ -138,6 +158,12 @@ export default function CreateReservationPage() {
 
   async function confirmReservation() {
     if (!station || !slot) return;
+    if (!slotState.ok) {
+      showNotice(slotState.reason === "Already started"
+        ? "This slot has already started. Choose a later time."
+        : "You can only make a reservation up to 7 days ahead.");
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
@@ -149,7 +175,12 @@ export default function CreateReservationPage() {
       });
       navigate(`/reservations/new?created=${encodeURIComponent(saved.reservationId)}`, { replace: true });
     } catch (reason) {
-      setError(reason.message || "The reservation could not be created.");
+      const message = reason.message || "The reservation could not be created.";
+      if (message.toLowerCase().includes("7 days")) {
+        showNotice("You can only make a reservation up to 7 days ahead.");
+      } else {
+        setError(message);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -199,6 +230,7 @@ export default function CreateReservationPage() {
       </ol>
 
       {error ? <p className="reserve-alert">{error}</p> : null}
+      <FlashNotice message={notice} onClose={() => setNotice("")} />
 
       {step === "station" ? (
         <section className="reserve-panel">
@@ -223,7 +255,7 @@ export default function CreateReservationPage() {
             ))}
           </div>
           <div className="reserve-actions">
-            <button type="button" className="btn primary" disabled={!stationId} onClick={() => setStep("slot")}>
+            <button type="button" className="btn primary" disabled={!stationId} onClick={() => { setDate(colomboDateInput()); setSlotId(""); setStep("slot"); }}>
               Continue
             </button>
           </div>
@@ -233,12 +265,13 @@ export default function CreateReservationPage() {
       {step === "slot" && station ? (
         <section className="reserve-panel">
           <h2>{stationTitle(station)}</h2>
+          <p className="reserve-status">Open times are limited to the next 7 days, through {utcDateLabel(`${latestDate}T00:00:00.000Z`)}.</p>
           <SlotSelector
             date={date}
-            onDateChange={(nextDate) => {
-              setDate(nextDate);
-              setSlotId("");
-            }}
+            minDate={earliestDate}
+            maxDate={furthestDate}
+            bookableOnly
+            onDateChange={chooseDate}
             slots={slots}
             loading={loadingSlots}
             selectedSlotId={slotId}
@@ -246,7 +279,7 @@ export default function CreateReservationPage() {
           />
           <div className="reserve-actions">
             <button type="button" className="btn ghost" onClick={() => setStep("station")}>Back</button>
-            <button type="button" className="btn primary" disabled={!slot} onClick={() => setStep("review")}>
+            <button type="button" className="btn primary" disabled={!slot || !slotState.ok} onClick={() => setStep("review")}>
               Review
             </button>
           </div>
@@ -268,7 +301,7 @@ export default function CreateReservationPage() {
           />
           <div className="reserve-actions">
             <button type="button" className="btn ghost" disabled={submitting} onClick={() => setStep("slot")}>Back</button>
-            <button type="button" className="btn primary" disabled={submitting} onClick={confirmReservation}>
+            <button type="button" className="btn primary" disabled={submitting || !slotState.ok} onClick={confirmReservation}>
               {submitting ? "Confirming" : "Confirm reservation"}
             </button>
           </div>

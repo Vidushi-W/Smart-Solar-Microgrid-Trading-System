@@ -62,6 +62,7 @@ abstract class SolarActivity : AppCompatActivity() {
         message = text("").apply { accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE }
         signIn = button(getString(R.string.login)) {
             prefs.edit().clear().apply()
+            com.smartsolar.microgrid.authentication.LocalAccountStore(applicationContext).clear()
             startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         }.apply { visibility = View.GONE }
         return true

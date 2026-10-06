@@ -122,7 +122,7 @@ public sealed class QrTransferService(IQrTransferRepository repository) : IQrTra
     }
 
     // Mirror the existing web lifecycle without adding time, billing or capacity rules.
-    private static bool Eligible(EnergyReservation r) => r.Status.ToString() is "Pending" or "Approved" or "Scheduled"
+    private static bool Eligible(EnergyReservation r) => r.Status.ToString() is "Approved" or "Scheduled"
         && r.QrTransfer?.TokenStatus != "Used" && r.QrTransfer?.CompletedAtUtc is null
         && ValidId(r.ProsumerId) && ValidId(r.StationId) && ValidId(r.SlotId)
         && double.IsFinite(r.EnergyKwh) && r.EnergyKwh >= 0;

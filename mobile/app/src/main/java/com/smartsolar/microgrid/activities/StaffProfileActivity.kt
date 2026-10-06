@@ -17,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import com.smartsolar.microgrid.BuildConfig
 import com.smartsolar.microgrid.R
 import com.smartsolar.microgrid.authentication.AuthenticationApiClient
+import com.smartsolar.microgrid.authentication.LocalAccountStore
 import com.smartsolar.microgrid.authentication.MobileAccountProfile
 import com.smartsolar.microgrid.authentication.ProfilePictureCodec
 import com.smartsolar.microgrid.authentication.UserRole
@@ -267,6 +268,7 @@ class StaffProfileActivity : AppCompatActivity() {
 
     private fun logout() {
         getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE).edit().clear().apply()
+        LocalAccountStore(applicationContext).clear()
         returnToLogin()
     }
 
