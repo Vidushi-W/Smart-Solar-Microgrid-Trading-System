@@ -18,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.smartsolar.microgrid.BuildConfig
 import com.smartsolar.microgrid.R
 import com.smartsolar.microgrid.api.ReservationApiClient
+import com.smartsolar.microgrid.api.MicrogridApi
 import com.smartsolar.microgrid.authentication.AuthenticationApiClient
 import com.smartsolar.microgrid.authentication.MobileAccountProfile
 import java.util.concurrent.Executors
@@ -34,6 +35,7 @@ class RoleHomeActivity : AppCompatActivity() {
     private lateinit var activeCountView: TextView
     private lateinit var pendingCountView: TextView
     private lateinit var historyCountView: TextView
+    private lateinit var operationalCountView: TextView
     private var role: String? = null
     private var sessionCheckRunning = false
 
@@ -156,17 +158,67 @@ class RoleHomeActivity : AppCompatActivity() {
             }, matchWidth())
             content.addView(Button(this).apply {
                 text = getString(R.string.qr_scanner)
-                setOnClickListener { startActivity(Intent(this@RoleHomeActivity, QrScanActivity::class.java)) }
-            }, matchWidth())
-            content.addView(Button(this).apply {
-                text = getString(R.string.energy_transfer)
-                setOnClickListener { startActivity(Intent(this@RoleHomeActivity, QrScanActivity::class.java)) }
+setOnClickListener {
+    startActivity(
+        Intent(
+            this@RoleHomeActivity,
+            QrScannerActivity::class.java
+        )
+    )
+}
+}, matchWidth())
+
+content.addView(Button(this).apply {
+    text = getString(R.string.energy_transfer)
+
+    setOnClickListener {
+        startActivity(
+            Intent(
+                this@RoleHomeActivity,
+                QrScannerActivity::class.java
+            )
+        )
+    }
             }, matchWidth())
             content.addView(Button(this).apply {
                 text = getString(R.string.my_profile)
                 setOnClickListener { startActivity(Intent(this@RoleHomeActivity, StaffProfileActivity::class.java)) }
             }, matchWidth())
         }
+        content.addView(sectionTitle(R.string.reservations), matchWidth())
+        operationalCountView = TextView(this).apply {
+            setTextColor(Color.rgb(96, 112, 100))
+        }
+        content.addView(operationalCountView, matchWidth())
+        listOf(
+            R.string.reservations to "",
+            R.string.requested_reservations to "Requested",
+            R.string.approved_reservations to "Approved",
+            R.string.scheduled_reservations to "Scheduled"
+        ).forEach { (label, status) ->
+            content.addView(Button(this).apply {
+                text = getString(label)
+                setOnClickListener {
+                    startActivity(Intent(this@RoleHomeActivity, ReservationsActivity::class.java)
+                        .putExtra("status", status))
+                }
+            }, matchWidth())
+        }
+        content.addView(Button(this).apply {
+            text = getString(R.string.booking_history)
+            setOnClickListener {
+                startActivity(Intent(this@RoleHomeActivity, ReservationsActivity::class.java)
+                    .putExtra("history", true).putExtra("status", "Completed"))
+            }
+        }, matchWidth())
+        if (isProsumer) content.addView(Button(this).apply {
+            text = getString(R.string.create_reservation)
+            setOnClickListener { startActivity(Intent(this@RoleHomeActivity, ReservationFormActivity::class.java)) }
+        }, matchWidth())
+        content.addView(Button(this).apply {
+            text = getString(R.string.retry)
+            setOnClickListener { validateSession() }
+        }, matchWidth())
         messageView = TextView(this).apply {
             setTextColor(Color.rgb(160, 53, 43))
             setPadding(0, 16, 0, 0)
@@ -201,9 +253,16 @@ class RoleHomeActivity : AppCompatActivity() {
                 }
                 val profile = if (role == "Prosumer") api.getMyProsumerAccount(token) else api.getMyStaffProfile(token)
                 val counts = if (role == "Prosumer") runCatching { reservationCounts(token) } else null
+                val operationalCounts = runCatching { MicrogridApi(this).dashboard() }
                 runOnUiThread {
                     if (isFinishing) return@runOnUiThread
                     showProfile(profile)
+                    operationalCounts.onSuccess { summary ->
+                        operationalCountView.text = getString(R.string.dashboard_counts,
+                            summary.getInt("pending"), summary.getInt("approvedFuture"), summary.getInt("dueSoon"))
+                    }.onFailure { error ->
+                        operationalCountView.text = error.message ?: getString(R.string.api_error)
+                    }
                     counts?.onSuccess { (active, pending, history) ->
                         activeCountView.text = getString(R.string.count_value, getString(R.string.active_reservations), active)
                         pendingCountView.text = getString(R.string.count_value, getString(R.string.pending_bookings), pending)

@@ -1,7 +1,7 @@
 /**
- * Base URL for apiClient, plus the written API contract list. Login and account calls use the account API on port 5000. catalogApi and reservationsApi keep VITE_API_BASE_URL for the reservation API on port 5251.
+ * Account API base and written contracts. Reservation clients use their own host.
  */
-export const API_BASE = import.meta.env.VITE_ACCOUNT_API_BASE_URL || "http://localhost:5000/api";
+export { ACCOUNT_API_BASE as API_BASE } from "./apiTargets";
 
 /**
  * Shared contracts used by the API reference screen and clients.
@@ -52,10 +52,9 @@ export const contractGroups = [
     owner: "Member 4",
     area: "QR & Transactions",
     items: [
-      { method: "POST", path: "/reservations/{id}/qr", role: "System, after approval", purpose: "Issue a single-use QR token for an approved reservation." },
+      { method: "POST", path: "/reservations/{id}/qr", role: "Owning Prosumer, Backoffice", purpose: "Issue or rotate QR credentials for an Approved or Scheduled reservation on the Account/QR API." },
       { method: "POST", path: "/transactions/verify", role: "Grid Operator", purpose: "Verify a scanned token. A used token must be rejected." },
       { method: "POST", path: "/transactions/{id}/complete", role: "Grid Operator", purpose: "Finalise the energy transfer and move the reservation to Completed." },
-      { method: "GET", path: "/transactions", role: "Backoffice, Grid Operator", purpose: "List QR token states for operational monitoring." },
     ],
   },
 ];

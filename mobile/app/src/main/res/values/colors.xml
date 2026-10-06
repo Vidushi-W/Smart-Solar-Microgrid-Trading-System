@@ -1,0 +1,7 @@
+<resources>
+    <color name="solar_background">#F6F8F2</color>
+    <color name="solar_heading">#14231D</color>
+    <color name="solar_muted">#607064</color>
+    <color name="solar_accent">#C46B42</color>
+    <color name="solar_error">#A0352B</color>
+</resources>

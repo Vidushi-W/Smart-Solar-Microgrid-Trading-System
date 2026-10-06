@@ -3,6 +3,8 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import PageHeader from "../../components/common/PageHeader";
+import ApiFailure from "../../components/common/ApiFailure";
 import Modal from "../../components/common/Modal";
 import StatusBadge from "../../components/common/StatusBadge";
 import DataTable from "../../components/tables/DataTable";
@@ -22,16 +24,18 @@ export default function TransactionsPage() {
   const { user } = useAuth();
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
+  const [reload, setReload] = useState(0);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("All");
   const [selectedId, setSelectedId] = useState(null);
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
     setLoading(true);
-    setError("");
-    fetchReservations(user)
+    setError(null);
+    fetchReservations(user, {}, controller.signal)
       .then((rows) => {
         if (!active) return;
         setReservations((rows || []).filter((row) => TRANSFER_STATUSES.includes(row.status)));
@@ -39,15 +43,16 @@ export default function TransactionsPage() {
       .catch((reason) => {
         if (!active) return;
         setReservations([]);
-        setError(reason.message);
+        if (reason.name !== "AbortError") setError(reason);
       })
       .finally(() => {
         if (active) setLoading(false);
       });
     return () => {
       active = false;
+      controller.abort();
     };
-  }, [user]);
+  }, [user, reload]);
 
   const rows = useMemo(() => {
     return reservations
@@ -64,7 +69,8 @@ export default function TransactionsPage() {
 
   return (
     <div className="page">
-      {error ? <p className="form-error" role="alert">{error}</p> : null}
+      <PageHeader title="Energy transfers" actions={<Link className="btn" to="/operational-reservations">Reservations desk</Link>} />
+      <ApiFailure error={error} onRetry={() => setReload((value) => value + 1)} />
       <section className="filter-card">
         <header className="panel-head">
           <h2>Search and filters</h2>
@@ -116,8 +122,8 @@ export default function TransactionsPage() {
               </dl>
             </section>
             <div className="modal-actions">
-              <Link className="btn" to={`/reservations/${selected.id}`}>Open reservation</Link>
-              <Link className="btn" to={`/transactions/${selected.id}`}>Open transfer</Link>
+              <Link className="btn" to={`/operational-reservations/${encodeURIComponent(selected.id)}`}>Open reservation</Link>
+              <Link className="btn" to={`/transactions/${encodeURIComponent(selected.id)}`}>Open transfer</Link>
               <button type="button" className="btn primary" onClick={() => setSelectedId(null)}>Close</button>
             </div>
           </div>

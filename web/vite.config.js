@@ -11,6 +11,11 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       open: false,
       proxy: {
+        "/reservation-api": {
+          target: env.VITE_DEV_RESERVATION_PROXY_TARGET || "http://localhost:5251",
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/reservation-api/, "/api"),
+        },
         "/api": {
           target: env.VITE_DEV_API_PROXY_TARGET || "http://localhost:5000",
           changeOrigin: true,
