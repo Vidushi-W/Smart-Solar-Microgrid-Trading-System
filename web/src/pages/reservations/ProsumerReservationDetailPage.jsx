@@ -7,6 +7,7 @@ import { Link, useParams } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";
 import StatusBadge from "../../components/common/StatusBadge";
 import ReservationActionSummary from "../../components/reservations/ReservationActionSummary";
+import ReservationFacts from "../../components/reservations/ReservationFacts";
 import TransferQr from "../../components/reservations/TransferQr";
 import { cancelReservation, fetchReservation, listStationsForReservations } from "../../services/apiClient";
 import { stationTitle, utcDateLabel, utcTimeLabel } from "./reservationTime";
@@ -134,22 +135,25 @@ export default function ProsumerReservationDetailPage() {
       {confirmingCancel && reservation ? (
         <div className="confirmation-backdrop">
           <section
-            className="confirmation-dialog"
+            className="confirmation-dialog history-dialog"
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="cancel-reservation-title"
           >
-            <h2 id="cancel-reservation-title">Cancel reservation</h2>
-            <dl className="reserve-summary">
-              <dt>Station</dt>
-              <dd>{stationTitle(station, reservation.stationId)}</dd>
-              <dt>Date</dt>
-              <dd>{utcDateLabel(reservation.scheduledAtUtc)}</dd>
-              <dt>Time</dt>
-              <dd>{utcTimeLabel(reservation.scheduledAtUtc)} UTC</dd>
-            </dl>
-            {error ? <p className="reserve-alert">{error}</p> : null}
-            <div className="form-actions">
+            <div className="history-dialog-head">
+              <div>
+                <p className="eyebrow">Reservation</p>
+                <h2 id="cancel-reservation-title">Cancel reservation</h2>
+              </div>
+            </div>
+            <ReservationFacts
+              station={stationTitle(station, reservation.stationId)}
+              date={utcDateLabel(reservation.scheduledAtUtc)}
+              time={`${utcTimeLabel(reservation.scheduledAtUtc)} UTC`}
+              status={reservation.status}
+            />
+            {error ? <p className="reserve-alert history-detail-alert">{error}</p> : null}
+            <div className="form-actions confirm-actions">
               <button className="btn ghost" type="button" disabled={busy} onClick={closeConfirmation}>
                 Keep Reservation
               </button>

@@ -6,6 +6,7 @@ import { Link, useParams } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";
 import StatusBadge from "../../components/common/StatusBadge";
 import ReservationActionSummary from "../../components/reservations/ReservationActionSummary";
+import ReservationFacts from "../../components/reservations/ReservationFacts";
 import SlotSelector from "../../components/reservations/SlotSelector";
 import { fetchReservation, listStationsForReservations, stationsApi, updateReservation } from "../../services/apiClient";
 import { slotInstant, stationTitle, utcDateInput, utcDateLabel, utcTimeLabel } from "./reservationTime";
@@ -116,22 +117,16 @@ export default function ModifyReservationPage() {
   function reservationFields(row, station) {
     if (!row) return null;
     return (
-      <dl className="reserve-summary">
-        <dt>Reservation</dt>
-        <dd>{row.reservationId}</dd>
-        <dt>Prosumer</dt>
-        <dd>{row.prosumerId}</dd>
-        <dt>Station</dt>
-        <dd>{stationTitle(station, row.stationId)}</dd>
-        <dt>Scheduled date</dt>
-        <dd>{utcDateLabel(row.scheduledAtUtc)}</dd>
-        <dt>Time</dt>
-        <dd>{utcTimeLabel(row.scheduledAtUtc)} UTC</dd>
-        <dt>Status</dt>
-        <dd><StatusBadge value={row.status} /></dd>
-        <dt>Slot</dt>
-        <dd>{row.slotId}</dd>
-      </dl>
+      <ReservationFacts
+        station={stationTitle(station, row.stationId)}
+        date={utcDateLabel(row.scheduledAtUtc)}
+        time={`${utcTimeLabel(row.scheduledAtUtc)} UTC`}
+        status={row.status}
+        reservationId={row.reservationId}
+        slotId={row.slotId}
+        noteLabel="Prosumer"
+        note={row.prosumerId}
+      />
     );
   }
 
@@ -225,16 +220,12 @@ export default function ModifyReservationPage() {
             </div>
             <div>
               <h2>New slot</h2>
-              <dl className="reserve-summary">
-                <dt>Station</dt>
-                <dd>{stationTitle(nextStation, stationId)}</dd>
-                <dt>Scheduled date</dt>
-                <dd>{String(selectedSlot.date).slice(0, 10)}</dd>
-                <dt>Time</dt>
-                <dd>{selectedSlot.startTime}–{selectedSlot.endTime} UTC</dd>
-                <dt>Slot</dt>
-                <dd>{selectedSlot.slotId}</dd>
-              </dl>
+              <ReservationFacts
+                station={stationTitle(nextStation, stationId)}
+                date={utcDateLabel(`${String(selectedSlot.date).slice(0, 10)}T00:00:00.000Z`)}
+                time={`${selectedSlot.startTime}–${selectedSlot.endTime} UTC`}
+                slotId={selectedSlot.slotId}
+              />
             </div>
           </div>
           <div className="reserve-actions">

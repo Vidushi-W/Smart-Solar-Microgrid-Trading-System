@@ -26,7 +26,7 @@ function issueOnce(reservationId) {
   return inflight.get(reservationId);
 }
 
-export default function TransferQr({ reservationId, status }) {
+export default function TransferQr({ reservationId, status, compact = false }) {
   const [image, setImage] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -73,13 +73,15 @@ export default function TransferQr({ reservationId, status }) {
 
   return (
     <div className="transfer-qr-block">
-      <p>Show this code to the grid operator. It is the transfer QR for this reservation.</p>
+      {compact ? null : <p>Show this code to the grid operator. It is the transfer QR for this reservation.</p>}
       {busy && !image ? <p className="reserve-status">Creating your transfer QR</p> : null}
       {error ? <p className="reserve-alert">{error}</p> : null}
       {image ? <img className="transfer-qr" src={image} alt="Transfer QR code" /> : null}
-      <button type="button" className="btn ghost" disabled={busy} onClick={replaceCode}>
-        {busy ? "Creating code" : "Generate a new code"}
-      </button>
+      {compact ? null : (
+        <button type="button" className="btn ghost" disabled={busy} onClick={replaceCode}>
+          {busy ? "Creating code" : "Generate a new code"}
+        </button>
+      )}
     </div>
   );
 }

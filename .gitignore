@@ -95,6 +95,9 @@ keystore.properties
 *.key
 *.pubxml.user
 
+# Local scratch pages used while checking the UI
+web/public/_*.html
+
 # Local databases and runtime files
 *.db
 *.db-shm

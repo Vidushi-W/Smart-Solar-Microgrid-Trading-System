@@ -7,6 +7,7 @@ import { Link, useParams } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";
 import StatusBadge from "../../components/common/StatusBadge";
 import ReservationActionSummary from "../../components/reservations/ReservationActionSummary";
+import ReservationFacts from "../../components/reservations/ReservationFacts";
 import { useAuth } from "../../context/AuthContext";
 import { approveReservation, cancelReservation, fetchProsumerAccounts, fetchReservation, listStationsForReservations } from "../../services/apiClient";
 import { stationTitle, utcDateLabel, utcTimeLabel } from "./reservationTime";
@@ -106,7 +107,7 @@ export default function StaffReservationDetailPage() {
       <PageHeader
         eyebrow="Reservations"
         title="Reservation details"
-        actions={<Link className="btn ghost" to="/reservations">Reservations</Link>}
+        actions={<Link className="btn primary" to="/reservations">Reservations</Link>}
       />
 
       {!confirmingCancel && error ? <p className="reserve-alert">{error}</p> : null}
@@ -161,24 +162,27 @@ export default function StaffReservationDetailPage() {
       {confirmingCancel && reservation ? (
         <div className="confirmation-backdrop">
           <section
-            className="confirmation-dialog"
+            className="confirmation-dialog history-dialog"
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="staff-cancel-title"
           >
-            <h2 id="staff-cancel-title">Cancel reservation</h2>
-            <dl className="reserve-summary">
-              <dt>Prosumer</dt>
-              <dd>{prosumerLabel}</dd>
-              <dt>Station</dt>
-              <dd>{stationTitle(station, reservation.stationId)}</dd>
-              <dt>Date</dt>
-              <dd>{utcDateLabel(reservation.scheduledAtUtc)}</dd>
-              <dt>Time</dt>
-              <dd>{utcTimeLabel(reservation.scheduledAtUtc)} UTC</dd>
-            </dl>
-            {error ? <p className="reserve-alert">{error}</p> : null}
-            <div className="form-actions">
+            <div className="history-dialog-head">
+              <div>
+                <p className="eyebrow">Reservation</p>
+                <h2 id="staff-cancel-title">Cancel reservation</h2>
+              </div>
+            </div>
+            <ReservationFacts
+              station={stationTitle(station, reservation.stationId)}
+              date={utcDateLabel(reservation.scheduledAtUtc)}
+              time={`${utcTimeLabel(reservation.scheduledAtUtc)} UTC`}
+              status={reservation.status}
+              noteLabel="Prosumer"
+              note={prosumerLabel}
+            />
+            {error ? <p className="reserve-alert history-detail-alert">{error}</p> : null}
+            <div className="form-actions confirm-actions">
               <button className="btn ghost" type="button" disabled={busy} onClick={closeConfirmation}>
                 Keep Reservation
               </button>

@@ -8,9 +8,9 @@ import StatusBadge from "../../components/common/StatusBadge";
 import { fetchMyReservations, fetchReservation, listStationsForReservations } from "../../services/apiClient";
 import { stationTitle, utcDateLabel, utcTimeLabel } from "./reservationTime";
 
-function when(iso) {
-  if (!iso) return "";
-  return `${utcDateLabel(iso)} · ${utcTimeLabel(iso)} UTC`;
+function stamp(iso) {
+  if (!iso) return { date: "—", time: "" };
+  return { date: utcDateLabel(iso), time: `${utcTimeLabel(iso)} UTC` };
 }
 
 export default function ReservationHistoryPage() {
@@ -91,6 +91,8 @@ export default function ReservationHistoryPage() {
   const stationName = detail
     ? stationTitle(stationById.get(detail.stationId), detail.stationId)
     : "";
+  const created = detail ? stamp(detail.createdAtUtc) : null;
+  const updated = detail ? stamp(detail.updatedAtUtc) : null;
 
   return (
     <div className="page">
@@ -171,27 +173,54 @@ export default function ReservationHistoryPage() {
               </div>
               <button className="btn ghost" type="button" onClick={() => setSelectedId("")}>Close</button>
             </div>
-            {detailLoading ? <p className="reserve-status">Loading reservation</p> : null}
-            {detailError ? <p className="reserve-alert">{detailError}</p> : null}
+            {detailLoading ? <p className="history-detail-note">Loading reservation</p> : null}
+            {detailError ? <p className="reserve-alert history-detail-alert">{detailError}</p> : null}
             {detail ? (
-              <dl className="reserve-summary">
-                <dt>Reservation ID</dt>
-                <dd className="reserve-code">{detail.reservationId}</dd>
-                <dt>Station</dt>
-                <dd>{stationName}</dd>
-                <dt>Date</dt>
-                <dd>{utcDateLabel(detail.scheduledAtUtc)}</dd>
-                <dt>Time</dt>
-                <dd>{utcTimeLabel(detail.scheduledAtUtc)} UTC</dd>
-                <dt>Status</dt>
-                <dd><StatusBadge value={detail.status} /></dd>
-                <dt>Slot</dt>
-                <dd className="reserve-code">{detail.slotId}</dd>
-                <dt>Created</dt>
-                <dd>{when(detail.createdAtUtc)}</dd>
-                <dt>Updated</dt>
-                <dd>{when(detail.updatedAtUtc)}</dd>
-              </dl>
+              <div className="history-detail">
+                <div className="history-when">
+                  <article>
+                    <span className="history-kicker">Date</span>
+                    <strong>{utcDateLabel(detail.scheduledAtUtc)}</strong>
+                  </article>
+                  <article>
+                    <span className="history-kicker">Time</span>
+                    <strong>{utcTimeLabel(detail.scheduledAtUtc)} UTC</strong>
+                  </article>
+                  <article className="history-when-status">
+                    <span className="history-kicker">Status</span>
+                    <StatusBadge value={detail.status} />
+                  </article>
+                </div>
+
+                <p className="history-place">
+                  <span className="history-kicker">Station</span>
+                  <strong>{stationName}</strong>
+                </p>
+
+                <section className="history-refs" aria-label="Reference numbers">
+                  <div>
+                    <span className="history-kicker">Reservation ID</span>
+                    <code>{detail.reservationId}</code>
+                  </div>
+                  <div>
+                    <span className="history-kicker">Slot</span>
+                    <code>{detail.slotId}</code>
+                  </div>
+                </section>
+
+                <div className="history-meta">
+                  <div>
+                    <span className="history-kicker">Created</span>
+                    <strong>{created.date}</strong>
+                    <em>{created.time}</em>
+                  </div>
+                  <div>
+                    <span className="history-kicker">Updated</span>
+                    <strong>{updated.date}</strong>
+                    <em>{updated.time}</em>
+                  </div>
+                </div>
+              </div>
             ) : null}
           </section>
         </div>
