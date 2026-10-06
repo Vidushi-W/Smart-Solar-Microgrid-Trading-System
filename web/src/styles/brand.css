@@ -353,6 +353,39 @@ img.avatar { width: 36px; height: 36px; }
 .reserve-card.selected, .reserve-pill.selected { border-color: #d8442d; background: #fff6f4; box-shadow: inset 0 0 0 1px #d8442d; }
 .reserve-pills { display: flex; flex-wrap: wrap; gap: 0.55rem; }
 .reserve-pill { min-width: 150px; }
+.flash-notice-layer { z-index: 90; }
+.flash-notice {
+  width: min(320px, 100%);
+  margin: 0;
+  padding: 1.15rem 1.15rem 0.95rem;
+  border-radius: 16px;
+  background: white;
+  color: #2b191d;
+  text-align: center;
+  box-shadow: 0 28px 70px rgba(25, 18, 17, 0.32);
+  animation: flash-notice-in 0.18s ease-out;
+}
+.flash-notice-mark {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  margin: 0 auto 0.75rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #1f9d55;
+  color: white;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.flash-notice-mark.warn { background: #e36a33; }
+.flash-notice h2 { margin: 0; color: #2b191d; font-size: 1.02rem; font-weight: 650; line-height: 1.35; }
+.flash-notice-actions { display: flex; justify-content: flex-end; margin-top: 0.95rem; }
+.flash-notice-actions .btn { min-height: 34px; padding: 0.35rem 0.8rem; }
+@keyframes flash-notice-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
 .reserve-date { display: flex; flex-direction: column; gap: 0.35rem; max-width: 220px; margin-bottom: 0.9rem; color: #554845; font-size: 0.78rem; font-weight: 700; }
 .reserve-date input, .reserve-date select { min-height: 42px; }
 .mine-edit { margin-top: 1rem; }

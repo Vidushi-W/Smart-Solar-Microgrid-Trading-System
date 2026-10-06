@@ -19,6 +19,9 @@ import com.smartsolar.microgrid.models.StationRecord
 import com.smartsolar.microgrid.models.stationLabel
 import com.smartsolar.microgrid.models.utcDate
 import com.smartsolar.microgrid.models.utcTime
+import com.smartsolar.microgrid.reservations.BookingRules
+import com.smartsolar.microgrid.reservations.noticeForApi
+import com.smartsolar.microgrid.reservations.ruleNotice
 import java.time.LocalDate
 import java.util.concurrent.Executors
 
@@ -30,7 +33,7 @@ class ModifyReservationActivity : AppCompatActivity() {
     private var stations: List<StationRecord> = emptyList()
     private var reservation: ReservationRecord? = null
     private var slots: List<SlotRecord> = emptyList()
-    private var date: String = LocalDate.now().toString()
+    private var date: String = BookingRules.colomboToday().toString()
     private var slotId = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,6 +72,9 @@ class ModifyReservationActivity : AppCompatActivity() {
                     date = utcDate(loaded.scheduledAtUtc).ifBlank { date }
                     progress.visibility = View.GONE
                     showDate()
+                    if (!BookingRules.hasTwelveHourNotice(loaded.scheduledAtUtc)) {
+                        ruleNotice(getString(R.string.twelve_hour_notice))
+                    }
                 }
             } catch (error: Exception) {
                 showError(error)
@@ -83,12 +89,24 @@ class ModifyReservationActivity : AppCompatActivity() {
         body.addView(Button(this).apply {
             text = date
             setOnClickListener {
-                val current = LocalDate.parse(date)
-                DatePickerDialog(this@ModifyReservationActivity, { _, year, month, day ->
-                    date = LocalDate.of(year, month + 1, day).toString()
-                    text = date
+                val today = BookingRules.colomboToday()
+                val parsed = LocalDate.parse(date)
+                val current = if (parsed.isBefore(today) || parsed.isAfter(today.plusDays(30))) today else parsed
+                val picker = DatePickerDialog(this@ModifyReservationActivity, { _, year, month, day ->
+                    val picked = LocalDate.of(year, month + 1, day)
                     slotId = ""
-                }, current.year, current.monthValue - 1, current.dayOfMonth).show()
+                    if (picked.isAfter(today.plusDays(7))) {
+                        date = today.toString()
+                        text = date
+                        ruleNotice(getString(R.string.seven_day_notice))
+                    } else {
+                        date = picked.toString()
+                        text = date
+                    }
+                }, current.year, current.monthValue - 1, current.dayOfMonth)
+                picker.datePicker.minDate = BookingRules.epochMillis(today)
+                picker.datePicker.maxDate = BookingRules.epochMillis(today.plusDays(30))
+                picker.show()
             }
         }, wrap())
         body.addView(Button(this).apply {
@@ -122,12 +140,14 @@ class ModifyReservationActivity : AppCompatActivity() {
 
     private fun showSlots() {
         body.removeAllViews()
-        if (slots.isEmpty()) body.addView(note(getString(R.string.no_slots)))
-        slots.forEach { slot ->
+        val open = slots.filter { BookingRules.bookable(it) }
+        if (open.isEmpty()) body.addView(note(getString(R.string.no_open_slots)))
+        open.forEach { slot ->
             body.addView(Button(this).apply {
                 text = "${slot.startTime}–${slot.endTime}  ${slot.status}\n${slot.remainingCapacity} remaining"
                 isAllCaps = false
                 setOnClickListener {
+                    if (!canChangeTo(slot)) return@setOnClickListener
                     slotId = slot.slotId
                     showReview(slot)
                 }
@@ -149,12 +169,23 @@ class ModifyReservationActivity : AppCompatActivity() {
         }))
         body.addView(Button(this).apply {
             text = getString(R.string.update_reservation)
-            setOnClickListener { submit(slot) }
+            setOnClickListener {
+                if (canChangeTo(slot)) submit(slot)
+            }
         }, wrap())
         body.addView(Button(this).apply {
             text = getString(R.string.back)
             setOnClickListener { showSlots() }
         }, wrap())
+    }
+
+    private fun canChangeTo(slot: SlotRecord): Boolean {
+        val row = reservation ?: return false
+        val currentOk = BookingRules.hasTwelveHourNotice(row.scheduledAtUtc)
+        val nextOk = BookingRules.hasTwelveHourNotice(BookingRules.slotInstant(slot.date, slot.startTime))
+        if (currentOk && nextOk) return true
+        ruleNotice(getString(R.string.twelve_hour_notice))
+        return false
     }
 
     private fun submit(slot: SlotRecord) {
@@ -207,7 +238,7 @@ class ModifyReservationActivity : AppCompatActivity() {
     private fun showError(error: Exception) {
         runOnUiThread {
             progress.visibility = View.GONE
-            message.text = error.message ?: getString(R.string.api_error)
+            if (!noticeForApi(error.message)) message.text = error.message ?: getString(R.string.api_error)
         }
     }
 

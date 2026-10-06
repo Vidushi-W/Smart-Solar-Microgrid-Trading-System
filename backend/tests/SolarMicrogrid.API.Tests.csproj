@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SolarMicrogrid.API\SolarMicrogrid.API.csproj" />
+    <ProjectReference Include="..\src\SmartSolar.Microgrid.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>

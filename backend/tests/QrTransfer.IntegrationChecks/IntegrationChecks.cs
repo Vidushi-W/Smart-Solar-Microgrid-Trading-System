@@ -107,10 +107,10 @@ internal static class IntegrationChecks
             // Sample records exist only in this isolated test database.
             foreach (var status in new[] { "Approved", "Scheduled", "Requested", "Pending", "Cancelled", "Rejected", "Completed" })
             {
-                await reservations.InsertOneAsync(new EnergyReservation
+                await raw.InsertOneAsync(new BsonDocument
                 {
-                    ReservationId = status, ProsumerId = "owner", StationId = stationId,
-                    SlotId = slotId, EnergyKwh = 12.5, Status = status,
+                    { "_id", status }, { "prosumerId", "owner" }, { "stationId", stationId },
+                    { "slotId", slotId }, { "energyKwh", 12.5 }, { "status", status },
                 });
             }
             await raw.UpdateOneAsync(new BsonDocument("_id", "Scheduled"),
@@ -133,7 +133,7 @@ internal static class IntegrationChecks
             var receipt = verified.GetProperty("verificationToken").GetString()!;
             var completion = new { token, verificationToken = receipt };
             await Check(http, "POST", "/api/transactions/Scheduled/complete", completion, "other-operator", 409);
-            await reservations.UpdateOneAsync(r => r.ReservationId == "Scheduled", Builders<EnergyReservation>.Update.Set(r => r.EnergyKwh, 13));
+            await raw.UpdateOneAsync(new BsonDocument("_id", "Scheduled"), new BsonDocument("$set", new BsonDocument("energyKwh", 13)));
             await Check(http, "POST", "/api/transactions/Scheduled/complete", completion, "operator", 409);
             verified = await Check(http, "POST", "/api/transactions/verify", payload, "operator", 200);
             receipt = verified.GetProperty("verificationToken").GetString()!;
@@ -163,13 +163,40 @@ internal static class IntegrationChecks
             verified = await Check(http, "POST", "/api/transactions/verify", payload, "operator", 200);
             completion = new { token = payload.GetProperty("token").GetString()!, verificationToken = verified.GetProperty("verificationToken").GetString()! };
             await Check(http, "POST", "/api/transactions/Approved/complete", completion, "operator", 409);
-            await reservations.UpdateOneAsync(r => r.ReservationId == "Approved", Builders<EnergyReservation>.Update.Set(r => r.Status, "Scheduled"));
+            await raw.UpdateOneAsync(new BsonDocument("_id", "Approved"), new BsonDocument("$set", new BsonDocument("status", "Scheduled")));
             await Check(http, "POST", "/api/transactions/Approved/complete", completion, "operator", 409);
             verified = await Check(http, "POST", "/api/transactions/verify", payload, "operator", 200);
             completion = new { token = payload.GetProperty("token").GetString()!, verificationToken = verified.GetProperty("verificationToken").GetString()! };
-            await reservations.UpdateOneAsync(r => r.ReservationId == "Approved", Builders<EnergyReservation>.Update.Set(r => r.Status, "Cancelled"));
+            await raw.UpdateOneAsync(new BsonDocument("_id", "Approved"), new BsonDocument("$set", new BsonDocument("status", "Cancelled")));
             await Check(http, "POST", "/api/transactions/Approved/complete", completion, "operator", 409);
             await Check(http, "POST", "/api/transactions/verify", payload, "operator", 409);
+
+            // Both main's ObjectId records and the operational API's string/PascalCase records remain usable.
+            var accountId = ObjectId.GenerateNewId().ToString();
+            await reservations.InsertOneAsync(new EnergyReservation
+            {
+                ReservationId = accountId, ProsumerId = "owner", StationId = stationId,
+                SlotId = slotId, EnergyKwh = 12.5, Status = ReservationStatus.Scheduled,
+            });
+            var operationalId = $"rs-{Guid.NewGuid():N}";
+            await raw.InsertOneAsync(new BsonDocument
+            {
+                { "_id", operationalId }, { "ProsumerId", "owner" }, { "StationId", stationId },
+                { "SlotId", slotId }, { "EnergyKwh", 12.5 }, { "Status", "Scheduled" },
+                { "History", new BsonArray { "preserve teammate history" } },
+            });
+            foreach (var id in new[] { accountId, operationalId })
+            {
+                issued = await Check(http, "POST", $"/api/reservations/{id}/qr", null, "owner", 200);
+                payload = issued.GetProperty("qrPayload");
+                verified = await Check(http, "POST", "/api/transactions/verify", payload, "operator", 200);
+                completion = new { token = payload.GetProperty("token").GetString()!, verificationToken = verified.GetProperty("verificationToken").GetString()! };
+                await Check(http, "POST", $"/api/transactions/{id}/complete", completion, "operator", 200);
+            }
+            persisted = await raw.Find(new BsonDocument("_id", operationalId)).SingleAsync();
+            Assert(persisted["Status"] == "Completed" && !persisted.Contains("status")
+                && persisted["History"][0] == "preserve teammate history",
+                "Operational completion preserves status casing and teammate history");
 
             Console.WriteLine($"PASS: {_passed} HTTP and persistence checks. Database: {databaseName}");
         }

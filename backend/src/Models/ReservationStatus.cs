@@ -6,4 +6,7 @@ public enum ReservationStatus
     Approved,
     Cancelled,
     Completed,
+    Requested,
+    Scheduled,
+    Rejected,
 }

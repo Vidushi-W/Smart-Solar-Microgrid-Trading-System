@@ -3,17 +3,20 @@
  * Backoffice can send an update or cancel. The API decides whether the change is allowed.
  */
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import FlashNotice from "../../components/common/FlashNotice";
 import PageHeader from "../../components/common/PageHeader";
 import StatusBadge from "../../components/common/StatusBadge";
 import ReservationActionSummary from "../../components/reservations/ReservationActionSummary";
 import ReservationFacts from "../../components/reservations/ReservationFacts";
 import { useAuth } from "../../context/AuthContext";
 import { approveReservation, cancelReservation, fetchProsumerAccounts, fetchReservation, listStationsForReservations } from "../../services/apiClient";
+import { hasTwelveHourNotice, TWELVE_HOUR_MESSAGE } from "../../utils/reservationRules";
 import { stationTitle, utcDateLabel, utcTimeLabel } from "./reservationTime";
 
 export default function StaffReservationDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const canChange = user.role === "Backoffice";
   const [reservation, setReservation] = useState(null);
@@ -23,6 +26,7 @@ export default function StaffReservationDetailPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [confirmingCancel, setConfirmingCancel] = useState(false);
 
   useEffect(() => {
@@ -77,14 +81,30 @@ export default function StaffReservationDetailPage() {
     }
   }
 
+  function showNotice(text) {
+    setNotice("");
+    window.setTimeout(() => setNotice(text), 0);
+  }
+
   async function confirmCancel() {
     if (!reservation || busy) return;
+    if (!hasTwelveHourNotice(reservation.scheduledAtUtc)) {
+      setConfirmingCancel(false);
+      showNotice(TWELVE_HOUR_MESSAGE);
+      return;
+    }
     setBusy(true);
     setError("");
     try {
       await cancelReservation(reservation.reservationId);
     } catch (reason) {
-      setError(reason.message || "The reservation could not be cancelled.");
+      const message = reason.message || "The reservation could not be cancelled.";
+      setConfirmingCancel(false);
+      if (message.toLowerCase().includes("12 hours")) {
+        showNotice(TWELVE_HOUR_MESSAGE);
+      } else {
+        setError(message);
+      }
       setBusy(false);
       return;
     }
@@ -94,6 +114,7 @@ export default function StaffReservationDetailPage() {
       setReservation(refreshed);
       setSummary(refreshed);
       setConfirmingCancel(false);
+      setNotice("Reservation cancelled");
     } catch (reason) {
       setSummary(null);
       setError(reason.message || "The cancelled reservation could not be reloaded.");
@@ -111,6 +132,7 @@ export default function StaffReservationDetailPage() {
       />
 
       {!confirmingCancel && error ? <p className="reserve-alert">{error}</p> : null}
+      <FlashNotice message={notice} onClose={() => setNotice("")} />
       {loading ? <p className="reserve-status">Loading reservation</p> : null}
 
       {summary ? (
@@ -150,8 +172,23 @@ export default function StaffReservationDetailPage() {
                   {busy ? "Approving" : "Approve reservation"}
                 </button>
               ) : null}
-              <Link className="btn primary" to={`/reservations/${reservation.reservationId}/modify`}>Update reservation</Link>
-              <button type="button" className="btn ghost" disabled={busy} onClick={() => { setConfirmingCancel(true); setError(""); }}>
+              <button type="button" className="btn primary" onClick={() => {
+                if (!hasTwelveHourNotice(reservation.scheduledAtUtc)) {
+                  showNotice(TWELVE_HOUR_MESSAGE);
+                  return;
+                }
+                navigate(`/reservations/${reservation.reservationId}/modify`);
+              }}>
+                Update reservation
+              </button>
+              <button type="button" className="btn ghost" disabled={busy} onClick={() => {
+                if (!hasTwelveHourNotice(reservation.scheduledAtUtc)) {
+                  showNotice(TWELVE_HOUR_MESSAGE);
+                  return;
+                }
+                setConfirmingCancel(true);
+                setError("");
+              }}>
                 Cancel Reservation
               </button>
             </div>

@@ -45,6 +45,14 @@ Resources live under `app/src/main/res/`: `layout/`, `drawable/`, `mipmap/`, `va
 
 SQLite stores required local Android data. MongoDB remains on the server and is accessed only through the C# REST API. Local data is not authoritative for reservation approval, QR verification or transfer finalization. Android services support client behavior; central business rules remain in backend services.
 
+## Operational frontend
+
+Reservations, role dashboards, QR display and scanning use native Views and Activity navigation. Server rules remain in the C# services.
+
+Nearby station/maps and assignment-specific local persistence remain separate future work. Keep machine-local SDK paths, signing keys and private credentials out of Git.
+
+The native Kotlin/AppCompat application now includes Gradle configuration, a manifest, authentication/profile screens, role dashboards, reservations and QR transfer screens. See [frontend integration](../docs/frontend-integration.md) for the implemented flows and backend dependencies.
+
 ## Authentication and account screens
 
 The Kotlin contracts under `app/src/main/java/com/smartsolar/microgrid/authentication/` model the shared login request and response, supported roles, and initial routing destinations:
@@ -63,14 +71,16 @@ After login, the client calls `GET /api/auth/me` with `Authorization: Bearer <to
 
 Open the `mobile/` directory in Android Studio, allow Gradle to sync, and run the `app` configuration on an emulator. The debug build uses `http://10.0.2.2:5000` so the emulator can reach an API running on the host machine at port `5000`.
 
-For a physical device, change `API_BASE_URL` in `app/build.gradle.kts` to the host machine's LAN address and keep the phone and host on the same network. Do not commit local SDK paths, signing keys, generated APKs, Gradle caches, or API secrets; the repository root `.gitignore` excludes them.
+The reservation client separately uses `http://10.0.2.2:5251`. For a physical device, pass Gradle properties `-PaccountApiBaseUrl=http://HOST:5000 -PreservationApiBaseUrl=http://HOST:5251` and keep the phone and host on the same network. Debug reservation calls use the existing Development identity headers from `/auth/me`; release builds send JWT only and require server JWT support. Do not commit local SDK paths, signing keys, generated APKs, Gradle caches, or API secrets.
 
 The login screen accepts username, email, or NIC; the API determines the account role. Mobile access is limited to Prosumer and Grid Operator accounts. It links to Prosumer registration, which sends NIC, full name, email, phone number, address, password, and confirmation to `POST /api/prosumers/register`. A successful submission displays the pending-activation response; Android does not activate the account locally.
 
 Prosumer account status is controlled by the API. An authenticated Prosumer can request deactivation through `POST /api/prosumers/me/deactivation`; Android cannot activate, deactivate, or reactivate an account itself. The app confirms before sending the request and prevents repeated requests after the status changes.
 
-The Prosumer Home screen displays token-authenticated account information, booking-summary placeholders, and quick actions reserved for the booking/node components. These actions currently navigate to a clearly marked integration placeholder screen rather than silently doing nothing; the owning components can replace those destinations when integrated. It opens `My Profile`, which reads through `GET /api/prosumers/me/profile`. NIC and account status are read-only; permitted fields are saved through `PUT /api/prosumers/me/profile` with the bearer token.
+The Prosumer Home screen displays token-authenticated account information, reservation counts, profile pictures, and account booking actions. My Profile reads and updates through the authenticated prosumer profile API. NIC and account status are read-only. Nearby Grid Nodes remains an integration placeholder.
 
-Grid Operators receive an operator home with links to bookings, QR scanning, and energy transfer; these currently navigate to the same marked integration placeholder while their operational workflows remain owned by their respective project components. The operator profile uses `GET` and `PUT /api/users/me/profile`; the API derives the account ID and role from the JWT and accepts only Backoffice/Grid Operator roles.
+Both mobile roles can also open the operational reservation lists on the reservation host, including Requested, Approved, Scheduled, and completed history. Operational detail retains server actions and history; eligible Prosumers can display or reissue their transaction QR. Account booking detail retains main's modify and cancellation summaries.
+
+Grid Operators receive account bookings, a working QR scanner and energy-transfer confirmation, and the staff profile screen. The operator profile uses GET and PUT /api/users/me/profile; the API derives the account ID and role from the JWT and accepts only Backoffice/Grid Operator roles.
 
 On launch and when returning to a role home, the app revalidates the stored JWT through `GET /api/auth/me`. The endpoint rejects accounts that have become inactive, after which Android clears its local session and returns to login. Backoffice sign-in is not enabled in the mobile client. Prosumer and Grid Operator profiles can choose a picture from the gallery; Android resizes it to JPEG before the authenticated profile update stores it in the user record. The API accepts images up to 750 KB and provides a default initial avatar when no picture is set.

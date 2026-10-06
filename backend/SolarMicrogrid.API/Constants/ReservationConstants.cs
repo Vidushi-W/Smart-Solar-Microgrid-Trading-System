@@ -32,7 +32,8 @@ public static class ServiceTypes
 
 public static class MongoCollections
 {
-    public const string Reservations = "EnergyReservation";
+    // Kept apart from EnergyReservation, which the account reservation API owns.
+    public const string Reservations = "OperationalEnergyReservation";
     public const string Stations = "SolarStationInfo";
     public const string Slots = "EnergyBookingSlots";
     public const string Prosumers = "Prosumers";
