@@ -28,12 +28,29 @@ public sealed class MongoQrTransferRepository : IQrTransferRepository
         var f = Builders<BsonDocument>.Filter;
         var filter = f.Eq("_id", reservationId);
         if (ObjectId.TryParse(reservationId, out var objectId))
+        {
             filter |= f.Eq("_id", objectId);
-        var document = await _reservations.Find(filter).FirstOrDefaultAsync(cancellationToken);
-        if (document is null) return null;
-        var status = document.GetValue(Field(document, "status", "Status"), "").AsString;
-        if (!Enum.TryParse<ReservationStatus>(status, out var reservationStatus)
-            || !Enum.IsDefined(reservationStatus)) return null;
+        }
+
+        var document = await _reservations
+            .Find(filter)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (document is null)
+        {
+            return null;
+        }
+
+        var status = document
+            .GetValue(Field(document, "status", "Status"), "")
+            .AsString;
+
+        if (!Enum.TryParse<ReservationStatus>(status, true, out var reservationStatus) ||
+            !Enum.IsDefined(reservationStatus))
+        {
+            return null;
+        }
+
         var reservation = new EnergyReservation
         {
             ReservationId = document["_id"].ToString()!,
@@ -43,8 +60,10 @@ public sealed class MongoQrTransferRepository : IQrTransferRepository
             EnergyKwh = document.GetValue(Field(document, "energyKwh", "EnergyKwh"), 0).ToDouble(),
             Status = reservationStatus,
             QrTransfer = document.GetValue("qrTransfer", BsonNull.Value) is BsonDocument qr
-                ? BsonSerializer.Deserialize<QrTransferState>(qr) : null,
+                ? BsonSerializer.Deserialize<QrTransferState>(qr)
+                : null,
         };
+
         _snapshots.Add(reservation, document);
         return reservation;
     }
