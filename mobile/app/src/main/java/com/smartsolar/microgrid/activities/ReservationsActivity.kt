@@ -42,7 +42,7 @@ class ReservationsActivity : SolarActivity() {
                 list.objects().forEach { row ->
                     rows.addView(Button(this).apply {
                         text = "${row.getString("code")} · ${row.getString("status")}\n${row.getString("stationName")}\n${date(row.getString("start"))} · ${row.getDouble("energyKwh")} kWh"
-                        setOnClickListener { startActivity(Intent(this@ReservationsActivity, ReservationDetailActivity::class.java)
+                        setOnClickListener { startActivity(Intent(this@ReservationsActivity, OperationalReservationDetailActivity::class.java)
                             .putExtra("reservationId", row.getString("id"))) }
                     })
                 }

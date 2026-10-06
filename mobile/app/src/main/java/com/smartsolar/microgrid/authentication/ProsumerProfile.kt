@@ -7,5 +7,7 @@ data class ProsumerProfile(
     val email: String,
     val contactNumber: String,
     val address: String,
-    val accountStatus: String
+    val accountStatus: String,
+    val createdAtUtc: String = "",
+    val profilePictureData: String? = null
 )

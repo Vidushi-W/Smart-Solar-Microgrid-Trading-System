@@ -5,4 +5,6 @@ public sealed record UpdateWebUserRequest(
     string Email,
     string ContactNumber,
     string Role,
-    string? Password);
+    string? Password,
+    string? Address = null,
+    string? ProfilePictureData = null);

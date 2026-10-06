@@ -8,6 +8,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.smartsolar.microgrid.BuildConfig
@@ -17,6 +18,7 @@ import com.smartsolar.microgrid.authentication.LoginRequest
 import com.smartsolar.microgrid.authentication.LoginResponse
 import com.smartsolar.microgrid.authentication.LoginRouter
 import com.smartsolar.microgrid.authentication.UserRole
+import java.io.IOException
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
@@ -25,6 +27,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var passwordInput: EditText
     private lateinit var loginButton: Button
     private lateinit var messageView: TextView
+    private lateinit var progressBar: ProgressBar
+    private lateinit var signUpLink: TextView
+    private lateinit var passwordToggle: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,27 +38,7 @@ class MainActivity : AppCompatActivity() {
         val savedRole = preferences.getString(ROLE_KEY, null)
         setContentView(createLoginView())
         if (!savedToken.isNullOrBlank() && !savedRole.isNullOrBlank()) {
-            loginButton.isEnabled = false
-            messageView.text = getString(R.string.signing_in)
-            executor.execute {
-                try {
-                    val identity = com.smartsolar.microgrid.api.MicrogridApi(this).identity()
-                    runOnUiThread {
-                        if (!isDestroyed) {
-                            preferences.edit().putString(ROLE_KEY, identity.getString("role")).apply()
-                            openHome(identity.getString("role"))
-                        }
-                    }
-                } catch (error: Exception) {
-                    runOnUiThread {
-                        if (!isDestroyed) {
-                            if ((error as? com.smartsolar.microgrid.api.ApiFailure)?.status == 401) preferences.edit().clear().apply()
-                            loginButton.isEnabled = true
-                            messageView.text = error.message
-                        }
-                    }
-                }
-            }
+            validateSavedSession(savedToken, savedRole)
         }
     }
 
@@ -87,10 +72,22 @@ class MainActivity : AppCompatActivity() {
             setSingleLine(true)
             inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
         }
+        passwordToggle = Button(this).apply {
+            text = getString(R.string.show_password)
+            setOnClickListener {
+                passwordVisible = !passwordVisible
+                passwordInput.inputType = android.text.InputType.TYPE_CLASS_TEXT or
+                    if (passwordVisible) android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                    else android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+                passwordInput.setSelection(passwordInput.text.length)
+                text = getString(if (passwordVisible) R.string.hide_password else R.string.show_password)
+            }
+        }
         loginButton = Button(this).apply {
             text = getString(R.string.login)
             setOnClickListener { submitLogin() }
         }
+        progressBar = ProgressBar(this).apply { visibility = View.GONE }
         messageView = TextView(this).apply {
             setTextColor(Color.rgb(160, 53, 43))
             setPadding(0, 20, 0, 0)
@@ -100,11 +97,16 @@ class MainActivity : AppCompatActivity() {
         content.addView(subtitle, matchWidth())
         content.addView(identifierInput, matchWidth())
         content.addView(passwordInput, matchWidth())
+        content.addView(passwordToggle, matchWidth())
         content.addView(loginButton, matchWidth())
-        content.addView(Button(this).apply {
-            text = getString(R.string.register_as_prosumer)
+        signUpLink = TextView(this).apply {
+            text = getString(R.string.signup_prompt)
+            setTextColor(Color.rgb(160, 62, 44))
+            gravity = Gravity.CENTER
             setOnClickListener { startActivity(Intent(this@MainActivity, RegisterProsumerActivity::class.java)) }
-        }, matchWidth())
+        }
+        content.addView(signUpLink, matchWidth())
+        content.addView(progressBar, matchWidth())
         content.addView(messageView, matchWidth())
         return content
     }
@@ -117,21 +119,74 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        loginButton.isEnabled = false
+        setLoading(true)
         messageView.text = getString(R.string.signing_in)
         executor.execute {
             try {
                 val apiClient = AuthenticationApiClient(BuildConfig.API_BASE_URL)
                 val response = apiClient.login(LoginRequest(identifier, password))
+                if (response.role == UserRole.BACKOFFICE) {
+                    throw IOException(getString(R.string.mobile_role_unavailable))
+                }
                 val identity = apiClient.getCurrentUser(response.token)
-                runOnUiThread { if (!isDestroyed) handleLoginSuccess(response.copy(role = identity.role)) }
+                if (identity.role != response.role) {
+                    throw IOException(getString(R.string.login_failed))
+                }
+                runOnUiThread {
+                    setLoading(false)
+                    handleLoginSuccess(response)
+                }
             } catch (error: Exception) {
                 runOnUiThread {
-                    loginButton.isEnabled = true
+                    setLoading(false)
                     messageView.text = error.message ?: getString(R.string.login_failed)
                 }
             }
         }
+    }
+
+    private fun validateSavedSession(token: String, savedRole: String) {
+        setLoading(true)
+        messageView.text = getString(R.string.checking_session)
+        executor.execute {
+            try {
+                val identity = AuthenticationApiClient(BuildConfig.API_BASE_URL).getCurrentUser(token)
+                if (identity.role.apiValue != savedRole || identity.role == UserRole.BACKOFFICE) {
+                    throw IOException(getString(R.string.login_failed))
+                }
+                runOnUiThread {
+                    setLoading(false)
+                    openHome(identity.role.apiValue)
+                }
+            } catch (error: Exception) {
+                val invalidSession = error.message?.contains("401", ignoreCase = true) == true
+                    || error.message?.contains("inactive", ignoreCase = true) == true
+                    || error is SecurityException
+                if (invalidSession) {
+                    getSharedPreferences(SESSION_PREFS, MODE_PRIVATE).edit().clear().apply()
+                }
+                runOnUiThread {
+                    setLoading(false)
+                    if (error.message?.contains("inactive", ignoreCase = true) == true) {
+                        messageView.text = getString(R.string.account_inactive)
+                    } else if (invalidSession
+                        || error.message?.contains("expired", ignoreCase = true) == true) {
+                        messageView.text = getString(R.string.session_expired)
+                    } else {
+                        messageView.text = getString(R.string.api_error)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun setLoading(loading: Boolean) {
+        loginButton.isEnabled = !loading
+        identifierInput.isEnabled = !loading
+        passwordInput.isEnabled = !loading
+        passwordToggle.isEnabled = !loading
+        signUpLink.isEnabled = !loading
+        progressBar.visibility = if (loading) View.VISIBLE else View.GONE
     }
 
     private fun handleLoginSuccess(response: LoginResponse) {
@@ -164,6 +219,8 @@ class MainActivity : AppCompatActivity() {
         const val TOKEN_KEY = "token"
         const val ROLE_KEY = "role"
     }
+
+    private var passwordVisible = false
 }
 
 private val UserRole.apiValue: String

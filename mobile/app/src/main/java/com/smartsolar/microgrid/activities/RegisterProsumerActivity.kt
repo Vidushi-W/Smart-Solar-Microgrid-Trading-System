@@ -7,6 +7,7 @@ import android.view.Gravity
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -27,6 +28,8 @@ class RegisterProsumerActivity : AppCompatActivity() {
     private lateinit var confirmPasswordInput: EditText
     private lateinit var registerButton: Button
     private lateinit var messageView: TextView
+    private lateinit var progressBar: ProgressBar
+    private var passwordVisible = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,12 +66,36 @@ class RegisterProsumerActivity : AppCompatActivity() {
         confirmPasswordInput = field(R.string.confirm_password, InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD)
         listOf(nicInput, fullNameInput, emailInput, phoneInput, addressInput, passwordInput, confirmPasswordInput)
             .forEach(content::addView)
+        content.addView(Button(this).apply {
+            text = getString(R.string.show_password)
+            setOnClickListener {
+                passwordVisible = !passwordVisible
+                val type = InputType.TYPE_CLASS_TEXT or if (passwordVisible) {
+                    InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                } else {
+                    InputType.TYPE_TEXT_VARIATION_PASSWORD
+                }
+                passwordInput.inputType = type
+                confirmPasswordInput.inputType = type
+                passwordInput.setSelection(passwordInput.text.length)
+                confirmPasswordInput.setSelection(confirmPasswordInput.text.length)
+                text = getString(if (passwordVisible) R.string.hide_password else R.string.show_password)
+            }
+        }, matchWidth())
+        content.addView(TextView(this).apply {
+            text = getString(R.string.password_requirements_hint)
+            textSize = 12f
+            setTextColor(Color.rgb(96, 112, 100))
+            setPadding(0, 0, 0, 12)
+        }, matchWidth())
 
         registerButton = Button(this).apply {
             text = getString(R.string.register)
             setOnClickListener { submitRegistration() }
         }
+        progressBar = ProgressBar(this).apply { visibility = android.view.View.GONE }
         content.addView(registerButton, matchWidth())
+        content.addView(progressBar, matchWidth())
         content.addView(Button(this).apply {
             text = getString(R.string.back_to_login)
             setOnClickListener { finish() }
@@ -99,31 +126,74 @@ class RegisterProsumerActivity : AppCompatActivity() {
             passwordInput.text.toString(),
             confirmPasswordInput.text.toString()
         )
+        if (listOf(request.nic, request.fullName, request.email, request.phoneNumber, request.address, request.password, request.confirmPassword)
+                .any(String::isBlank)) {
+            showError(getString(R.string.registration_required))
+            return
+        }
+        if (!Regex("^(?:[0-9]{12}|[0-9]{9}[VvXx])$").matches(request.nic)) {
+            showError(getString(R.string.invalid_nic))
+            return
+        }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(request.email).matches()) {
+            showError(getString(R.string.invalid_email))
+            return
+        }
+        val phoneDigits = request.phoneNumber.count(Char::isDigit)
+        if (!Regex("^\\+?[0-9\\s().-]+$").matches(request.phoneNumber) || phoneDigits !in 7..15) {
+            showError(getString(R.string.invalid_phone))
+            return
+        }
         if (request.password != request.confirmPassword) {
             messageView.text = getString(R.string.passwords_do_not_match)
             return
         }
+        if (!isStrongPassword(request.password)) {
+            showError(getString(R.string.password_requirements_error))
+            return
+        }
 
-        registerButton.isEnabled = false
+        setLoading(true)
         messageView.setTextColor(Color.rgb(96, 112, 100))
         messageView.text = getString(R.string.registering)
         executor.execute {
             try {
                 val response = AuthenticationApiClient(BuildConfig.API_BASE_URL).register(request)
                 runOnUiThread {
+                    setLoading(false)
                     messageView.setTextColor(Color.rgb(47, 126, 89))
-                    messageView.text = response.message
+                    messageView.text = if (response.accountStatus == "PendingActivation") {
+                        getString(R.string.registration_pending)
+                    } else {
+                        response.message
+                    }
                     registerButton.isEnabled = false
                 }
             } catch (error: Exception) {
                 runOnUiThread {
-                    registerButton.isEnabled = true
-                    messageView.setTextColor(Color.rgb(160, 53, 43))
-                    messageView.text = error.message ?: getString(R.string.registration_failed)
+                    setLoading(false)
+                    showError(error.message ?: getString(R.string.registration_failed))
                 }
             }
         }
     }
+
+    private fun setLoading(loading: Boolean) {
+        registerButton.isEnabled = !loading
+        progressBar.visibility = if (loading) android.view.View.VISIBLE else android.view.View.GONE
+    }
+
+    private fun showError(message: String) {
+        messageView.setTextColor(Color.rgb(160, 53, 43))
+        messageView.text = message
+    }
+
+    private fun isStrongPassword(password: String): Boolean =
+        password.length >= 8
+            && password.any(Char::isUpperCase)
+            && password.any(Char::isLowerCase)
+            && password.any(Char::isDigit)
+            && password.any { !it.isLetterOrDigit() && !it.isWhitespace() }
 
     private fun matchWidth() = LinearLayout.LayoutParams(
         LinearLayout.LayoutParams.MATCH_PARENT,

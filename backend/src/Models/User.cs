@@ -31,4 +31,8 @@ public sealed class User
     public string AccountStatus { get; set; } = "Active";
     [BsonElement("createdAtUtc")]
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    [BsonElement("profilePictureData")]
+    [BsonIgnoreIfNull]
+    public string? ProfilePictureData { get; set; }
 }

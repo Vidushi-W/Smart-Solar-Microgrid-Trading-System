@@ -6,22 +6,28 @@ import { getCurrentUser, login as loginRequest } from "../services/authService";
 
 const AuthContext = createContext(null);
 
+function mapIdentity(identity) {
+  return {
+    id: identity.userId,
+    name: identity.name || identity.username || identity.userId,
+    username: identity.username,
+    role: identity.role,
+    profilePictureData: identity.profilePictureData || null,
+  };
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!localStorage.getItem("authToken")) {
+    const storedToken = localStorage.getItem("authToken");
+    if (!storedToken) {
       setLoading(false);
       return;
     }
     getCurrentUser()
-      .then((identity) => setUser({
-        id: identity.userId,
-        name: identity.username || identity.userId,
-        username: identity.username,
-        role: identity.role,
-      }))
+      .then((identity) => setUser(mapIdentity(identity)))
       .catch(() => {
         localStorage.removeItem("authToken");
         setUser(null);
@@ -29,17 +35,12 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const login = useCallback(async (identifier, password) => {
-    const result = await loginRequest(identifier, password);
+  const login = useCallback(async (identifier, password, role) => {
+    const result = await loginRequest(identifier, password, role);
     localStorage.setItem("authToken", result.token);
     try {
       const identity = await getCurrentUser();
-      const session = {
-        id: identity.userId,
-        name: identity.username || identity.userId,
-        username: identity.username,
-        role: identity.role || result.role,
-      };
+      const session = { ...mapIdentity(identity), role: identity.role || result.role };
       setUser(session);
       return session;
     } catch (error) {
@@ -53,8 +54,12 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  const updateUser = useCallback((updates) => {
+    setUser((current) => current ? { ...current, ...updates } : current);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>{children}</AuthContext.Provider>
   );
 }
 

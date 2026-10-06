@@ -11,15 +11,33 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
         <activity android:name=".activities.ReservationsActivity" android:exported="false" />
-        <activity android:name=".activities.ReservationDetailActivity" android:exported="false" />
+        <activity android:name=".activities.OperationalReservationDetailActivity" android:exported="false" />
         <activity android:name=".activities.ReservationFormActivity" android:exported="false" />
         <activity android:name=".activities.ReservationQrActivity" android:exported="false" />
         <activity android:name=".activities.QrScannerActivity" android:exported="false" />
+        <activity
+            android:name=".activities.ModifyReservationActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.ReservationDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.CreateReservationActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.ReservationListActivity"
+            android:exported="false" />
         <activity
             android:name=".activities.RegisterProsumerActivity"
             android:exported="false" />
         <activity
             android:name=".activities.ProsumerProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.StaffProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.ModulePlaceholderActivity"
             android:exported="false" />
         <activity
             android:name=".activities.RoleHomeActivity"

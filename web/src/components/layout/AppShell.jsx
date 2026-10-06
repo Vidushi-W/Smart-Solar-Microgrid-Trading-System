@@ -1,5 +1,5 @@
 /**
- * Frame around signed-in pages. API pages own their request notices.
+ * Frame around signed-in pages: sidebar and top bar. The mobile menu closes when the route changes.
  */
 import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";

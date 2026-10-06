@@ -45,6 +45,18 @@ Backoffice-only endpoints manage Web application users with the `Backoffice` and
 
 The API validates required fields, email format, password length, allowed Web roles, and duplicate usernames. MongoDB operations and password hashing remain in backend services; the Web client never accesses MongoDB directly.
 
+Authenticated self-profile updates may include an optional `profilePictureData` JPEG data URL. The API rejects non-JPEG formats and decoded images larger than 750 KB; omitted values preserve the existing picture, and an empty string removes it.
+
+### Initial Backoffice account
+
+The API intentionally has no default Backoffice credentials. The demo credentials in the Web client are local sample data and are not MongoDB accounts. To create the first real Backoffice account, run the one-time bootstrap tool from an interactive terminal in `backend/src`:
+
+```powershell
+dotnet run --project ..\tools\BootstrapBackoffice\BootstrapBackoffice.csproj
+```
+
+It is a standalone utility and does not rebuild or replace the running API. It reads the same MongoDB connection string and database settings as the API, refuses to run if any Backoffice account already exists, prompts for the account details, masks password input, hashes the password with ASP.NET Identity, and asks you to confirm the target database before inserting. MongoDB must be reachable. For MongoDB Atlas, get the **driver connection string** from Atlas **Connect → Drivers**; the browser URL for the Atlas dashboard is not a database connection string. Set it locally in PowerShell as ` $env:MONGODB_CONNECTION_STRING = Read-Host "Atlas connection string" ` (do not paste database credentials into chat or commit them). The same variable must be set when starting the API so it uses the same database. The new account is active and uses the standard login page.
+
 ## Prosumer account lifecycle
 
 Prosumer status is stored centrally in `AccountStatus`:

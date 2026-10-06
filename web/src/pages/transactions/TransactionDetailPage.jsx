@@ -5,7 +5,7 @@ import StatusBadge from "../../components/common/StatusBadge";
 import ApiFailure from "../../components/common/ApiFailure";
 import Modal from "../../components/common/Modal";
 import { useAuth } from "../../context/AuthContext";
-import { fetchReservation } from "../../services/reservationsApi";
+import { fetchReservation, postReservationAction } from "../../services/reservationsApi";
 import { verifyQr, completeTransfer } from "../../services/qrTransfersApi";
 import { ReservationFields } from "../reservations/ReservationDetailPage";
 import { formatDateTime } from "../../utils/format";
@@ -63,13 +63,23 @@ export default function TransactionDetailPage() {
       if (e.status == null || e.status === 0 || e.status >= 500 || (e.status >= 200 && e.status < 300)) setUncertain(true);
     } finally { setBusy(false); }
   }
+  async function schedule() {
+    setBusy(true); setError(null); setCredentials(null); setTransfer(null);
+    try { setReservation(await postReservationAction(user, id, "schedule")); }
+    catch (error) { setError(error); }
+    finally { setBusy(false); }
+  }
+  const history = reservation?.history || [];
+  const updated = history.length ? history[history.length - 1].at : reservation?.start;
   const operator = user.role === "GridOperator";
   return <div className="page">
     <PageHeader title="Transfer information" actions={reservation ? <StatusBadge value={reservation.status} /> : null} />
-    <p className="back-link"><Link to="/transactions">Completed transfers</Link> · <Link to={`/reservations/${encodeURIComponent(id)}`}>Reservation details</Link></p>
+    <p className="back-link"><Link to="/transactions">All transfers</Link> · <Link to={`/operational-reservations/${encodeURIComponent(id)}`}>Reservation details</Link></p>
     {loading ? <p role="status">Loading reservation…</p> : null}
     <ApiFailure error={error} onRetry={!busy ? () => setReload((n) => n + 1) : undefined} />
     {reservation ? <article className="panel"><h2>{reservation.code}</h2><ReservationFields reservation={reservation} />
+      <p className="hint">Updated {formatDateTime(updated)}</p>
+      {reservation.allowedActions?.includes("schedule") ? <button type="button" className="btn primary" disabled={busy} onClick={schedule}>Confirm schedule</button> : null}
       <p className="hint">Persisted QR token history and completion audit are not exposed by the current read API.</p>
     </article> : null}
     {operator && reservation && reservation.status !== "Completed" && !uncertain ? <article className="panel">

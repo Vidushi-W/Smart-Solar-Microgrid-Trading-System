@@ -4,8 +4,29 @@
 import { ACCOUNT_API_BASE } from './apiTargets';
 const usersPath = '/api/users';
 
+export async function registerProsumer(request) {
+  const response = await fetchWithAuth('/api/prosumers/register', {
+    method: 'POST',
+    body: JSON.stringify(request)
+  });
+  return response.json();
+}
+
 export async function getUser(id) {
   const response = await fetchWithAuth(`${usersPath}/${encodeURIComponent(id)}`);
+  return response.json();
+}
+
+export async function getMyStaffProfile() {
+  const response = await fetchWithAuth(`${usersPath}/me/profile`);
+  return response.json();
+}
+
+export async function updateMyStaffProfile(profile) {
+  const response = await fetchWithAuth(`${usersPath}/me/profile`, {
+    method: 'PUT',
+    body: JSON.stringify(profile)
+  });
   return response.json();
 }
 
@@ -43,23 +64,46 @@ export async function getPendingProsumers() {
   return response.json();
 }
 
+export async function getProsumers() {
+  const response = await fetchWithAuth('/api/prosumers');
+  return response.json();
+}
+
+export async function getProsumerByNic(nic) {
+  const response = await fetchWithAuth(`/api/prosumers/${encodeURIComponent(nic)}`);
+  return response.json();
+}
+
+export async function updateProsumerByNic(nic, profile) {
+  const response = await fetchWithAuth(`/api/prosumers/${encodeURIComponent(nic)}`, {
+    method: 'PUT',
+    body: JSON.stringify(profile)
+  });
+  return response.json();
+}
+
 export async function getDeactivatedProsumers() {
   const response = await fetchWithAuth('/api/prosumers/deactivated');
   return response.json();
 }
 
 export async function activateProsumer(id) {
-  const response = await fetchWithAuth(`/api/prosumers/${id}/activate`, { method: 'POST' });
+  const response = await fetchWithAuth(`/api/prosumers/${encodeURIComponent(id)}/activate`, { method: 'POST' });
   return response.json();
 }
 
 export async function deactivateProsumer(id) {
-  const response = await fetchWithAuth(`/api/prosumers/${id}/deactivate`, { method: 'POST' });
+  const response = await fetchWithAuth(`/api/prosumers/${encodeURIComponent(id)}/deactivate`, { method: 'POST' });
+  return response.json();
+}
+
+export async function requestProsumerDeactivationByBackoffice(id) {
+  const response = await fetchWithAuth(`/api/prosumers/${encodeURIComponent(id)}/request-deactivation`, { method: 'POST' });
   return response.json();
 }
 
 export async function reactivateProsumer(id) {
-  const response = await fetchWithAuth(`/api/prosumers/${id}/reactivate`, { method: 'POST' });
+  const response = await fetchWithAuth(`/api/prosumers/${encodeURIComponent(id)}/reactivate`, { method: 'POST' });
   return response.json();
 }
 

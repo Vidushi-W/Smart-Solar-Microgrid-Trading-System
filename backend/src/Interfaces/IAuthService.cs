@@ -4,5 +4,5 @@ namespace SolarMicrogridTrading.Api.Interfaces;
 
 public interface IAuthService
 {
-    Task<LoginResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken);
+    Task<LoginOutcome> LoginAsync(LoginRequest request, CancellationToken cancellationToken);
 }

@@ -22,6 +22,7 @@ const TONES = {
 };
 
 const LABELS = {
+  Requested: "Pending",
   AwaitingQR: "Awaiting QR",
   GridOperator: "Grid Operator",
 };

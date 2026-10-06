@@ -6,6 +6,8 @@ import StatusBadge from "../../components/common/StatusBadge";
 import ApiFailure from "../../components/common/ApiFailure";
 import { useAuth } from "../../context/AuthContext";
 import { fetchReservation, fetchReservationOptions, modifyReservation, postReservationAction } from "../../services/reservationsApi";
+import ProsumerReservationDetailPage from "./ProsumerReservationDetailPage";
+import StaffReservationDetailPage from "./StaffReservationDetailPage";
 import { formatDateTime, formatTimeRange } from "../../utils/format";
 
 export function ReservationFields({ reservation: r }) {
@@ -21,7 +23,7 @@ export function ReservationFields({ reservation: r }) {
   </dl>;
 }
 
-export default function ReservationDetailPage() {
+export function OperationalReservationDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
   const [reservation, setReservation] = useState(null);
@@ -70,7 +72,7 @@ export default function ReservationDetailPage() {
 
   return <div className="page">
     <PageHeader title={reservation?.code || "Reservation"} actions={reservation ? <StatusBadge value={reservation.status} /> : null} />
-    <p className="back-link"><Link to="/reservations">All reservations</Link></p>
+    <p className="back-link"><Link to="/operational-reservations">All reservations</Link></p>
     {loading ? <p role="status">Loading reservation…</p> : null}
     <ApiFailure error={error} onRetry={!busy ? () => setReload((n) => n + 1) : undefined} />
     {notice ? <p className="hint" role="status">{notice}</p> : null}
@@ -113,4 +115,9 @@ export default function ReservationDetailPage() {
       </Modal> : null}
     </> : null}
   </div>;
+}
+
+export default function ReservationDetailPage() {
+  const { user } = useAuth();
+  return user.role === "Prosumer" ? <ProsumerReservationDetailPage /> : <StaffReservationDetailPage />;
 }

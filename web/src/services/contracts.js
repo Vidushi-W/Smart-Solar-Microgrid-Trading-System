@@ -11,7 +11,7 @@ export const contractGroups = [
     owner: "Member 1",
     area: "Authentication & Accounts",
     items: [
-      { method: "POST", path: "/auth/login", role: "Public", purpose: "Sign in with email and password. Response carries the user id, name, and role. Clients must not choose their own user id." },
+      { method: "POST", path: "/auth/login", role: "Public", purpose: "Sign in with username, email, or NIC and password. Response carries the user id, name, and role. Clients must not choose their own user id." },
       { method: "GET", path: "/users", role: "Backoffice", purpose: "List Backoffice and Grid Operator accounts." },
       { method: "POST", path: "/users", role: "Backoffice", purpose: "Create a staff account." },
       { method: "PATCH", path: "/users/{id}/status", role: "Backoffice", purpose: "Activate or deactivate a staff account." },

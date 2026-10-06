@@ -1,12 +1,12 @@
 /**
- * Login and current-user calls. The identifier is a username or NIC. This module does not store the token; AuthContext does that after a successful login.
+ * Login and current-user calls. The identifier is a username, email, or NIC. This module does not store the token; AuthContext does that after a successful login.
  */
 import { apiRequest } from './apiClient';
 
-export async function login(identifier, password) {
+export async function login(identifier, password, role) {
   return apiRequest('/auth/login', {
     method: 'POST',
-    body: { identifier, password }
+    body: { identifier, password, role }
   });
 }
 

@@ -4,4 +4,5 @@ public sealed record UpdateProsumerProfileRequest(
     string Name,
     string Email,
     string ContactNumber,
-    string Address);
+    string Address,
+    string? ProfilePictureData = null);

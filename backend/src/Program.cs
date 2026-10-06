@@ -17,14 +17,18 @@ using SolarMicrogridTrading.Api.Models;
 using SolarMicrogridTrading.Api.Repositories;
 using SolarMicrogridTrading.Api.Services;
 
+LoadSharedDevelopmentEnv();
+
 var builder = WebApplication.CreateBuilder(args);
 
 var mongoSettings = new MongoDbSettings
 {
-    ConnectionString = builder.Configuration["MongoDb:ConnectionString"]
-        ?? Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING")
+    ConnectionString = Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING")
+        ?? builder.Configuration["MongoDb:ConnectionString"]
         ?? throw new InvalidOperationException("MONGODB_CONNECTION_STRING is not configured."),
-    DatabaseName = builder.Configuration["MongoDb:DatabaseName"] ?? "SolarMicrogridTrading",
+    DatabaseName = Environment.GetEnvironmentVariable("MONGODB_DATABASE_NAME")
+        ?? builder.Configuration["MongoDb:DatabaseName"]
+        ?? "SolarMicrogridTrading",
     UsersCollectionName = builder.Configuration["MongoDb:UsersCollectionName"] ?? "Users"
 };
 
@@ -64,8 +68,16 @@ builder.Services.AddScoped<
     SmartSolar.Microgrid.Repositories.MongoStationRepository>();
 
 builder.Services.AddScoped<
+    SmartSolar.Microgrid.Interfaces.IReservationRepository,
+    SmartSolar.Microgrid.Repositories.MongoReservationRepository>();
+
+builder.Services.AddScoped<
+    SmartSolar.Microgrid.Interfaces.IReservationService,
+    SmartSolar.Microgrid.Services.ReservationService>();
+
+builder.Services.AddScoped<
     SmartSolar.Microgrid.Interfaces.IStationReservationChecker,
-    SmartSolar.Microgrid.Services.UnconfiguredStationReservationChecker>();
+    SmartSolar.Microgrid.Services.ReservationStationChecker>();
 
 builder.Services.AddScoped<
     SmartSolar.Microgrid.Interfaces.IStationService,
@@ -77,7 +89,7 @@ builder.Services.AddScoped<
 
 builder.Services.AddScoped<
     SmartSolar.Microgrid.Interfaces.ISlotReservationChecker,
-    SmartSolar.Microgrid.Services.UnconfiguredSlotReservationChecker>();
+    SmartSolar.Microgrid.Services.ReservationSlotChecker>();
 
 builder.Services.AddScoped<
     SmartSolar.Microgrid.Interfaces.IEnergyBookingSlotService,
@@ -180,5 +192,54 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+static void LoadSharedDevelopmentEnv()
+{
+    var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
+    while (directory is not null)
+    {
+        ApplyEnvFile(Path.Combine(directory.FullName, ".env"));
+        ApplyEnvFile(Path.Combine(directory.FullName, "SolarMicrogrid.API", ".env"));
+        ApplyEnvFile(Path.Combine(directory.FullName, "backend", "SolarMicrogrid.API", ".env"));
+        directory = directory.Parent;
+    }
+}
+
+static void ApplyEnvFile(string path)
+{
+    if (!File.Exists(path))
+    {
+        return;
+    }
+
+    foreach (var rawLine in File.ReadAllLines(path))
+    {
+        var line = rawLine.Trim();
+        if (line.Length == 0 || line.StartsWith('#'))
+        {
+            continue;
+        }
+
+        var separator = line.IndexOf('=');
+        if (separator <= 0)
+        {
+            continue;
+        }
+
+        var key = line[..separator].Trim();
+        if (string.IsNullOrEmpty(key) || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(key)))
+        {
+            continue;
+        }
+
+        var value = line[(separator + 1)..].Trim();
+        if (value.Length >= 2 && value.StartsWith('"') && value.EndsWith('"'))
+        {
+            value = value[1..^1];
+        }
+
+        Environment.SetEnvironmentVariable(key, value);
+    }
+}
 
 public partial class Program;

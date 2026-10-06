@@ -64,12 +64,19 @@ class AuthenticationApiClient(
             })?.bufferedReader()?.use { it.readText() }.orEmpty()
             val response = JSONObject(responseText.ifBlank { "{}" })
             if (connection.responseCode !in 200..299) {
-                throw IOException(response.optString("message", "Authentication expired."))
+                throw IOException("HTTP ${connection.responseCode}: ${response.optString("message", "Authentication expired.")}")
             }
             AuthenticatedUser(
                 userId = response.getString("userId"),
                 username = response.getString("username"),
-                role = parseRole(response.getString("role"))
+                role = parseRole(response.getString("role")),
+                name = response.optString("name", response.getString("username")),
+                email = response.optString("email"),
+                contactNumber = response.optString("contactNumber"),
+                address = response.optString("address"),
+                nic = response.optString("nic"),
+                accountStatus = response.optString("accountStatus", "Active"),
+                createdAtUtc = response.optString("createdAtUtc")
             )
         } finally {
             connection.disconnect()
@@ -127,7 +134,9 @@ class AuthenticationApiClient(
             email = response.getString("email"),
             contactNumber = response.getString("contactNumber"),
             address = response.getString("address"),
-            accountStatus = response.getString("accountStatus")
+            accountStatus = response.getString("accountStatus"),
+            createdAtUtc = response.optString("createdAtUtc"),
+            profilePictureData = response.optString("profilePictureData").takeIf(String::isNotBlank)
         )
     }
 
@@ -141,6 +150,7 @@ class AuthenticationApiClient(
                 .put("email", request.email)
                 .put("contactNumber", request.contactNumber)
                 .put("address", request.address)
+                .put("profilePictureData", request.profilePictureData)
         )
         return ProsumerProfile(
             userId = response.getString("userId"),
@@ -149,9 +159,56 @@ class AuthenticationApiClient(
             email = response.getString("email"),
             contactNumber = response.getString("contactNumber"),
             address = response.getString("address"),
-            accountStatus = response.getString("accountStatus")
+            accountStatus = response.getString("accountStatus"),
+            createdAtUtc = response.optString("createdAtUtc"),
+            profilePictureData = response.optString("profilePictureData").takeIf(String::isNotBlank)
         )
     }
+
+    fun getMyStaffProfile(token: String): MobileAccountProfile =
+        parseAccountProfile(authorizedRequest("/api/users/me/profile", token, "GET"))
+
+    fun updateMyStaffProfile(
+        token: String,
+        role: UserRole,
+        name: String,
+        email: String,
+        contactNumber: String,
+        password: String?,
+        profilePictureData: String? = null
+    ): MobileAccountProfile {
+        val roleName = when (role) {
+            UserRole.BACKOFFICE -> "Backoffice"
+            UserRole.GRID_OPERATOR -> "GridOperator"
+            UserRole.PROSUMER -> throw IOException("Prosumer profiles use the Prosumer profile endpoint.")
+        }
+        val payload = JSONObject()
+            .put("name", name)
+            .put("email", email)
+            .put("contactNumber", contactNumber)
+            .put("role", roleName)
+            .put("password", password)
+            .put("profilePictureData", profilePictureData)
+        return parseAccountProfile(authorizedRequest("/api/users/me/profile", token, "PUT", payload))
+    }
+
+    fun getMyProsumerAccount(token: String): MobileAccountProfile =
+        parseAccountProfile(authorizedRequest("/api/prosumers/me/profile", token, "GET"))
+
+    private fun parseAccountProfile(response: JSONObject) = MobileAccountProfile(
+        userId = response.optString("userId", response.optString("id")),
+        username = response.optString("username", response.optString("nic")),
+        nic = response.optString("nic"),
+        name = response.optString("name"),
+        email = response.optString("email"),
+        contactNumber = response.optString("contactNumber"),
+        address = response.optString("address"),
+        role = response.optString("role", "Prosumer"),
+        accountStatus = response.optString("accountStatus", if (response.optBoolean("isActive")) "Active" else "Inactive"),
+        isActive = response.optBoolean("isActive"),
+        createdAtUtc = response.optString("createdAtUtc"),
+        profilePictureData = response.optString("profilePictureData").takeIf(String::isNotBlank)
+    )
 
     fun requestDeactivation(token: String): String {
         return authorizedRequest("/api/prosumers/me/deactivation", token, "POST")
@@ -183,7 +240,7 @@ class AuthenticationApiClient(
                 ?.bufferedReader()?.use { it.readText() }.orEmpty()
             val response = JSONObject(responseText.ifBlank { "{}" })
             if (connection.responseCode !in 200..299) {
-                throw IOException(response.optString("message", "Profile request failed."))
+                throw IOException("HTTP ${connection.responseCode}: ${response.optString("message", "Profile request failed.")}")
             }
             response
         } finally {

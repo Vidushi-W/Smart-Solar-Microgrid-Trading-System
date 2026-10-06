@@ -7,4 +7,7 @@ public sealed record ProsumerProfileResponse(
     string Email,
     string ContactNumber,
     string Address,
-    string AccountStatus);
+    string AccountStatus,
+    bool IsActive,
+    DateTime CreatedAtUtc,
+    string? ProfilePictureData = null);

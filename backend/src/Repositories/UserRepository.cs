@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using SolarMicrogridTrading.Api.Configuration;
 using SolarMicrogridTrading.Api.Interfaces;
@@ -19,7 +21,10 @@ public sealed class UserRepository : IUserRepository
         var normalizedIdentifier = identifier.Trim();
         var filter = Builders<User>.Filter.Or(
             Builders<User>.Filter.Eq(user => user.Username, normalizedIdentifier),
-            Builders<User>.Filter.Eq(user => user.Nic, normalizedIdentifier));
+            Builders<User>.Filter.Eq(user => user.Nic, normalizedIdentifier),
+            Builders<User>.Filter.Regex(
+                user => user.Email,
+                new BsonRegularExpression($"^{Regex.Escape(normalizedIdentifier)}$", "i")));
 
         return await users.Find(filter).FirstOrDefaultAsync(cancellationToken);
     }
@@ -36,15 +41,24 @@ public sealed class UserRepository : IUserRepository
         return await users.Find(user => user.Id == id).FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<bool> ExistsByUsernameOrNicAsync(
+    public async Task<User?> GetByNicAsync(string nic, CancellationToken cancellationToken)
+    {
+        return await users.Find(user => user.Nic == nic.Trim().ToUpperInvariant()).FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<bool> ExistsByUsernameEmailOrNicAsync(
         string username,
+        string email,
         string nic,
         string? excludedId,
         CancellationToken cancellationToken)
     {
         var filter = Builders<User>.Filter.Or(
             Builders<User>.Filter.Eq(user => user.Username, username),
-            Builders<User>.Filter.Eq(user => user.Nic, nic));
+            Builders<User>.Filter.Eq(user => user.Nic, nic),
+            Builders<User>.Filter.Regex(
+                user => user.Email,
+                new BsonRegularExpression($"^{Regex.Escape(email.Trim())}$", "i")));
         if (!string.IsNullOrWhiteSpace(excludedId))
         {
             filter &= Builders<User>.Filter.Ne(user => user.Id, excludedId);
