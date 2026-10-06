@@ -2,6 +2,24 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "vite";
+import { bookingDateRange, isSlotWithinBookingWindow, slotBookingState } from "../src/pages/reservations/reservationTime.js";
+
+test("booking picker matches the API's seven Colombo calendar days", () => {
+  const now = Date.parse("2026-10-06T20:30:00.000Z");
+  assert.deepEqual(bookingDateRange(now), { minDate: "2026-10-07", maxDate: "2026-10-14" });
+  assert.equal(isSlotWithinBookingWindow({ date: "2026-10-06", startTime: "20:29" }, now), false);
+  assert.equal(isSlotWithinBookingWindow({ date: "2026-10-06", startTime: "20:30" }, now), false);
+  assert.equal(isSlotWithinBookingWindow({ date: "2026-10-06", startTime: "20:31" }, now), true);
+  assert.equal(isSlotWithinBookingWindow({ date: "2026-10-13", startTime: "20:30" }, now), true);
+  assert.equal(isSlotWithinBookingWindow({ date: "2026-10-13", startTime: "20:31" }, now), true);
+  assert.equal(isSlotWithinBookingWindow({ date: "2026-10-14", startTime: "09:00" }, now), true);
+  assert.equal(isSlotWithinBookingWindow({ date: "2026-10-14", startTime: "18:29" }, now), true);
+  assert.equal(isSlotWithinBookingWindow({ date: "2026-10-14", startTime: "18:30" }, now), false);
+  assert.equal(slotBookingState({ date: "2026-10-14", startTime: "18:30" }, new Date(now)).reason, "Outside the next 7 days");
+  assert.deepEqual(bookingDateRange(Date.parse("2026-10-31T20:30:00Z")), { minDate: "2026-11-01", maxDate: "2026-11-08" });
+  assert.equal(isSlotWithinBookingWindow(null, now), false);
+  assert.equal(isSlotWithinBookingWindow({ date: "invalid", startTime: "invalid" }, now), false);
+});
 
 test("existing API ownership, bodies and errors", async (t) => {
   const server = await createServer({ server: { middlewareMode: true }, appType: "custom" });
@@ -18,6 +36,7 @@ test("existing API ownership, bodies and errors", async (t) => {
     const qr = await server.ssrLoadModule("/src/services/qrTransfersApi.js");
     const catalog = await server.ssrLoadModule("/src/services/catalogApi.js");
     const targets = await server.ssrLoadModule("/src/services/apiTargets.js");
+    const accountBookings = await server.ssrLoadModule("/src/services/apiClient.js");
     const user = { id: "transport-test-only", role: "Prosumer" };
 
     await t.test("reservation reads use reservation host and encoded identifiers", async () => {
@@ -65,6 +84,31 @@ test("existing API ownership, bodies and errors", async (t) => {
       await assert.rejects(() => reservations.modifyReservation(user, "id", ""), (error) => error.status === 400 && error.message === "Select a slot.");
       globalThis.fetch = async () => Response.json({ message: "Sign in is required." }, { status: 401 });
       await assert.rejects(() => reservations.fetchReservation(user, "id"), (error) => error.status === 401);
+    });
+    await t.test("account booking confirmation returns the created reservation on the account host", async () => {
+      const saved = { reservationId: "booking-test-only", status: "Pending" };
+      globalThis.fetch = async (url, options) => {
+        requests.push({ url, options });
+        return Response.json(saved);
+      };
+      const booking = { prosumerId: user.id, stationId: "station-test-only", slotId: "slot-test-only", scheduledAtUtc: "2030-01-01T09:00:00.000Z" };
+      assert.deepEqual(await accountBookings.createReservation(booking), saved);
+      const request = requests.pop();
+      assert.equal(request.url, targets.ACCOUNT_API_BASE + "/reservations");
+      assert.equal(request.options.method, "POST");
+      assert.deepEqual(JSON.parse(request.options.body), booking);
+      assert.ok(request.options.signal instanceof AbortSignal);
+    });
+    await t.test("slow booking confirmation stops waiting and warns against duplicate submission", async (bookingTest) => {
+      bookingTest.mock.timers.enable({ apis: ["setTimeout"] });
+      globalThis.fetch = async (_url, { signal }) => new Promise((_resolve, reject) => {
+        signal.addEventListener("abort", () => reject(new DOMException("cancelled", "AbortError")), { once: true });
+      });
+      const pending = accountBookings.createReservation({});
+      const rejected = assert.rejects(pending, (error) => error.status === 0
+        && error.message.includes("may have been saved") && error.message.includes("check your reservations"));
+      bookingTest.mock.timers.tick(30_000);
+      await rejected;
     });
     await t.test("network and abort errors never become success", async () => {
       globalThis.fetch = async () => { throw new TypeError("offline"); };

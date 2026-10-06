@@ -45,6 +45,7 @@ export function colomboDateInput(now = new Date(), dayOffset = 0) {
 }
 
 export function slotBookingState(slot, now = new Date()) {
+  if (!slot) return { ok: false, reason: "This slot is not available." };
   const start = new Date(slotInstant(slot));
   if (Number.isNaN(start.getTime())) {
     return { ok: false, reason: "This slot is not available." };
@@ -58,4 +59,16 @@ export function slotBookingState(slot, now = new Date()) {
     return { ok: false, reason: "Outside the next 7 days" };
   }
   return { ok: true, reason: "" };
+}
+
+export function bookingDateRange(now = Date.now()) {
+  const instant = new Date(now);
+  return {
+    minDate: colomboDateInput(instant),
+    maxDate: colomboDateInput(instant, 7),
+  };
+}
+
+export function isSlotWithinBookingWindow(slot, now = Date.now()) {
+  return slotBookingState(slot, new Date(now)).ok;
 }

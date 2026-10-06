@@ -47,8 +47,19 @@ export async function apiRequest(path, { method = "GET", body, signal } = {}) {
   return payload;
 }
 
-export function createReservation(body) {
-  return apiRequest("/reservations", { method: "POST", body });
+export async function createReservation(body) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+  try {
+    return await apiRequest("/reservations", { method: "POST", body, signal: controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new ApiError("Reservation confirmation timed out. The booking may have been saved; check your reservations before trying again.", 0);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export function fetchReservation(id) {

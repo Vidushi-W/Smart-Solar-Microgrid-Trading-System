@@ -61,7 +61,11 @@ It is a standalone utility and does not rebuild or replace the running API. It r
 
 Prosumer status is stored centrally in `AccountStatus`:
 
-`PendingActivation` -> `Active` -> `DeactivationRequested` -> `Deactivated` -> `Active`
+New Prosumer registrations start with `IsActive = true` and `AccountStatus = Active`, so they can log in immediately without Backoffice approval.
+
+`Active` -> `DeactivationRequested` -> `Deactivated` -> `Active`
+
+Existing `PendingActivation`/`Registered` accounts remain supported by the Backoffice activation endpoints; registration does not change existing accounts.
 
 - `GET /api/prosumers/pending` - Backoffice queue for pending and requested-deactivation prosumers.
 - `GET /api/prosumers/deactivated` - Backoffice-only list of deactivated prosumers.
