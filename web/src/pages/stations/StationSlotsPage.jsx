@@ -89,7 +89,7 @@ export default function StationSlotsPage() {
   }
 
   return (
-    <div className="page">
+    <div className="page station-slots-page">
       <Link to="/stations" className="back-link">← Back to stations</Link>
       <PageHeader
         eyebrow="Backoffice · slot manager"
@@ -102,13 +102,20 @@ export default function StationSlotsPage() {
       {notice ? <div className="banner ok" role="status"><p>{notice}</p><button type="button" onClick={() => setNotice("")}>Dismiss</button></div> : null}
 
       {station ? (
-        <section className="filter-card slot-date-filter">
+        <>
+        <section className="station-slot-summary">
+          <div className="station-slot-identity"><span className="station-slot-mark">⌖</span><div><span className="station-kicker">STATION SLOT MANAGER</span><strong>{station.name}</strong><span>{station.stationId} · {station.status}</span></div></div>
+          <div className="station-capacity-meter"><div className="station-meter-label"><span>Battery availability</span><strong>{station.availableBatterySlots} / {station.totalBatterySlots}</strong></div><div className="station-meter-track"><span style={{ width: `${station.totalBatterySlots ? (station.availableBatterySlots / station.totalBatterySlots) * 100 : 0}%` }} /></div><small>Live capacity reported by the connected network</small></div>
+          <div className="station-slot-counts"><div><strong>{slots.length}</strong><span>slots today</span></div><div><strong>{slots.filter((slot) => slot.status === "Open").length}</strong><span>open</span></div><div><strong>{slots.reduce((sum, slot) => sum + Number(slot.remainingCapacity || 0), 0)}</strong><span>places left</span></div></div>
+        </section>
+        <section className="filter-card stations-date-filter">
           <label>
             Schedule date
             <input type="date" value={date} onChange={(event) => setDate(event.target.value)} required />
           </label>
           <span className="hint">{station.availableBatterySlots} of {station.totalBatterySlots} battery slots available</span>
         </section>
+        </>
       ) : null}
 
       {loading ? <div className="panel"><p className="hint">Loading slots…</p></div> : !station ? null : slots.length === 0 ? (

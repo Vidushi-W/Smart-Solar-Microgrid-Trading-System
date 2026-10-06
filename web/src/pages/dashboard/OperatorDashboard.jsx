@@ -16,18 +16,28 @@ export default function OperatorDashboard({ name }) {
   useEffect(() => {
     let active = true;
     async function load() {
-      try {
-        const [reservations, stationRows] = await Promise.all([
-          fetchAllReservations(),
-          listStationsForReservations(),
-        ]);
-        if (!active) return;
-        setRows(Array.isArray(reservations) ? reservations : []);
-        setStations(Array.isArray(stationRows) ? stationRows : []);
+      const [reservationResult, stationResult] = await Promise.allSettled([
+        fetchAllReservations(),
+        listStationsForReservations(),
+      ]);
+      if (!active) return;
+
+      if (reservationResult.status === "fulfilled") {
+        setRows(Array.isArray(reservationResult.value) ? reservationResult.value : []);
+      }
+      if (stationResult.status === "fulfilled") {
+        setStations(Array.isArray(stationResult.value) ? stationResult.value : []);
+      }
+
+      const failures = [reservationResult, stationResult]
+        .filter((result) => result.status === "rejected")
+        .map((result) => result.reason?.message)
+        .filter(Boolean);
+      if (failures.length === 0) {
         setError("");
         setUpdated(new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }));
-      } catch (reason) {
-        if (active) setError(reason.message || "Could not load live bookings.");
+      } else {
+        setError(failures.join(" "));
       }
     }
     load();

@@ -1,12 +1,15 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartSolar.Microgrid.DTOs;
 using SmartSolar.Microgrid.Interfaces;
 using SmartSolar.Microgrid.Services;
+using SolarMicrogridTrading.Api.Constants;
 
 namespace SmartSolar.Microgrid.Controllers;
 
 [ApiController]
 [Route("api/slots")]
+[Authorize(Policy = AuthorizationPolicies.BackofficeOnly)]
 public sealed class EnergyBookingSlotsController : ControllerBase
 {
     private readonly IEnergyBookingSlotService _service;

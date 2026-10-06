@@ -7,7 +7,7 @@ export const NAV_ITEMS = [
   { to: "/prosumers", label: "Prosumer Management", icon: "prosumers", roles: ["Backoffice"], end: true },
   { to: "/prosumers/pending", label: "Pending Activations", icon: "prosumers", roles: ["Backoffice"], end: true },
   { to: "/prosumers/deactivated", label: "Deactivated Accounts", icon: "prosumers", roles: ["Backoffice"] },
-  { to: "/stations", label: "Stations", roleLabels: { GridOperator: "Microgrid Nodes" }, icon: "stations", roles: ["Backoffice", "GridOperator"] },
+  { to: "/stations", label: "Stations", icon: "stations", roles: ["Backoffice", "GridOperator"] },
   { to: "/slots", label: "Energy slots", icon: "slots", roles: ["Backoffice", "GridOperator"] },
   { to: "/reservations", label: "Reservations", roleLabels: { GridOperator: "Bookings", Prosumer: "My Reservations" }, icon: "reservations", roles: ["Backoffice", "GridOperator", "Prosumer"] },
   { to: "/member2", label: "Stations", icon: "stations", roles: ["Prosumer"], end: true },
