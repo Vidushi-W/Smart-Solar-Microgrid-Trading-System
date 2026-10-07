@@ -22,6 +22,7 @@ import com.smartsolar.microgrid.models.utcTime
 import com.smartsolar.microgrid.reservations.BookingRules
 import com.smartsolar.microgrid.reservations.noticeForApi
 import com.smartsolar.microgrid.reservations.ruleNotice
+import com.smartsolar.microgrid.ui.SolarUi
 import java.time.LocalDate
 import java.util.concurrent.Executors
 
@@ -41,14 +42,15 @@ class ModifyReservationActivity : AppCompatActivity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(32, 28, 32, 40)
-            setBackgroundColor(Color.rgb(246, 248, 242))
+            setBackgroundColor(getColor(R.color.solar_background))
         }
+        root.addView(SolarUi.backBar(this))
         root.addView(TextView(this).apply {
             text = getString(R.string.modify_reservation)
             textSize = 26f
-            setTextColor(Color.rgb(20, 35, 29))
+            setTextColor(getColor(R.color.solar_heading))
         })
-        message = TextView(this).apply { setTextColor(Color.rgb(160, 53, 43)) }
+        message = TextView(this).apply { setTextColor(getColor(R.color.solar_error)) }
         root.addView(message, wrap())
         progress = ProgressBar(this)
         root.addView(progress, wrap())
@@ -109,10 +111,7 @@ class ModifyReservationActivity : AppCompatActivity() {
                 picker.show()
             }
         }, wrap())
-        body.addView(Button(this).apply {
-            text = getString(R.string.load_slots)
-            setOnClickListener { loadSlots() }
-        }, wrap())
+        body.addView(SolarUi.primaryButton(this, getString(R.string.load_slots)) { loadSlots() }, wrap())
         body.addView(Button(this).apply {
             text = getString(R.string.back)
             setOnClickListener { finish() }
@@ -143,11 +142,12 @@ class ModifyReservationActivity : AppCompatActivity() {
         val open = slots.filter { BookingRules.bookable(it) }
         if (open.isEmpty()) body.addView(note(getString(R.string.no_open_slots)))
         open.forEach { slot ->
-            body.addView(Button(this).apply {
-                text = "${slot.startTime}–${slot.endTime}  ${slot.status}\n${slot.remainingCapacity} remaining"
-                isAllCaps = false
-                setOnClickListener {
-                    if (!canChangeTo(slot)) return@setOnClickListener
+            body.addView(SolarUi.choiceCard(
+                this,
+                "${slot.startTime}–${slot.endTime}",
+                "${slot.status} · ${slot.remainingCapacity} remaining"
+            ) {
+                if (canChangeTo(slot)) {
                     slotId = slot.slotId
                     showReview(slot)
                 }
@@ -162,16 +162,12 @@ class ModifyReservationActivity : AppCompatActivity() {
     private fun showReview(slot: SlotRecord) {
         val row = reservation ?: return
         body.removeAllViews()
-        body.addView(note(buildString {
-            append(getString(R.string.current_slot, "${utcDate(row.scheduledAtUtc)} ${utcTime(row.scheduledAtUtc)} UTC"))
-            append("\n")
-            append(getString(R.string.new_slot, "${slot.date} ${slot.startTime}–${slot.endTime} UTC"))
-        }))
-        body.addView(Button(this).apply {
-            text = getString(R.string.update_reservation)
-            setOnClickListener {
-                if (canChangeTo(slot)) submit(slot)
-            }
+        body.addView(SolarUi.facts(this, listOf(
+            "Current" to "${utcDate(row.scheduledAtUtc)} ${utcTime(row.scheduledAtUtc)} UTC",
+            "New" to "${slot.date} ${slot.startTime}–${slot.endTime} UTC"
+        )), wrap())
+        body.addView(SolarUi.primaryButton(this, getString(R.string.update_reservation)) {
+            if (canChangeTo(slot)) submit(slot)
         }, wrap())
         body.addView(Button(this).apply {
             text = getString(R.string.back)
@@ -214,25 +210,17 @@ class ModifyReservationActivity : AppCompatActivity() {
         body.addView(TextView(this).apply {
             text = getString(R.string.update_summary)
             textSize = 20f
-            setTextColor(Color.rgb(20, 35, 29))
+            setTextColor(getColor(R.color.solar_heading))
         })
-        body.addView(note(buildString {
-            append(getString(R.string.result_line, getString(R.string.result_updated)))
-            append("\n")
-            append(row.reservationId)
-            append("\n")
-            append(stationLabel(row.stationId, stations))
-            append("\n")
-            append(utcDate(row.scheduledAtUtc))
-            append("  ")
-            append(utcTime(row.scheduledAtUtc))
-            append(" UTC\n")
-            append(row.status)
-        }))
-        body.addView(Button(this).apply {
-            text = getString(R.string.back_to_dashboard)
-            setOnClickListener { finish() }
-        }, wrap())
+        body.addView(SolarUi.facts(this, listOf(
+            "Result" to getString(R.string.result_updated),
+            getString(R.string.station) to stationLabel(row.stationId, stations),
+            "Date" to utcDate(row.scheduledAtUtc),
+            "Time" to "${utcTime(row.scheduledAtUtc)} UTC",
+            "Status" to row.status,
+            getString(R.string.reservation_id) to row.reservationId
+        )), wrap())
+        body.addView(SolarUi.primaryButton(this, getString(R.string.back_to_dashboard)) { finish() }, wrap())
     }
 
     private fun showError(error: Exception) {
@@ -245,7 +233,7 @@ class ModifyReservationActivity : AppCompatActivity() {
     private fun note(text: String) = TextView(this).apply {
         this.text = text
         textSize = 16f
-        setTextColor(Color.rgb(32, 40, 36))
+        setTextColor(getColor(R.color.solar_heading))
         setPadding(0, 8, 0, 8)
     }
 

@@ -15,6 +15,7 @@ import com.smartsolar.microgrid.BuildConfig
 import com.smartsolar.microgrid.R
 import com.smartsolar.microgrid.authentication.AuthenticationApiClient
 import com.smartsolar.microgrid.authentication.RegisterProsumerRequest
+import com.smartsolar.microgrid.ui.SolarUi
 import java.util.concurrent.Executors
 
 class RegisterProsumerActivity : AppCompatActivity() {
@@ -41,18 +42,19 @@ class RegisterProsumerActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
             setPadding(48, 48, 48, 48)
-            setBackgroundColor(Color.rgb(246, 248, 242))
+            setBackgroundColor(getColor(R.color.solar_background))
         }
+        content.addView(com.smartsolar.microgrid.ui.SolarUi.backBar(this), matchWidth())
         content.addView(TextView(this).apply {
             text = getString(R.string.prosumer_registration)
             textSize = 26f
-            setTextColor(Color.rgb(20, 35, 29))
+            setTextColor(getColor(R.color.solar_heading))
             gravity = Gravity.CENTER
         }, matchWidth())
         content.addView(TextView(this).apply {
             text = getString(R.string.registration_subtitle)
             textSize = 15f
-            setTextColor(Color.rgb(96, 112, 100))
+            setTextColor(getColor(R.color.solar_muted))
             setPadding(0, 12, 0, 24)
             gravity = Gravity.CENTER
         }, matchWidth())
@@ -85,12 +87,13 @@ class RegisterProsumerActivity : AppCompatActivity() {
         content.addView(TextView(this).apply {
             text = getString(R.string.password_requirements_hint)
             textSize = 12f
-            setTextColor(Color.rgb(96, 112, 100))
+            setTextColor(getColor(R.color.solar_muted))
             setPadding(0, 0, 0, 12)
         }, matchWidth())
 
         registerButton = Button(this).apply {
             text = getString(R.string.register)
+            com.smartsolar.microgrid.ui.SolarUi.primary(this)
             setOnClickListener { submitRegistration() }
         }
         progressBar = ProgressBar(this).apply { visibility = android.view.View.GONE }
@@ -101,7 +104,7 @@ class RegisterProsumerActivity : AppCompatActivity() {
             setOnClickListener { finish() }
         }, matchWidth())
         messageView = TextView(this).apply {
-            setTextColor(Color.rgb(160, 53, 43))
+            setTextColor(getColor(R.color.solar_error))
             setPadding(0, 16, 0, 0)
             gravity = Gravity.CENTER
         }
@@ -114,6 +117,7 @@ class RegisterProsumerActivity : AppCompatActivity() {
         inputType = inputTypeValue
         setSingleLine(!multiline)
         if (multiline) minLines = 3
+        SolarUi.field(this)
     }.also { it.layoutParams = matchWidth() }
 
     private fun submitRegistration() {
@@ -154,14 +158,14 @@ class RegisterProsumerActivity : AppCompatActivity() {
         }
 
         setLoading(true)
-        messageView.setTextColor(Color.rgb(96, 112, 100))
+        messageView.setTextColor(getColor(R.color.solar_muted))
         messageView.text = getString(R.string.registering)
         executor.execute {
             try {
                 val response = AuthenticationApiClient(BuildConfig.API_BASE_URL).register(request)
                 runOnUiThread {
                     setLoading(false)
-                    messageView.setTextColor(Color.rgb(47, 126, 89))
+                    messageView.setTextColor(getColor(R.color.solar_success))
                     messageView.text = if (response.accountStatus == "PendingActivation") {
                         getString(R.string.registration_pending)
                     } else {
@@ -184,7 +188,7 @@ class RegisterProsumerActivity : AppCompatActivity() {
     }
 
     private fun showError(message: String) {
-        messageView.setTextColor(Color.rgb(160, 53, 43))
+        messageView.setTextColor(getColor(R.color.solar_error))
         messageView.text = message
     }
 

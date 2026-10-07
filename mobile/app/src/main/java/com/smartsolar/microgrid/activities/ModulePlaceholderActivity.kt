@@ -17,19 +17,20 @@ class ModulePlaceholderActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             setPadding(48, 48, 48, 48)
-            setBackgroundColor(Color.rgb(246, 248, 242))
+            setBackgroundColor(getColor(R.color.solar_background))
         }
+        content.addView(com.smartsolar.microgrid.ui.SolarUi.backBar(this), matchWidth())
         content.addView(TextView(this).apply {
             text = title
             textSize = 26f
             gravity = Gravity.CENTER
-            setTextColor(Color.rgb(20, 35, 29))
+            setTextColor(getColor(R.color.solar_heading))
         }, matchWidth())
         content.addView(TextView(this).apply {
             text = getString(R.string.module_not_connected)
             textSize = 15f
             gravity = Gravity.CENTER
-            setTextColor(Color.rgb(96, 112, 100))
+            setTextColor(getColor(R.color.solar_muted))
         }, matchWidth())
         content.addView(Button(this).apply {
             text = getString(R.string.back_to_dashboard)

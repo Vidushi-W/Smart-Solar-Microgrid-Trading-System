@@ -45,12 +45,13 @@ class QrScanActivity : AppCompatActivity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(24, 24, 24, 32)
-            setBackgroundColor(Color.rgb(246, 248, 242))
+            setBackgroundColor(getColor(R.color.solar_background))
         }
+        root.addView(com.smartsolar.microgrid.ui.SolarUi.backBar(this))
         root.addView(TextView(this).apply {
             text = getString(R.string.scan_transfer)
             textSize = 24f
-            setTextColor(Color.rgb(20, 35, 29))
+            setTextColor(getColor(R.color.solar_heading))
         })
         previewView = PreviewView(this)
         root.addView(previewView, LinearLayout.LayoutParams(
@@ -60,7 +61,7 @@ class QrScanActivity : AppCompatActivity() {
         message = TextView(this).apply {
             setPadding(0, 16, 0, 8)
             textSize = 16f
-            setTextColor(Color.rgb(32, 40, 36))
+            setTextColor(getColor(R.color.solar_heading))
             text = getString(R.string.scan_transfer)
         }
         root.addView(message)

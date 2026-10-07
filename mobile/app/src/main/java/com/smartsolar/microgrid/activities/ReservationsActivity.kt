@@ -40,11 +40,17 @@ class ReservationsActivity : SolarActivity() {
             if (!state.busy && list != null) {
                 if (list.length() == 0) rows.addView(TextView(this).apply { text = getString(R.string.no_reservations) })
                 list.objects().forEach { row ->
-                    rows.addView(Button(this).apply {
-                        text = "${row.getString("code")} · ${row.getString("status")}\n${row.getString("stationName")}\n${date(row.getString("start"))} · ${row.getDouble("energyKwh")} kWh"
-                        setOnClickListener { startActivity(Intent(this@ReservationsActivity, OperationalReservationDetailActivity::class.java)
-                            .putExtra("reservationId", row.getString("id"))) }
-                    })
+                    rows.addView(com.smartsolar.microgrid.ui.SolarUi.choiceCard(
+                        this,
+                        "${row.getString("code")} · ${row.getString("status")}",
+                        "${row.getString("stationName")}\n${date(row.getString("start"))} · ${row.getDouble("energyKwh")} kWh"
+                    ) {
+                        startActivity(Intent(this, OperationalReservationDetailActivity::class.java)
+                            .putExtra("reservationId", row.getString("id")))
+                    }, LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply { bottomMargin = dp(10) })
                 }
             }
         }

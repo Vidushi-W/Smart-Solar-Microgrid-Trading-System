@@ -43,15 +43,29 @@ class OperationalReservationDetailActivity : SolarActivity() {
                     button(label, !state.busy && action in allowed) {
                         if (action == "modify") open(ReservationFormActivity::class.java, id)
                         else if (action == "reject") {
-                            val reason = android.widget.EditText(this)
-                            AlertDialog.Builder(this).setTitle(label).setView(reason)
-                                .setPositiveButton(R.string.confirm) { _, _ ->
+                            val reason = android.widget.EditText(this).apply {
+                                hint = getString(R.string.reject)
+                                com.smartsolar.microgrid.ui.SolarUi.field(this)
+                            }
+                            com.smartsolar.microgrid.ui.SolarUi.popup(
+                                activity = this,
+                                title = label,
+                                content = reason,
+                                confirm = getString(R.string.confirm),
+                                dismiss = getString(R.string.back),
+                                onConfirm = {
                                     val body = JSONObject().put("reason", reason.text.toString())
                                     screen.request { api.action(id, action, body) }
-                                }.setNegativeButton(R.string.back, null).show()
-                        } else AlertDialog.Builder(this).setTitle(label).setMessage(row.getString("code"))
-                            .setPositiveButton(R.string.confirm) { _, _ -> screen.request { api.action(id, action) } }
-                            .setNegativeButton(R.string.back, null).show()
+                                }
+                            )
+                        } else com.smartsolar.microgrid.ui.SolarUi.popup(
+                            activity = this,
+                            title = label,
+                            message = row.getString("code"),
+                            confirm = getString(R.string.confirm),
+                            dismiss = getString(R.string.back),
+                            onConfirm = { screen.request { api.action(id, action) } }
+                        )
                     }
                     if (blocks.has(action)) text(blocks.getString(action))
                 }

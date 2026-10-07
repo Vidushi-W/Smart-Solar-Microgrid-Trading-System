@@ -71,6 +71,30 @@ class LocalAccountStore(context: Context) : SQLiteOpenHelper(
         writableDatabase.delete(TABLE, null, null)
     }
 
+    fun current(): MobileAccountProfile? {
+        readableDatabase.query(TABLE, null, null, null, null, null, null, "1").use { cursor ->
+            if (!cursor.moveToFirst()) return null
+            return MobileAccountProfile(
+                userId = cursor.string("user_id"),
+                username = cursor.string("username"),
+                nic = cursor.string("nic"),
+                name = cursor.string("name"),
+                email = cursor.string("email"),
+                contactNumber = cursor.string("phone"),
+                address = cursor.string("address"),
+                role = cursor.string("role"),
+                accountStatus = cursor.string("account_status"),
+                isActive = true,
+                createdAtUtc = cursor.string("updated_at")
+            )
+        }
+    }
+
+    private fun android.database.Cursor.string(column: String): String {
+        val index = getColumnIndexOrThrow(column)
+        return if (isNull(index)) "" else getString(index)
+    }
+
     private fun write(
         nic: String,
         userId: String,

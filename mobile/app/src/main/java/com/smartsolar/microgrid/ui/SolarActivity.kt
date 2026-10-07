@@ -58,6 +58,7 @@ abstract class SolarActivity : AppCompatActivity() {
             setBackgroundColor(getColor(R.color.solar_background))
         }
         setContentView(ScrollView(this).apply { addView(content) })
+        content.addView(SolarUi.backBar(this))
         heading(title)
         message = text("").apply { accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE }
         signIn = button(getString(R.string.login)) {
@@ -67,17 +68,35 @@ abstract class SolarActivity : AppCompatActivity() {
         }.apply { visibility = View.GONE }
         return true
     }
-    protected fun heading(value: String) = text(value).apply { textSize = 26f; setTextColor(getColor(R.color.solar_heading)) }
+    protected fun heading(value: String) = text(value).apply {
+        textSize = 26f
+        setTypeface(typeface, android.graphics.Typeface.BOLD)
+        setTextColor(getColor(R.color.solar_heading))
+    }
     protected fun text(value: String): TextView = TextView(this).apply {
         text = value; textSize = 16f; setTextColor(getColor(R.color.solar_muted))
         layoutParams = params(); content.addView(this)
     }
     protected fun button(label: String, enabled: Boolean = true, action: () -> Unit): Button = Button(this).apply {
-        text = label; isEnabled = enabled; layoutParams = params()
-        setOnClickListener { action() }; content.addView(this)
+        text = label
+        isEnabled = enabled
+        isAllCaps = false
+        backgroundTintList = null
+        stateListAnimator = null
+        setBackgroundResource(R.drawable.solar_button)
+        setTextColor(getColor(R.color.solar_accent))
+        setTypeface(typeface, android.graphics.Typeface.BOLD)
+        minHeight = dp(52)
+        layoutParams = params()
+        setOnClickListener { action() }
+        content.addView(this)
     }
     protected fun input(label: String): EditText = EditText(this).apply {
-        hint = label; setSingleLine(true); layoutParams = params(); content.addView(this)
+        hint = label
+        setSingleLine(true)
+        layoutParams = params()
+        SolarUi.field(this)
+        content.addView(this)
     }
     protected fun status(state: ScreenState) {
         report(state.busy, state.error)
@@ -109,7 +128,11 @@ abstract class SolarActivity : AppCompatActivity() {
     protected fun open(type: Class<*>, id: String? = null) {
         startActivity(Intent(this, type).apply { if (id != null) putExtra("reservationId", id) })
     }
-    protected fun back() = button(getString(R.string.back)) { finish() }
+    protected fun back() {
+        val label = getString(R.string.back)
+        val already = content.childCount > 0 && content.getChildAt(0).contentDescription == label
+        if (!already) content.addView(SolarUi.backBar(this), 0)
+    }
     companion object {
         fun date(value: String): String = try {
             DateTimeFormatter.ofPattern("EEE, d MMM yyyy HH:mm").withZone(ZoneId.of("Asia/Colombo")).format(Instant.parse(value))

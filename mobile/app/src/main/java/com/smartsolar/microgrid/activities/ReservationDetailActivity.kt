@@ -25,6 +25,7 @@ import com.smartsolar.microgrid.models.utcTime
 import com.smartsolar.microgrid.reservations.BookingRules
 import com.smartsolar.microgrid.reservations.noticeForApi
 import com.smartsolar.microgrid.reservations.ruleNotice
+import com.smartsolar.microgrid.ui.SolarUi
 import java.util.concurrent.Executors
 
 class ReservationDetailActivity : AppCompatActivity() {
@@ -42,14 +43,15 @@ class ReservationDetailActivity : AppCompatActivity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(32, 28, 32, 40)
-            setBackgroundColor(Color.rgb(246, 248, 242))
+            setBackgroundColor(getColor(R.color.solar_background))
         }
+        root.addView(com.smartsolar.microgrid.ui.SolarUi.backBar(this))
         root.addView(TextView(this).apply {
             text = getString(R.string.reservation_details)
             textSize = 26f
-            setTextColor(Color.rgb(20, 35, 29))
+            setTextColor(getColor(R.color.solar_heading))
         })
-        message = TextView(this).apply { setTextColor(Color.rgb(160, 53, 43)) }
+        message = TextView(this).apply { setTextColor(getColor(R.color.solar_error)) }
         root.addView(message, wrap())
         progress = ProgressBar(this)
         root.addView(progress, wrap())
@@ -76,6 +78,11 @@ class ReservationDetailActivity : AppCompatActivity() {
                     reservation = loaded
                     progress.visibility = View.GONE
                     show(loaded)
+                    if (intent.getBooleanExtra(SHOW_QR_KEY, false)
+                        && (loaded.status == "Approved" || loaded.status == "Scheduled")) {
+                        intent.removeExtra(SHOW_QR_KEY)
+                        loadQr(loaded)
+                    }
                 }
             } catch (error: Exception) {
                 showError(error)
@@ -86,48 +93,33 @@ class ReservationDetailActivity : AppCompatActivity() {
     private fun show(row: ReservationRecord) {
         body.removeAllViews()
         val canChange = role() == "Prosumer" || role() == "Backoffice"
-        body.addView(note(buildString {
-            append(row.reservationId)
-            append("\n")
-            append(getString(R.string.station_line, stationLabel(row.stationId, stations)))
-            append("\n")
-            append(getString(R.string.date_line, utcDate(row.scheduledAtUtc)))
-            append("\n")
-            append(getString(R.string.time_line, "${utcTime(row.scheduledAtUtc)} UTC"))
-            append("\n")
-            append(getString(R.string.status_line, row.status))
-            if (role() != "Prosumer") {
-                append("\n")
-                append(row.prosumerId)
-            }
-        }))
+        body.addView(SolarUi.statusChip(this, row.status), LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = 8; bottomMargin = 12 })
+        val facts = mutableListOf(
+            getString(R.string.station) to stationLabel(row.stationId, stations),
+            "Date" to utcDate(row.scheduledAtUtc),
+            "Time" to "${utcTime(row.scheduledAtUtc)} UTC",
+            getString(R.string.reservation_id) to row.reservationId
+        )
+        if (role() != "Prosumer") facts += getString(R.string.prosumer) to row.prosumerId
+        body.addView(SolarUi.facts(this, facts), wrap())
         val open = row.status == "Pending" || row.status == "Approved" || row.status == "Scheduled"
         if (row.status == "Approved" || row.status == "Scheduled") {
-            body.addView(Button(this).apply {
-                text = getString(R.string.show_qr)
-                setOnClickListener { loadQr(row) }
-            }, wrap())
+            body.addView(SolarUi.primaryButton(this, getString(R.string.show_qr)) { loadQr(row) }, wrap())
         }
         if (canChange && open) {
-            body.addView(Button(this).apply {
-                text = getString(R.string.modify_reservation)
-                setOnClickListener {
-                    if (!hasNotice(row)) return@setOnClickListener
-                    startActivity(Intent(this@ReservationDetailActivity, ModifyReservationActivity::class.java)
-                        .putExtra(ID_KEY, row.reservationId))
-                }
+            body.addView(SolarUi.outlineButton(this, getString(R.string.modify_reservation)) {
+                if (!hasNotice(row)) return@outlineButton
+                startActivity(Intent(this, ModifyReservationActivity::class.java)
+                    .putExtra(ID_KEY, row.reservationId))
             }, wrap())
-            body.addView(Button(this).apply {
-                text = getString(R.string.cancel_reservation)
-                setOnClickListener {
-                    if (hasNotice(row)) confirmCancel(row)
-                }
+            body.addView(SolarUi.outlineButton(this, getString(R.string.cancel_reservation)) {
+                if (hasNotice(row)) confirmCancel(row)
             }, wrap())
         }
-        body.addView(Button(this).apply {
-            text = getString(R.string.back)
-            setOnClickListener { finish() }
-        }, wrap())
+        body.addView(SolarUi.outlineButton(this, getString(R.string.back)) { finish() }, wrap())
     }
 
     private fun hasNotice(row: ReservationRecord): Boolean {
@@ -164,31 +156,35 @@ class ReservationDetailActivity : AppCompatActivity() {
         val image = ImageView(this).apply {
             setImageBitmap(bitmap ?: BarcodeEncoder().encodeBitmap(payload, BarcodeFormat.QR_CODE, 720, 720))
             contentDescription = getString(R.string.show_qr)
-            setPadding(48, 24, 48, 24)
+            setBackgroundColor(Color.WHITE)
+            setPadding(24, 8, 24, 8)
+            adjustViewBounds = true
         }
-        AlertDialog.Builder(this)
-            .setTitle(R.string.show_qr)
-            .setView(image)
-            .setPositiveButton(R.string.close, null)
-            .show()
+        SolarUi.popup(
+            activity = this,
+            title = getString(R.string.show_qr),
+            message = getString(R.string.transaction_qr),
+            content = image,
+            confirm = getString(R.string.close)
+        )
     }
 
     private fun confirmCancel(row: ReservationRecord) {
         if (!hasNotice(row)) return
-        AlertDialog.Builder(this)
-            .setTitle(R.string.cancel_reservation)
-            .setMessage(buildString {
+        SolarUi.popup(
+            activity = this,
+            title = getString(R.string.cancel_reservation),
+            message = buildString {
                 append(getString(R.string.station_line, stationLabel(row.stationId, stations)))
                 append("\n")
                 append(getString(R.string.date_line, utcDate(row.scheduledAtUtc)))
                 append("\n")
                 append(getString(R.string.time_line, "${utcTime(row.scheduledAtUtc)} UTC"))
-            })
-            .setNegativeButton(R.string.keep_reservation, null)
-            .setPositiveButton(R.string.cancel_reservation) { _, _ ->
-                if (hasNotice(row)) cancel(row)
-            }
-            .show()
+            },
+            confirm = getString(R.string.cancel_reservation),
+            dismiss = getString(R.string.keep_reservation),
+            onConfirm = { if (hasNotice(row)) cancel(row) }
+        )
     }
 
     private fun cancel(row: ReservationRecord) {
@@ -216,30 +212,22 @@ class ReservationDetailActivity : AppCompatActivity() {
         body.removeAllViews()
         body.addView(TextView(this).apply {
             text = getString(R.string.cancellation_summary)
-            textSize = 20f
-            setTextColor(Color.rgb(20, 35, 29))
+            textSize = 22f
+            setTextColor(getColor(R.color.solar_heading))
         })
-        body.addView(note(buildString {
-            append(getString(R.string.result_line, getString(R.string.result_cancelled)))
-            append("\n")
-            append(row.reservationId)
-            append("\n")
-            append(stationLabel(row.stationId, stations))
-            append("\n")
-            append(utcDate(row.scheduledAtUtc))
-            append("  ")
-            append(utcTime(row.scheduledAtUtc))
-            append(" UTC\n")
-            append(row.status)
-        }))
-        body.addView(Button(this).apply {
-            text = getString(R.string.view_reservation)
-            setOnClickListener { show(row) }
-        }, wrap())
-        body.addView(Button(this).apply {
-            text = getString(R.string.my_bookings)
-            setOnClickListener { finish() }
-        }, wrap())
+        body.addView(SolarUi.statusChip(this, row.status), LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = 12; bottomMargin = 12 })
+        body.addView(SolarUi.facts(this, listOf(
+            getString(R.string.result_line, getString(R.string.result_cancelled)).substringBefore(':') to getString(R.string.result_cancelled),
+            getString(R.string.station) to stationLabel(row.stationId, stations),
+            "Date" to utcDate(row.scheduledAtUtc),
+            "Time" to "${utcTime(row.scheduledAtUtc)} UTC",
+            getString(R.string.reservation_id) to row.reservationId
+        )), wrap())
+        body.addView(SolarUi.primaryButton(this, getString(R.string.view_reservation)) { show(row) }, wrap())
+        body.addView(SolarUi.outlineButton(this, getString(R.string.my_bookings)) { finish() }, wrap())
     }
 
     private fun showError(error: Exception) {
@@ -252,7 +240,7 @@ class ReservationDetailActivity : AppCompatActivity() {
     private fun note(text: String) = TextView(this).apply {
         this.text = text
         textSize = 16f
-        setTextColor(Color.rgb(32, 40, 36))
+        setTextColor(getColor(R.color.solar_heading))
         setPadding(0, 12, 0, 8)
     }
 
@@ -280,5 +268,6 @@ class ReservationDetailActivity : AppCompatActivity() {
 
     companion object {
         const val ID_KEY = "reservationId"
+        const val SHOW_QR_KEY = "showQr"
     }
 }

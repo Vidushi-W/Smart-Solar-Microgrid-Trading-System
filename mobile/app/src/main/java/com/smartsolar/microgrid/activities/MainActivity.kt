@@ -2,6 +2,8 @@ package com.smartsolar.microgrid.activities
 
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -9,7 +11,9 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.ScrollView
 import android.widget.TextView
+import com.smartsolar.microgrid.ui.SolarUi
 import androidx.appcompat.app.AppCompatActivity
 import com.smartsolar.microgrid.BuildConfig
 import com.smartsolar.microgrid.R
@@ -44,34 +48,59 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun createLoginView(): View {
-        val content = LinearLayout(this).apply {
+        val page = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(48, 72, 48, 48)
-            setBackgroundColor(Color.rgb(246, 248, 242))
+            setBackgroundColor(getColor(R.color.solar_background))
         }
-        val title = TextView(this).apply {
-            text = getString(R.string.app_name)
-            textSize = 25f
-            setTextColor(Color.rgb(20, 35, 29))
-            gravity = Gravity.CENTER
+        val hero = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(24), dp(36), dp(24), dp(28))
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                intArrayOf(
+                    getColor(R.color.solar_hero_start),
+                    getColor(R.color.solar_hero_mid),
+                    getColor(R.color.solar_hero_end)
+                )
+            )
         }
-        val subtitle = TextView(this).apply {
+        val wordmark = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        wordmark.addView(TextView(this).apply {
+            text = "Solar"
+            textSize = 32f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(Color.WHITE)
+        })
+        wordmark.addView(TextView(this).apply {
+            text = "Grid"
+            textSize = 32f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(getColor(R.color.solar_gold))
+        })
+        hero.addView(wordmark)
+        hero.addView(TextView(this).apply {
             text = getString(R.string.login_subtitle)
-            textSize = 16f
-            setTextColor(Color.rgb(96, 112, 100))
-            setPadding(0, 16, 0, 32)
-            gravity = Gravity.CENTER
+            textSize = 15f
+            setTextColor(Color.parseColor("#F8E4DC"))
+            setPadding(0, dp(8), 0, 0)
+        })
+        page.addView(hero)
+
+        val form = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(24), dp(20), dp(32))
         }
         identifierInput = EditText(this).apply {
             hint = getString(R.string.username_or_nic)
             setSingleLine(true)
             inputType = android.text.InputType.TYPE_CLASS_TEXT
+            SolarUi.field(this)
         }
         passwordInput = EditText(this).apply {
             hint = getString(R.string.password)
             setSingleLine(true)
             inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+            SolarUi.field(this)
         }
         passwordToggle = Button(this).apply {
             text = getString(R.string.show_password)
@@ -86,31 +115,38 @@ class MainActivity : AppCompatActivity() {
         }
         loginButton = Button(this).apply {
             text = getString(R.string.login)
+            SolarUi.primary(this)
             setOnClickListener { submitLogin() }
         }
         progressBar = ProgressBar(this).apply { visibility = View.GONE }
         messageView = TextView(this).apply {
-            setTextColor(Color.rgb(160, 53, 43))
-            setPadding(0, 20, 0, 0)
+            setTextColor(getColor(R.color.solar_error))
+            setPadding(0, dp(8), 0, 0)
             gravity = Gravity.CENTER
         }
-        content.addView(title, matchWidth())
-        content.addView(subtitle, matchWidth())
-        content.addView(identifierInput, matchWidth())
-        content.addView(passwordInput, matchWidth())
-        content.addView(passwordToggle, matchWidth())
-        content.addView(loginButton, matchWidth())
         signUpLink = TextView(this).apply {
             text = getString(R.string.signup_prompt)
-            setTextColor(Color.rgb(160, 62, 44))
+            setTextColor(getColor(R.color.solar_accent))
+            setTypeface(typeface, Typeface.BOLD)
             gravity = Gravity.CENTER
+            setPadding(0, dp(8), 0, 0)
             setOnClickListener { startActivity(Intent(this@MainActivity, RegisterProsumerActivity::class.java)) }
         }
-        content.addView(signUpLink, matchWidth())
-        content.addView(progressBar, matchWidth())
-        content.addView(messageView, matchWidth())
-        return content
+        form.addView(identifierInput, matchWidth())
+        form.addView(passwordInput, matchWidth())
+        form.addView(passwordToggle, matchWidth())
+        form.addView(loginButton, matchWidth())
+        form.addView(signUpLink, matchWidth())
+        form.addView(progressBar, matchWidth())
+        form.addView(messageView, matchWidth())
+        page.addView(form)
+        return ScrollView(this).apply {
+            isFillViewport = true
+            addView(page)
+        }
     }
+
+    private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
     private fun submitLogin() {
         val identifier = identifierInput.text.toString().trim()

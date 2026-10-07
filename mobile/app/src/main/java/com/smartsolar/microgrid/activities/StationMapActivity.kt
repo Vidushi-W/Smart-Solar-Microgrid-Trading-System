@@ -76,42 +76,43 @@ class StationMapActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun createView(): View {
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.rgb(246, 248, 242))
+            setBackgroundColor(getColor(R.color.solar_background))
         }
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(24, 20, 24, 8)
         }
+        header.addView(com.smartsolar.microgrid.ui.SolarUi.backBar(this))
         header.addView(TextView(this).apply {
             text = getString(R.string.nearby_stations)
             textSize = 25f
-            setTextColor(Color.rgb(26, 55, 44))
+            setTextColor(getColor(R.color.solar_heading))
         })
         header.addView(TextView(this).apply {
             text = getString(R.string.stations_map_subtitle)
             textSize = 14f
-            setTextColor(Color.rgb(91, 108, 99))
+            setTextColor(getColor(R.color.solar_muted))
             setPadding(0, 6, 0, 6)
         })
         content.addView(header)
 
         messageView = TextView(this).apply {
             textSize = 14f
-            setTextColor(Color.rgb(57, 76, 64))
+            setTextColor(getColor(R.color.solar_muted))
             setPadding(24, 8, 24, 12)
         }
         content.addView(messageView)
 
         mapContainer = FrameLayout(this).apply {
             id = mapContainerId
-            setBackgroundColor(Color.rgb(226, 232, 226))
+            setBackgroundColor(getColor(R.color.solar_line))
         }
         demoMapView = DemoMapView().apply { visibility = View.GONE }
         mapContainer.addView(demoMapView, FrameLayout.LayoutParams(-1, -1))
         mapHint = TextView(this).apply {
             gravity = Gravity.CENTER
             textAlignment = View.TEXT_ALIGNMENT_CENTER
-            setTextColor(Color.rgb(57, 76, 64))
+            setTextColor(getColor(R.color.solar_muted))
             textSize = 13f
             setPadding(16, 8, 16, 8)
             setBackgroundColor(Color.argb(210, 255, 255, 255))
@@ -250,7 +251,7 @@ class StationMapActivity : AppCompatActivity(), OnMapReadyCallback {
             details.addView(TextView(this).apply {
                 text = station.name
                 textSize = 16f
-                setTextColor(Color.rgb(26, 55, 44))
+                setTextColor(getColor(R.color.solar_heading))
             })
             details.addView(TextView(this).apply {
                 text = getString(
@@ -261,7 +262,7 @@ class StationMapActivity : AppCompatActivity(), OnMapReadyCallback {
                     station.totalBatterySlots
                 )
                 textSize = 12f
-                setTextColor(Color.rgb(91, 108, 99))
+                setTextColor(getColor(R.color.solar_muted))
             })
             row.addView(details, LinearLayout.LayoutParams(0, -2, 1f))
             row.addView(Button(this).apply {
@@ -332,20 +333,20 @@ class StationMapActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private inner class DemoMapView : View(this@StationMapActivity) {
-        private val backgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(235, 242, 237) }
+        private val backgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#F3F3F0") }
         private val roadPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(207, 222, 211)
+            color = Color.parseColor("#E4DEDA")
             strokeWidth = dp(2).toFloat()
             style = Paint.Style.STROKE
         }
-        private val markerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(231, 126, 67) }
+        private val markerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#D8442D") }
         private val markerRingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             style = Paint.Style.STROKE
             strokeWidth = dp(3).toFloat()
         }
         private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(35, 66, 51)
+            color = Color.parseColor("#211A1A")
             textSize = dp(12).toFloat()
             typeface = Typeface.DEFAULT_BOLD
         }

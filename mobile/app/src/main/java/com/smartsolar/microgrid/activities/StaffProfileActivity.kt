@@ -55,7 +55,7 @@ class StaffProfileActivity : AppCompatActivity() {
                     runOnUiThread {
                         profilePictureData = data
                         showAvatar(data)
-                        messageView.setTextColor(Color.rgb(47, 126, 89))
+                        messageView.setTextColor(getColor(R.color.solar_success))
                         messageView.text = getString(R.string.profile_picture_selected)
                     }
                 } catch (error: Exception) {
@@ -90,23 +90,20 @@ class StaffProfileActivity : AppCompatActivity() {
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(48, 40, 48, 48)
-            setBackgroundColor(Color.rgb(246, 248, 242))
+            setBackgroundColor(getColor(R.color.solar_background))
         }
-        content.addView(Button(this).apply {
-            text = getString(R.string.back)
-            setOnClickListener { finish() }
-        }, matchWidth())
+        content.addView(com.smartsolar.microgrid.ui.SolarUi.backBar(this), matchWidth())
         content.addView(TextView(this).apply {
             text = getString(R.string.my_profile)
             textSize = 28f
-            setTextColor(Color.rgb(20, 35, 29))
+            setTextColor(getColor(R.color.solar_heading))
         }, matchWidth())
         avatarView = TextView(this).apply {
             text = "?"
             textSize = 28f
             gravity = Gravity.CENTER
             setTextColor(Color.WHITE)
-            setBackgroundColor(Color.rgb(169, 67, 50))
+            setBackgroundColor(getColor(R.color.solar_accent))
             contentDescription = getString(R.string.default_avatar)
         }
         content.addView(avatarView, LinearLayout.LayoutParams(120, 120).apply {
@@ -138,12 +135,12 @@ class StaffProfileActivity : AppCompatActivity() {
         roleView = field(R.string.role, InputType.TYPE_CLASS_TEXT).apply { isEnabled = false }
         statusView = TextView(this).apply {
             textSize = 16f
-            setTextColor(Color.rgb(20, 35, 29))
+            setTextColor(getColor(R.color.solar_heading))
             setPadding(0, 12, 0, 12)
         }
         createdView = TextView(this).apply {
             textSize = 14f
-            setTextColor(Color.rgb(96, 112, 100))
+            setTextColor(getColor(R.color.solar_muted))
             setPadding(0, 8, 0, 8)
         }
         passwordInput = field(R.string.change_password, InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD)
@@ -157,11 +154,12 @@ class StaffProfileActivity : AppCompatActivity() {
         content.addView(TextView(this).apply {
             text = getString(R.string.password_requirements_hint)
             textSize = 12f
-            setTextColor(Color.rgb(96, 112, 100))
+            setTextColor(getColor(R.color.solar_muted))
         }, matchWidth())
         saveButton = Button(this).apply {
             text = getString(R.string.save_profile)
             isEnabled = false
+            com.smartsolar.microgrid.ui.SolarUi.primary(this)
             setOnClickListener { saveProfile() }
         }
         content.addView(saveButton, matchWidth())
@@ -240,7 +238,7 @@ class StaffProfileActivity : AppCompatActivity() {
                     passwordInput.text.clear()
                     confirmPasswordInput.text.clear()
                     showProfile(updated)
-                    messageView.setTextColor(Color.rgb(47, 126, 89))
+                    messageView.setTextColor(getColor(R.color.solar_success))
                     messageView.text = getString(R.string.profile_updated)
                 }
             } catch (error: Exception) {
@@ -290,7 +288,7 @@ class StaffProfileActivity : AppCompatActivity() {
     }
 
     private fun showErrorMessage(message: String) {
-        messageView.setTextColor(Color.rgb(160, 53, 43))
+        messageView.setTextColor(getColor(R.color.solar_error))
         messageView.text = message
     }
 
@@ -318,6 +316,7 @@ class StaffProfileActivity : AppCompatActivity() {
         hint = getString(label)
         inputType = inputTypeValue
         setSingleLine(true)
+        com.smartsolar.microgrid.ui.SolarUi.field(this)
         layoutParams = matchWidth()
     }
 

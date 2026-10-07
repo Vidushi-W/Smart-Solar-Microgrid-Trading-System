@@ -1,7 +1,6 @@
 package com.smartsolar.microgrid.reservations
 
 import android.app.Activity
-import androidx.appcompat.app.AlertDialog
 import com.smartsolar.microgrid.R
 import com.smartsolar.microgrid.models.SlotRecord
 import java.time.Instant
@@ -62,10 +61,12 @@ enum class SlotWindow {
 }
 
 fun Activity.ruleNotice(message: String) {
-    AlertDialog.Builder(this)
-        .setMessage(message)
-        .setPositiveButton(R.string.close, null)
-        .show()
+    com.smartsolar.microgrid.ui.SolarUi.popup(
+        activity = this,
+        title = getString(R.string.notice_title),
+        message = message,
+        confirm = getString(R.string.close)
+    )
 }
 
 fun Activity.noticeForApi(message: String?): Boolean {

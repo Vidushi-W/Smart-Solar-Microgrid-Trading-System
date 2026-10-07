@@ -132,14 +132,19 @@ class ReservationFormActivity : SolarActivity() {
         if (person.isBlank()) { message.text = getString(R.string.select_prosumer); return }
         val serviceType = service.selectedItem.toString()
         val slotId = slot.getString("id")
-        AlertDialog.Builder(this).setTitle(R.string.review_booking)
-            .setMessage("${slot.getString("label")}\n${date(slot.getString("start"))}\n${amount ?: choices?.reservation?.getDouble("energyKwh")} kWh")
-            .setPositiveButton(R.string.confirm) { _, _ ->
+        com.smartsolar.microgrid.ui.SolarUi.popup(
+            activity = this,
+            title = getString(R.string.review_booking),
+            message = "${slot.getString("label")}\n${date(slot.getString("start"))}\n${amount ?: choices?.reservation?.getDouble("energyKwh")} kWh",
+            confirm = getString(R.string.confirm),
+            dismiss = getString(R.string.back),
+            onConfirm = {
                 screen.request {
                     reservationId?.let { api.modify(it, slotId) } ?: api.create(JSONObject()
                         .put("prosumerId", person).put("slotId", slotId).put("serviceType", serviceType).put("energyKwh", amount))
                 }
-            }.setNegativeButton(R.string.back, null).show()
+            }
+        )
     }
     override fun onSaveInstanceState(outState: Bundle) {
         if (::stations.isInitialized) {

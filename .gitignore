@@ -65,6 +65,10 @@ local.properties
 mobile/local.properties
 mobile/build/
 mobile/app/build/
+# Android Studio recreates the wrapper on sync. It is not app source.
+mobile/gradlew
+mobile/gradlew.bat
+mobile/gradle/
 *.apk
 *.aab
 *.dex

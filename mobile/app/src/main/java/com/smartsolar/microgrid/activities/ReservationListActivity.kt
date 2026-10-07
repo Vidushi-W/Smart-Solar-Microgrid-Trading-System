@@ -21,6 +21,7 @@ import com.smartsolar.microgrid.models.StationRecord
 import com.smartsolar.microgrid.models.stationLabel
 import com.smartsolar.microgrid.models.utcDate
 import com.smartsolar.microgrid.models.utcTime
+import com.smartsolar.microgrid.ui.SolarUi
 import java.util.concurrent.Executors
 
 class ReservationListActivity : AppCompatActivity() {
@@ -38,12 +39,13 @@ class ReservationListActivity : AppCompatActivity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(32, 28, 32, 40)
-            setBackgroundColor(Color.rgb(246, 248, 242))
+            setBackgroundColor(getColor(R.color.solar_background))
         }
+        root.addView(SolarUi.backBar(this))
         root.addView(TextView(this).apply {
             text = titleFor(mode)
             textSize = 26f
-            setTextColor(Color.rgb(20, 35, 29))
+            setTextColor(getColor(R.color.solar_heading))
         })
         if (mode != MODE_STAFF) {
             root.addView(Button(this).apply {
@@ -62,7 +64,7 @@ class ReservationListActivity : AppCompatActivity() {
                 override fun afterTextChanged(s: Editable?) = Unit
             })
         }, wrap())
-        message = TextView(this).apply { setTextColor(Color.rgb(160, 53, 43)) }
+        message = TextView(this).apply { setTextColor(getColor(R.color.solar_error)) }
         root.addView(message, wrap())
         progress = ProgressBar(this)
         root.addView(progress, wrap())
@@ -118,30 +120,25 @@ class ReservationListActivity : AppCompatActivity() {
         if (visible.isEmpty()) {
             list.addView(TextView(this).apply {
                 text = getString(R.string.no_reservations)
-                setTextColor(Color.rgb(96, 112, 100))
+                setTextColor(getColor(R.color.solar_muted))
             })
             return
         }
         visible.sortedBy { it.scheduledAtUtc }.forEach { row ->
-            list.addView(Button(this).apply {
-                text = buildString {
-                    append(stationLabel(row.stationId, stations))
+            val detail = buildString {
+                append(utcDate(row.scheduledAtUtc))
+                append("   ")
+                append(utcTime(row.scheduledAtUtc))
+                append(" UTC   ·   ")
+                append(row.status)
+                if (mode == MODE_STAFF) {
                     append("\n")
-                    append(utcDate(row.scheduledAtUtc))
-                    append("  ")
-                    append(utcTime(row.scheduledAtUtc))
-                    append(" UTC  ·  ")
-                    append(row.status)
-                    if (mode == MODE_STAFF) {
-                        append("\n")
-                        append(row.prosumerId)
-                    }
+                    append(row.prosumerId)
                 }
-                isAllCaps = false
-                setOnClickListener {
-                    startActivity(Intent(this@ReservationListActivity, ReservationDetailActivity::class.java)
-                        .putExtra(ReservationDetailActivity.ID_KEY, row.reservationId))
-                }
+            }
+            list.addView(SolarUi.choiceCard(this, stationLabel(row.stationId, stations), detail) {
+                startActivity(Intent(this, ReservationDetailActivity::class.java)
+                    .putExtra(ReservationDetailActivity.ID_KEY, row.reservationId))
             }, wrap())
         }
     }
