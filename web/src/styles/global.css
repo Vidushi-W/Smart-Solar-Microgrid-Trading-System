@@ -547,20 +547,6 @@ tr:last-child td { border-bottom: 0; }
 }
 .login-card .btn { margin-top: 0.25rem; padding: 0.65rem 0.9rem; border-radius: 8px; }
 .form-error { color: #be123c; font-weight: 700; text-align: left; }
-.demo-grid { display: grid; gap: 0.5rem; }
-.demo-card {
-  text-align: left;
-  border: 1px solid #e3e8ef;
-  background: white;
-  border-radius: 8px;
-  padding: 0.5rem 0.75rem;
-  cursor: pointer;
-  box-shadow: none;
-}
-.demo-card strong, .demo-card span { display: block; }
-.demo-card span { color: var(--muted); font-size: 0.8rem; font-weight: 500; }
-.demo-card:hover { border-color: #b7c3d4; background: #fafbfc; }
-
 .slot-fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
 .slot-fieldset legend { font-weight: 700; padding: 0; }
 .station-picks, .slot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.7rem; }

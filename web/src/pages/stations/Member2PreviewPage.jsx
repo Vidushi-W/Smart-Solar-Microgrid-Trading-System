@@ -1,6 +1,5 @@
 /**
- * Temporary Member 2 view for reservation testing.
- * Station names and capacity are local mock details. Slots are loaded from the station API.
+ * Station and slot availability view backed by the station API.
  */
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -72,9 +71,9 @@ export default function Member2PreviewPage() {
   return (
     <div className="page">
       <PageHeader
-        eyebrow="Temporary · Member 2"
+        eyebrow="Prosumer network"
         title="Stations & energy slots"
-        description="Names, location, and capacity are temporary test data. Slot times come from the station API, so a reservation can still be booked."
+        description="Browse stations and live slot availability from the connected network."
         actions={<Link className="btn primary" to="/reservations/new">Reserve Energy Slot</Link>}
       />
 

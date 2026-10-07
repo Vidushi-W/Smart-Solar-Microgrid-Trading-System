@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import App from './ConnectedApp.jsx';
 import './styles/global.css';
 import './styles/brand.css';
+import './styles/stations.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

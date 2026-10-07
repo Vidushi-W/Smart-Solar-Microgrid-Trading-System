@@ -14,7 +14,7 @@ namespace SmartSolar.Microgrid.Configuration
 {
     public sealed class MongoDbSettings
     {
-        public const string SectionName = "MongoDB";
+        public const string SectionName = "MongoDb";
 
         [Required]
         public string ConnectionString { get; init; } = string.Empty;

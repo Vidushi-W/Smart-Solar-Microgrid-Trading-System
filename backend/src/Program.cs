@@ -20,16 +20,28 @@ using SolarMicrogridTrading.Api.Services;
 LoadSharedDevelopmentEnv();
 
 var builder = WebApplication.CreateBuilder(args);
+var mongoConnectionString = Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING");
+var mongoDatabaseName = Environment.GetEnvironmentVariable("MONGODB_DATABASE_NAME");
+if (!string.IsNullOrWhiteSpace(mongoConnectionString))
+{
+    builder.Configuration["MongoDb:ConnectionString"] = mongoConnectionString;
+}
+if (!string.IsNullOrWhiteSpace(mongoDatabaseName))
+{
+    builder.Configuration["MongoDb:DatabaseName"] = mongoDatabaseName;
+}
 
 var mongoSettings = new MongoDbSettings
 {
-    ConnectionString = Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING")
+    ConnectionString = mongoConnectionString
         ?? builder.Configuration["MongoDb:ConnectionString"]
         ?? throw new InvalidOperationException("MONGODB_CONNECTION_STRING is not configured."),
-    DatabaseName = Environment.GetEnvironmentVariable("MONGODB_DATABASE_NAME")
+    DatabaseName = mongoDatabaseName
         ?? builder.Configuration["MongoDb:DatabaseName"]
         ?? "SolarMicrogridTrading",
-    UsersCollectionName = builder.Configuration["MongoDb:UsersCollectionName"] ?? "Users"
+    UsersCollectionName = Environment.GetEnvironmentVariable("MONGODB_USERS_COLLECTION_NAME")
+        ?? builder.Configuration["MongoDb:UsersCollectionName"]
+        ?? "Users"
 };
 
 builder.Services.AddSingleton(mongoSettings);
