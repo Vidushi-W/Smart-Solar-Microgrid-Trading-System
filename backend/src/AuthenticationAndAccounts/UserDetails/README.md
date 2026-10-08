@@ -16,8 +16,8 @@ The `role` field distinguishes `Backoffice`, `GridOperator`, and `Prosumer` docu
   "nic": "prosumer-nic-or-web-identifier",
   "passwordHash": "ASP.NET PasswordHasher output",
   "role": "Prosumer",
-  "isActive": false,
-  "accountStatus": "PendingActivation",
+  "isActive": true,
+  "accountStatus": "Active",
   "name": "Full name",
   "email": "person@example.com",
   "contactNumber": "+94110000000",
@@ -26,6 +26,6 @@ The `role` field distinguishes `Backoffice`, `GridOperator`, and `Prosumer` docu
 }
 ```
 
-Web users use `Backoffice` or `GridOperator` roles and are created active. Android registration creates a `Prosumer` document with a unique `nic`, `PendingActivation`, and `isActive: false`. Passwords are never stored as plaintext.
+Web users use `Backoffice` or `GridOperator` roles and are created active. Web and Android registration creates a `Prosumer` document with a unique `nic`, `Active`, and `isActive: true`, allowing immediate login without Backoffice activation. Passwords are never stored as plaintext.
 
 The station, booking-slot, and reservation components must use their own agreed collections; this component only owns `UserDetails`.

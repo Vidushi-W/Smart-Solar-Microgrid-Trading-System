@@ -73,6 +73,9 @@ export default function TransferQr({ reservationId, status, compact = false }) {
     };
   }, [reservationId, visible, local]);
 
+  if (status === "Pending") {
+    return <p className="reserve-status">Your reservation is awaiting approval. The transfer QR will be available once it is approved or scheduled.</p>;
+  }
   if (!visible) return null;
 
   // Drop the saved code and ask for another. A sample id only redraws the local payload.

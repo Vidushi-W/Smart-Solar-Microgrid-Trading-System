@@ -6,6 +6,7 @@ using MongoDB.Driver;
 using SolarMicrogridTrading.Api.DTOs;
 using SolarMicrogridTrading.Api.Interfaces;
 using SolarMicrogridTrading.Api.Helpers;
+using SolarMicrogridTrading.Api.Constants;
 using SolarMicrogridTrading.Api.Models;
 
 namespace SolarMicrogridTrading.Api.Services;
@@ -63,8 +64,8 @@ public sealed class ProsumerRegistrationService : IProsumerRegistrationService
             ContactNumber = request.PhoneNumber.Trim(),
             Address = request.Address.Trim(),
             Role = role,
-            IsActive = false,
-            AccountStatus = "PendingActivation",
+            IsActive = role == "Prosumer",
+            AccountStatus = role == "Prosumer" ? AccountStatuses.Active : AccountStatuses.PendingActivation,
             CreatedAtUtc = DateTime.UtcNow
         };
         user.PasswordHash = passwordHasher.HashPassword(user, request.Password);
@@ -79,7 +80,9 @@ public sealed class ProsumerRegistrationService : IProsumerRegistrationService
         }
 
         return (new ProsumerRegistrationResponse(
-            "Registration submitted. Your account is awaiting Backoffice activation.",
+            user.IsActive
+                ? "Account created successfully. You can sign in now."
+                : "Registration submitted. Your account is awaiting Backoffice activation.",
             user.Nic,
             user.AccountStatus), null);
     }

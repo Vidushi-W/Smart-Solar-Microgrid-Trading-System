@@ -37,10 +37,23 @@ internal static class IntegrationChecks
         });
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Logging.ClearProviders();
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Jwt:Key"] = "Integration-test-signing-key-only-0123456789",
+        });
         builder.Services.AddProblemDetails();
         builder.Services.AddControllers().AddApplicationPart(typeof(QrTransfersController).Assembly)
             .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
         builder.Services.AddSingleton<IMongoDatabase>(database);
+        builder.Services.AddSingleton(new SolarMicrogridTrading.Api.Configuration.MongoDbSettings
+        {
+            DatabaseName = databaseName,
+            UsersCollectionName = "UserDetails",
+        });
+        builder.Services.AddScoped<SolarMicrogridTrading.Api.Interfaces.IUserRepository, SolarMicrogridTrading.Api.Repositories.UserRepository>();
+        builder.Services.AddScoped<SolarMicrogridTrading.Api.Interfaces.IProsumerRegistrationService, SolarMicrogridTrading.Api.Services.ProsumerRegistrationService>();
+        builder.Services.AddScoped<SolarMicrogridTrading.Api.Interfaces.IAuthService, SolarMicrogridTrading.Api.Services.AuthService>();
+        builder.Services.AddScoped<Microsoft.AspNetCore.Identity.IPasswordHasher<SolarMicrogridTrading.Api.Models.User>, Microsoft.AspNetCore.Identity.PasswordHasher<SolarMicrogridTrading.Api.Models.User>>();
         builder.Services.AddSingleton(Options.Create(new MongoDbSettings()));
         builder.Services.AddSingleton(Options.Create(new StationOptions()));
         builder.Services.AddScoped<IQrTransferRepository, MongoQrTransferRepository>();
@@ -79,6 +92,48 @@ internal static class IntegrationChecks
         try
         {
             await database.RunCommandAsync<BsonDocument>(new BsonDocument("ping", 1));
+            var registration = new
+            {
+                nic = "200012345678", fullName = "Registration Test", email = "registration@example.test",
+                phoneNumber = "+94111234567", address = "Isolated test fixture",
+                password = "FixturePassword1!", confirmPassword = "FixturePassword1!",
+            };
+            var registered = await Check(http, "POST", "/api/prosumers/register", registration, null, 202);
+            Assert(registered.GetProperty("accountStatus").GetString() == "Active", "Registration returns an active Prosumer account");
+            var users = database.GetCollection<SolarMicrogridTrading.Api.Models.User>("UserDetails");
+            var registeredUser = await users.Find(user => user.Nic == registration.nic).SingleAsync();
+            Assert(registeredUser.IsActive && registeredUser.AccountStatus == "Active" && registeredUser.Role == "Prosumer",
+                "New Prosumer is persisted active without Backoffice approval");
+            Assert(registeredUser.PasswordHash != registration.password
+                && new Microsoft.AspNetCore.Identity.PasswordHasher<SolarMicrogridTrading.Api.Models.User>()
+                    .VerifyHashedPassword(registeredUser, registeredUser.PasswordHash, registration.password)
+                    != Microsoft.AspNetCore.Identity.PasswordVerificationResult.Failed,
+                "Registration stores a valid password hash");
+            foreach (var identifier in new[] { registration.nic, registration.email })
+            {
+                var loggedIn = await Check(http, "POST", "/api/auth/login",
+                    new { identifier, registration.password, role = "Prosumer" }, null, 200);
+                Assert(loggedIn.GetProperty("role").GetString() == "Prosumer"
+                    && !string.IsNullOrWhiteSpace(loggedIn.GetProperty("token").GetString()),
+                    "New Prosumer can immediately log in with NIC or email and receives a JWT");
+            }
+            await Check(http, "POST", "/api/prosumers/register", registration, null, 409);
+            await Check(http, "POST", "/api/auth/login",
+                new { identifier = registration.nic, password = "WrongPassword1!", role = "Prosumer" }, null, 401);
+            await Check(http, "POST", "/api/auth/login",
+                new { identifier = registration.nic, registration.password, role = "Backoffice" }, null, 401);
+            var nativeLogin = await Check(http, "POST", "/api/auth/login",
+                new { identifier = registration.nic, registration.password }, null, 200);
+            Assert(nativeLogin.GetProperty("role").GetString() == "Prosumer",
+                "Native login retains the stored role when the optional role is omitted");
+            var userUpdates = Builders<SolarMicrogridTrading.Api.Models.User>.Update;
+            await users.UpdateOneAsync(user => user.Id == registeredUser.Id, userUpdates.Set(user => user.IsActive, false));
+            await Check(http, "POST", "/api/auth/login",
+                new { identifier = registration.nic, registration.password, role = "Prosumer" }, null, 401);
+            await users.UpdateOneAsync(user => user.Id == registeredUser.Id,
+                userUpdates.Set(user => user.IsActive, true).Set(user => user.AccountStatus, "Deactivated"));
+            await Check(http, "POST", "/api/auth/login",
+                new { identifier = registration.nic, registration.password, role = "Prosumer" }, null, 401);
             await Check(http, "POST", "/api/transactions/verify", new { version = 1, reservationId = "missing", token = new string('A', 64) }, null, 403);
             await Check(http, "POST", "/api/reservations/missing/qr", null, "owner", 404);
             await Check(http, "POST", "/api/transactions/verify", new { version = 2, reservationId = "x", token = "bad" }, "operator", 400);

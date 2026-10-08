@@ -9,7 +9,7 @@ function canReserve(slot) {
   return slotBookingState(slot).ok && slot.status !== "Closed" && slot.status !== "Full" && slot.remainingCapacity > 0;
 }
 
-export default function SlotSelector({ date, minDate, maxDate, onDateChange, slots, loading, selectedSlotId, onSelect, bookableOnly = false }) {
+export default function SlotSelector({ date, minDate, maxDate, onDateChange, slots, loading, selectedSlotId, onSelect, bookableOnly = false, isSlotDisabled }) {
   const visible = bookableOnly ? slots.filter(canReserve) : slots;
   return (
     <>
@@ -29,6 +29,7 @@ export default function SlotSelector({ date, minDate, maxDate, onDateChange, slo
             key={item.slotId}
             type="button"
             className={item.slotId === selectedSlotId ? "reserve-pill selected" : "reserve-pill"}
+            disabled={isSlotDisabled?.(item) || false}
             onClick={() => onSelect(item.slotId)}
           >
             <strong>{item.startTime}–{item.endTime}</strong>

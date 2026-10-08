@@ -73,7 +73,7 @@ Open the `mobile/` directory in Android Studio, allow Gradle to sync, and run th
 
 The reservation client separately uses `http://10.0.2.2:5251`. For a physical device, pass Gradle properties `-PaccountApiBaseUrl=http://HOST:5000 -PreservationApiBaseUrl=http://HOST:5251` and keep the phone and host on the same network. Debug reservation calls use the existing Development identity headers from `/auth/me`; release builds send JWT only and require server JWT support. Do not commit local SDK paths, signing keys, generated APKs, Gradle caches, or API secrets.
 
-The login screen accepts username, email, or NIC; the API determines the account role. Mobile access is limited to Prosumer and Grid Operator accounts. It links to Prosumer registration, which sends NIC, full name, email, phone number, address, password, and confirmation to `POST /api/prosumers/register`. A successful submission displays the pending-activation response; Android does not activate the account locally.
+The login screen accepts username, email, or NIC; the API determines the account role. Mobile access is limited to Prosumer and Grid Operator accounts. It links to Prosumer registration, which sends NIC, full name, email, phone number, address, password, and confirmation to `POST /api/prosumers/register`. The API creates new Prosumer accounts active immediately, and a successful submission confirms that the Prosumer can sign in now.
 
 Prosumer account status is controlled by the API. An authenticated Prosumer can request deactivation through `POST /api/prosumers/me/deactivation`; Android cannot activate, deactivate, or reactivate an account itself. The app confirms before sending the request and prevents repeated requests after the status changes.
 

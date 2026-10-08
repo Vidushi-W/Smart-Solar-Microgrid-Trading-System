@@ -37,8 +37,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Store the token, then load /auth/me. If that call fails, delete the token so a half-finished login is not kept.
-  const login = useCallback(async (identifier, password) => {
-    const result = await loginRequest(identifier, password);
+  const login = useCallback(async (identifier, password, role) => {
+    const result = await loginRequest(identifier, password, role);
     localStorage.setItem("authToken", result.token);
     try {
       const identity = await getCurrentUser();

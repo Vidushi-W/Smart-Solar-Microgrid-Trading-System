@@ -34,6 +34,7 @@ export default function SignupPage() {
   const [role, setRole] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [registeredStatus, setRegisteredStatus] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -80,7 +81,11 @@ export default function SignupPage() {
     setSubmitting(true);
     try {
       const result = await registerProsumer({ ...form, nic, role });
-      setSuccess(result.message || `Registration received as ${ROLE_LABELS[role]}. Your account is awaiting activation.`);
+      const accountStatus = result.accountStatus || (role === "Prosumer" ? "Active" : "PendingActivation");
+      setRegisteredStatus(accountStatus);
+      setSuccess(result.message || (accountStatus === "Active"
+        ? "Account created successfully. You can sign in now."
+        : `Registration received as ${ROLE_LABELS[role]}. Your account is awaiting activation.`));
       setForm(initialForm);
       setRole("");
     } catch (reason) {
@@ -106,17 +111,19 @@ export default function SignupPage() {
         <div className="auth-card signup-card">
           {success ? (
             <div className="signup-success" role="status">
-              <p className="eyebrow">REGISTRATION RECEIVED</p>
+              <p className="eyebrow">ACCOUNT CREATED</p>
               <h2>You’re on the grid.</h2>
               <p className="auth-intro">{success}</p>
-              <p className="signup-next-step">Your NIC will be your sign-in ID after your account is activated.</p>
+              <p className="signup-next-step">{registeredStatus === "Active"
+                ? "Your account is active. Sign in now using your NIC or email and password."
+                : "Sign in using your NIC or email and password after your account is activated."}</p>
               <Link className="btn primary auth-submit signup-back-login" to="/login">Return to sign in <span aria-hidden="true">↗</span></Link>
             </div>
           ) : (
             <>
               <p className="eyebrow">CREATE YOUR ACCOUNT</p>
               <h2>Join SolarGrid</h2>
-              <p className="auth-intro">Choose your role once. After activation, sign-in opens that role.</p>
+              <p className="auth-intro">Choose your role once. Solar Prosumers can sign in immediately; staff accounts require activation.</p>
               <form onSubmit={submit} className="auth-form signup-form">
                 <div className="role-picker" role="group" aria-label="Register as">
                   <p className="role-picker-label">Register as</p>
@@ -137,7 +144,7 @@ export default function SignupPage() {
                 <input id="signup-name" name="fullName" value={form.fullName} onChange={updateField} autoComplete="name" required />
                 <label htmlFor="signup-nic">National ID (NIC)</label>
                 <input id="signup-nic" name="nic" value={form.nic} onChange={updateField} autoComplete="off" pattern="(?:[0-9]{12}|[0-9]{9}[VvXx])" title="New format: 12 digits with no letters. Older format: 9 digits followed by V or X; the letter must be at the end." required />
-                <p className="signup-field-note">New-format NICs contain exactly 12 digits and no letters. Older NICs contain 9 digits followed by V or X (at the end). Your NIC becomes your username after activation.</p>
+                <p className="signup-field-note">New-format NICs contain exactly 12 digits and no letters. Older NICs contain 9 digits followed by V or X (at the end). Your NIC is your username.</p>
                 <label htmlFor="signup-email">Email address</label>
                 <input id="signup-email" name="email" type="email" value={form.email} onChange={updateField} autoComplete="email" required />
                 <label htmlFor="signup-phone">Phone number</label>
