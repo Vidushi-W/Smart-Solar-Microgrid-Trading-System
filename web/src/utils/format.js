@@ -24,6 +24,7 @@ export function formatTimeRange(start, end) {
   return `${day}, ${time.format(new Date(start))} – ${time.format(new Date(end))}`;
 }
 
+// Local calendar date for an input. This is the viewer's date, not the UTC date used by reservation screens.
 export function toDateInputValue(iso) {
   const date = new Date(iso);
   const month = String(date.getMonth() + 1).padStart(2, "0");

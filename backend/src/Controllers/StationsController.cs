@@ -1,6 +1,7 @@
 // Station list, nearby search, update, and deactivation for this API.
 // The web station screens call these routes through stationsApi.
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartSolar.Microgrid.DTOs;
 using SmartSolar.Microgrid.Interfaces;
@@ -16,6 +17,7 @@ public sealed class StationsController : ControllerBase
     public StationsController(IStationService service) => _service = service;
 
     [HttpPost]
+    [Authorize(Roles = "Backoffice,GridOperator")]
     [ProducesResponseType(typeof(StationResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<StationResponse>> Create(
@@ -43,6 +45,7 @@ public sealed class StationsController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "GridOperator")]
     [ProducesResponseType(typeof(StationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -58,6 +61,7 @@ public sealed class StationsController : ControllerBase
     }
 
     [HttpPut("{id}/deactivate")]
+    [Authorize(Roles = "GridOperator")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]

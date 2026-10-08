@@ -1,3 +1,5 @@
+// Prosumer slot change for one reservation. The station stays the same.
+// Both the current start and the new slot need 12 hours' notice. A date past 7 Colombo days is rejected.
 package com.smartsolar.microgrid.activities
 
 import android.app.DatePickerDialog
@@ -60,6 +62,7 @@ class ModifyReservationActivity : AppCompatActivity() {
         load()
     }
 
+    // Loads the reservation and warns when it is inside the 12-hour window.
     private fun load() {
         val token = token() ?: return
         val id = intent.getStringExtra(ReservationDetailActivity.ID_KEY).orEmpty()
@@ -84,6 +87,7 @@ class ModifyReservationActivity : AppCompatActivity() {
         }
     }
 
+    // Picker range is 30 days, but a day past the next 7 is reset to today and a notice is shown.
     private fun showDate() {
         val row = reservation ?: return
         body.removeAllViews()
@@ -175,6 +179,7 @@ class ModifyReservationActivity : AppCompatActivity() {
         }, wrap())
     }
 
+    // Requires 12 hours' notice for both the current start and the selected slot.
     private fun canChangeTo(slot: SlotRecord): Boolean {
         val row = reservation ?: return false
         val currentOk = BookingRules.hasTwelveHourNotice(row.scheduledAtUtc)
@@ -184,6 +189,7 @@ class ModifyReservationActivity : AppCompatActivity() {
         return false
     }
 
+    // Sends the new slot with the reservation's current status, then reloads the saved row.
     private fun submit(slot: SlotRecord) {
         val token = token() ?: return
         val row = reservation ?: return
@@ -223,6 +229,7 @@ class ModifyReservationActivity : AppCompatActivity() {
         body.addView(SolarUi.primaryButton(this, getString(R.string.back_to_dashboard)) { finish() }, wrap())
     }
 
+    // Rule failures use a notice popup. Any other error is written on the screen.
     private fun showError(error: Exception) {
         runOnUiThread {
             progress.visibility = View.GONE
@@ -237,6 +244,7 @@ class ModifyReservationActivity : AppCompatActivity() {
         setPadding(0, 8, 0, 8)
     }
 
+    // Returns the session JWT, or closes this screen when it is missing.
     private fun token(): String? {
         val value = getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE).getString(MainActivity.TOKEN_KEY, null)
         if (value.isNullOrBlank()) {

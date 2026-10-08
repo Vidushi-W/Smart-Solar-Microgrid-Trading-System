@@ -1,5 +1,5 @@
 /**
- * Station list from stationsApi. Only Backoffice can add, edit, open the slot manager, or deactivate. Deactivate can fail when the station still has active reservations.
+ * Station list from the station API. Backoffice and Grid Operator can add a station. Only a Grid Operator can edit or deactivate one. Prosumers can view stations and open their slots to book.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -14,7 +14,8 @@ import StationForm from "./StationForm";
 export default function StationsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const canManage = user?.role === "Backoffice";
+  const canCreate = user?.role === "Backoffice" || user?.role === "GridOperator";
+  const canChange = user?.role === "GridOperator";
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -46,6 +47,7 @@ export default function StationsPage() {
     return matchesText && (status === "All" || station.status === status);
   }), [stations, query, status]);
 
+  // Update an existing station, or create one when the dialog was opened for a new station, then reload the list.
   async function saveStation(payload) {
     setSaving(true);
     setError("");
@@ -61,6 +63,7 @@ export default function StationsPage() {
     }
   }
 
+  // Deactivate through the station API. A failure that mentions active reservations is rewritten into a plain message.
   async function deactivateStation() {
     if (!deactivateTarget) return;
     setSaving(true);
@@ -89,10 +92,10 @@ export default function StationsPage() {
   return (
     <div className="page">
       <PageHeader
-        eyebrow="Backoffice · stations"
+        eyebrow="Stations"
         title="Solar stations"
-        description="Manage station locations, capacity and operating schedules."
-        actions={canManage ? <button type="button" className="btn primary" onClick={openAdd}>Add station</button> : null}
+        description="Stations saved by the station API. A prosumer books a reservation against one of these stations."
+        actions={canCreate ? <button type="button" className="btn primary" onClick={openAdd}>Add station</button> : null}
       />
 
       {error ? <div className="banner warn" role="alert"><p>{error}</p><button type="button" onClick={() => setError("")}>Dismiss</button></div> : null}
@@ -133,10 +136,9 @@ export default function StationsPage() {
                   <td><StatusBadge value={station.status} /></td>
                   <td>
                     <div className="row-actions">
-                      {canManage ? <button type="button" className="btn ghost" onClick={() => { setFormStation(station); setFormOpen(true); }}>Edit</button> : null}
-                      {canManage ? <button type="button" className="btn ghost" onClick={() => navigate(`/stations/${encodeURIComponent(station.stationId)}/slots`)}>Manage slots</button> : null}
-                      {canManage && station.status === "Active" ? <button type="button" className="btn danger" onClick={() => setDeactivateTarget(station)}>Deactivate</button> : null}
-                      {!canManage ? <span className="hint">View only</span> : null}
+                      <button type="button" className="btn ghost" onClick={() => navigate(`/stations/${encodeURIComponent(station.stationId)}/slots`)}>View slots</button>
+                      {canChange ? <button type="button" className="btn ghost" onClick={() => { setFormStation(station); setFormOpen(true); }}>Edit</button> : null}
+                      {canChange && station.status === "Active" ? <button type="button" className="btn danger" onClick={() => setDeactivateTarget(station)}>Deactivate</button> : null}
                     </div>
                   </td>
                 </tr>

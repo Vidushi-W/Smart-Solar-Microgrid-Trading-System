@@ -16,6 +16,7 @@ public class ApiExceptionMiddleware
         _logger = logger;
     }
 
+    // A reservation rule keeps its status code. Any MongoDB driver failure becomes 503.
     public async Task InvokeAsync(HttpContext context)
     {
         try

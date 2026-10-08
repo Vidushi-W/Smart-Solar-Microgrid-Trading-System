@@ -1,3 +1,5 @@
+// Verify and complete a scanned transfer QR on the account API.
+// complete posts the QR token and verification token to /api/transactions/{reservationId}/complete.
 package com.smartsolar.microgrid.api
 
 import org.json.JSONObject
@@ -50,6 +52,7 @@ class QrApiClient(private val baseUrl: String) {
         }
     }
 
+    // Uses message, then detail, then title from an error body.
     private fun messageOf(body: String, code: Int): String {
         val json = runCatching { JSONObject(body) }.getOrNull() ?: return "HTTP $code"
         val message = json.optString("message")

@@ -1,3 +1,5 @@
+// Placeholder for a module that is not connected yet.
+// Logout clears authentication_session and the local SQLite account.
 package com.smartsolar.microgrid.activities
 
 import android.graphics.Color

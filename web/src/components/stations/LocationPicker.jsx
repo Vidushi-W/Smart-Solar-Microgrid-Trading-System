@@ -7,6 +7,7 @@ const TILE_SIZE = 256;
 const MAX_LATITUDE = 85.05112878;
 const DEFAULT_LOCATION = { latitude: 7.8731, longitude: 80.7718 };
 
+// Web Mercator pixel position for this zoom. Latitude is clamped before the projection.
 function project(latitude, longitude, zoom) {
   const scale = TILE_SIZE * 2 ** zoom;
   const boundedLatitude = Math.max(-MAX_LATITUDE, Math.min(MAX_LATITUDE, latitude));
@@ -17,6 +18,7 @@ function project(latitude, longitude, zoom) {
   };
 }
 
+// Inverse of project: map a pixel back to longitude and latitude.
 function unproject(x, y, zoom) {
   const scale = TILE_SIZE * 2 ** zoom;
   return {
@@ -50,6 +52,7 @@ export default function LocationPicker({ latitude, longitude, onSelect }) {
     ? project(Number(latitude), Number(longitude), zoom)
     : null;
 
+  // A drag does not pick a point. A click selects the map location under the pointer.
   function selectFromPointer(event) {
     if (!mapRef.current || !dragRef.current || dragRef.current.moved) return;
     const bounds = mapRef.current.getBoundingClientRect();
@@ -68,6 +71,7 @@ export default function LocationPicker({ latitude, longitude, onSelect }) {
     dragRef.current = { x: event.clientX, y: event.clientY, moved: false };
   }
 
+  // Pan only after the pointer moves more than 4px, so a small click is not treated as a drag.
   function handlePointerMove(event) {
     if (!dragRef.current || !mapRef.current) return;
     const dx = event.clientX - dragRef.current.x;

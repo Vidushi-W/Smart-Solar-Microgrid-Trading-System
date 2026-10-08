@@ -27,6 +27,7 @@ function utcDayStart(date) {
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 }
 
+// Monday 00:00 UTC of the week that contains now. Sunday belongs to the previous Monday.
 function weekStart(now) {
   const day = now.getUTCDay();
   const mondayOffset = day === 0 ? -6 : 1 - day;

@@ -70,6 +70,32 @@ public class AccountReservationServiceTests
     }
 
     [Fact]
+    public async Task UpdateAndCancel_RejectABackofficeCaller()
+    {
+        var world = World();
+        var current = world.AddSlot(hoursAhead: 30);
+        var next = world.AddSlot(hoursAhead: 50);
+        var created = (await world.Service.CreateAsync(world.Prosumer, Request(current), CancellationToken.None)).Value!;
+        var staff = new ReservationActor(world.Prosumer.UserId, "Backoffice");
+
+        var updated = await world.Service.UpdateAsync(staff, created.ReservationId, new UpdateReservationRequest
+        {
+            ProsumerId = world.Prosumer.UserId,
+            StationId = next.StationId,
+            SlotId = next.SlotId,
+            ScheduledAtUtc = StartOf(next),
+            Status = ReservationStatus.Pending,
+        }, CancellationToken.None);
+        var cancelled = await world.Service.CancelAsync(staff, created.ReservationId, CancellationToken.None);
+
+        Assert.Equal(ReservationFailure.Forbidden, updated.Failure);
+        Assert.Contains("prosumer", updated.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(ReservationFailure.Forbidden, cancelled.Failure);
+        Assert.Equal(current.SlotId, (await world.Reservations.GetByIdAsync(created.ReservationId, CancellationToken.None))!.SlotId);
+        Assert.Equal(ReservationStatus.Pending, (await world.Reservations.GetByIdAsync(created.ReservationId, CancellationToken.None))!.Status);
+    }
+
+    [Fact]
     public async Task Update_PersistsTheNewSlotWhenTwelveHoursRemain()
     {
         var world = World();

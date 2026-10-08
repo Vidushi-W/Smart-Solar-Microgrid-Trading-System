@@ -1,3 +1,5 @@
+// Grid-operator scanner. Screenshots are blocked.
+// Confirm is enabled only for a Scheduled reservation that still has a verification token.
 package com.smartsolar.microgrid.activities
 
 import android.Manifest
@@ -27,6 +29,7 @@ class QrScannerActivity : SolarActivity() {
     private val permission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) scan() else message.text = getString(R.string.camera_denied)
     }
+    // Grid operator only. Screenshots are blocked.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!setup(getString(R.string.scan_qr), listOf("GridOperator"))) return
@@ -96,6 +99,7 @@ class QrScannerActivity : SolarActivity() {
             content = original
         }
     }
+    // Does nothing while a request is in flight or the last completion outcome is uncertain.
     private fun scan() {
         if (model.state.value?.busy == true || model.state.value?.uncertain == true) return
         model.reset(); reading = true

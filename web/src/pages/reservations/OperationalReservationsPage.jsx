@@ -40,6 +40,7 @@ function windowLabel(iso) {
   return `${day}, ${time}`;
 }
 
+// If cancel or modify is blocked for the 12-hour rule, show that lock instead of the service type.
 function noticeFrom(row) {
   const blocks = row.actionBlocks || {};
   const text = `${blocks.cancel || ""} ${blocks.modify || ""}`;
@@ -62,9 +63,10 @@ export default function OperationalReservationsPage() {
   const stationId = searchParams.get("station") || "All";
   const query = searchParams.get("q") || "";
   const date = searchParams.get("date") || "";
-  const canBook = user.role === "Backoffice" || user.role === "Prosumer";
+  const canBook = user.role === "Prosumer";
   const requestStatus = tab === "pending" ? "Requested" : status;
 
+  // Drop All and an empty value from the query string instead of storing them.
   function setParam(key, value) {
     const next = new URLSearchParams(searchParams);
     if (!value || value === "All") next.delete(key);
@@ -72,6 +74,7 @@ export default function OperationalReservationsPage() {
     setSearchParams(next);
   }
 
+  // The pending tab always asks for Requested, even when the status query says something else.
   async function load() {
     setLoading(true);
     setError("");
@@ -109,6 +112,7 @@ export default function OperationalReservationsPage() {
     }
   }
 
+  // Show only actions the row allows. Reject sends the fixed reason used by this desk.
   function actionsFor(row) {
     const allowed = row.allowedActions || [];
     const buttons = [];
@@ -135,7 +139,7 @@ export default function OperationalReservationsPage() {
     if (allowed.includes("cancel")) {
       buttons.push(
         <button key="cancel" type="button" className="desk-action" disabled={busyId === row.id} onClick={() => run(row, "cancel")}>
-          Cancel on behalf
+          Cancel
         </button>
       );
     }

@@ -1,3 +1,5 @@
+// Lists the signed-in user's bookings, or every booking in staff mode.
+// Upcoming keeps Pending, Approved, and Scheduled. History keeps Completed and Cancelled.
 package com.smartsolar.microgrid.activities
 
 import android.content.Intent
@@ -82,6 +84,7 @@ class ReservationListActivity : AppCompatActivity() {
         load(intent.getStringExtra(MODE_KEY) ?: MODE_UPCOMING)
     }
 
+    // Staff mode loads every reservation. Other modes load only the signed-in user's.
     private fun load(mode: String) {
         val token = token() ?: return
         executor.execute {
@@ -104,6 +107,7 @@ class ReservationListActivity : AppCompatActivity() {
         }
     }
 
+    // Upcoming is Pending, Approved, and Scheduled. History is Completed and Cancelled. Staff shows every status.
     private fun render(mode: String) {
         list.removeAllViews()
         val allowed = when (mode) {
@@ -149,6 +153,7 @@ class ReservationListActivity : AppCompatActivity() {
         else -> getString(R.string.my_bookings)
     }
 
+    // Returns the session JWT, or closes this screen when it is missing.
     private fun token(): String? {
         val value = getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE).getString(MainActivity.TOKEN_KEY, null)
         if (value.isNullOrBlank()) {

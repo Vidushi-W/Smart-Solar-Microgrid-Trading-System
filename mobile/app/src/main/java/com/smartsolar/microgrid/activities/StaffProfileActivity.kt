@@ -1,3 +1,6 @@
+// Grid operator and backoffice profile.
+// Loads and saves /api/users/me/profile. Username and role stay read-only.
+// The session lives in authentication_session; logout also clears the SQLite account.
 package com.smartsolar.microgrid.activities
 
 import android.graphics.Color
@@ -65,6 +68,7 @@ class StaffProfileActivity : AppCompatActivity() {
         }
     }
 
+    // GridOperator and Backoffice only. Any other role closes the screen. A missing token returns to login.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         token = getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE)
@@ -277,6 +281,7 @@ class StaffProfileActivity : AppCompatActivity() {
         finish()
     }
 
+    // Signs out when the message mentions 401, expiry, or an inactive account.
     private fun showError(error: Exception) {
         val message = error.message ?: getString(R.string.profile_failed)
         if (message.contains("401", ignoreCase = true) || message.contains("expired", ignoreCase = true)
@@ -292,6 +297,7 @@ class StaffProfileActivity : AppCompatActivity() {
         messageView.text = message
     }
 
+    // Blank data shows the letter avatar. A data URL is decoded as a JPEG and shown instead.
     private fun showAvatar(data: String?) {
         if (data.isNullOrBlank()) {
             photoView.visibility = View.GONE
@@ -320,11 +326,13 @@ class StaffProfileActivity : AppCompatActivity() {
         layoutParams = matchWidth()
     }
 
+    // Optional leading plus and punctuation, with 7 to 15 digits.
     private fun isPhoneValid(value: String): Boolean {
         val digits = value.count(Char::isDigit)
         return Regex("^\\+?[0-9\\s().-]+$").matches(value) && digits in 7..15
     }
 
+    // Eight or more characters, with upper, lower, a digit, and a symbol.
     private fun isStrongPassword(value: String): Boolean =
         value.length >= 8 && value.any(Char::isUpperCase) && value.any(Char::isLowerCase)
             && value.any(Char::isDigit) && value.any { !it.isLetterOrDigit() && !it.isWhitespace() }

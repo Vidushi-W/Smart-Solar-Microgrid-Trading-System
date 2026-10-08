@@ -1,3 +1,5 @@
+// Prosumer profile. Loads and updates /api/prosumers/me/profile and can request deactivation.
+// Shows the SQLite account first. Logout clears the session prefs and that local row.
 package com.smartsolar.microgrid.activities
 
 import android.content.Intent
@@ -79,6 +81,7 @@ class ProsumerProfileActivity : AppCompatActivity() {
         loadProfile()
     }
 
+    // Blank data shows the letter avatar. A data URL is decoded as a JPEG and shown instead.
     private fun showAvatar(data: String?) {
         if (data.isNullOrBlank()) {
             photoView.visibility = View.GONE
@@ -194,6 +197,7 @@ class ProsumerProfileActivity : AppCompatActivity() {
         }
     }
 
+    // Fills the form from SQLite while the profile request is still running.
     private fun showCachedAccount() {
         val cached = LocalAccountStore(this).current() ?: return
         avatarView.text = cached.name.firstOrNull()?.uppercase() ?: "?"
@@ -222,6 +226,7 @@ class ProsumerProfileActivity : AppCompatActivity() {
         deactivationButton.isEnabled = value.accountStatus == "Active" && !editing
     }
 
+    // Enables the photo and text fields. NIC, status, and registration date stay read-only.
     private fun setEditing(value: Boolean) {
         editing = value
         pictureButton.isEnabled = value
@@ -272,6 +277,7 @@ class ProsumerProfileActivity : AppCompatActivity() {
             .show()
     }
 
+    // Posts deactivation, then saves the returned status into SQLite.
     private fun requestDeactivation() {
         setLoading(true)
         executor.execute {
@@ -309,6 +315,7 @@ class ProsumerProfileActivity : AppCompatActivity() {
         finish()
     }
 
+    // Signs out on 401, an expired token, or an inactive account.
     private fun handleApiError(error: Exception) {
         val message = error.message ?: getString(R.string.profile_failed)
         if (message.contains("401", ignoreCase = true) || message.contains("expired", ignoreCase = true)
@@ -354,6 +361,7 @@ class ProsumerProfileActivity : AppCompatActivity() {
         layoutParams = matchWidth()
     }
 
+    // Optional leading plus and punctuation, with 7 to 15 digits.
     private fun isPhoneValid(value: String): Boolean {
         val digits = value.count(Char::isDigit)
         return Regex("^\\+?[0-9\\s().-]+$").matches(value) && digits in 7..15

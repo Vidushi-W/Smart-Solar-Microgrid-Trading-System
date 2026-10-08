@@ -40,6 +40,7 @@ export default function ProsumerQueuePage({ mode }) {
   const visibleRows = rows.filter((row) =>
     `${row.nic || row.username} ${row.name} ${row.email}`.toLowerCase().includes(normalizedQuery));
 
+  // DeactivationRequested is processed immediately. Activate and reactivate wait for the confirmation dialog.
   async function process(row) {
     if (deactivatedMode || row.accountStatus !== "DeactivationRequested") {
       setConfirmation({ row, action: deactivatedMode ? "reactivate" : "activate" });

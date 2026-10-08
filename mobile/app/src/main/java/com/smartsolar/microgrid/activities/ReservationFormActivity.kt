@@ -1,3 +1,4 @@
+// Prosumer form to create a reservation or change its slot through MicrogridApi.
 package com.smartsolar.microgrid.activities
 
 import android.os.Bundle
@@ -29,11 +30,12 @@ class ReservationFormActivity : SolarActivity() {
     private var desiredSlot = ""
     private var desiredProsumer = ""
     private var desiredService = 0
+    // Prosumer only. Modify hides service and energy; the prosumer spinner stays locked unless the role is Backoffice.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         reservationId = intent.getStringExtra("reservationId")
         if (!setup(getString(if (reservationId == null) R.string.create_reservation else R.string.modify_reservation),
-                listOf("Prosumer", "Backoffice"))) return
+                listOf("Prosumer"))) return
         desiredStation = savedInstanceState?.getString("station").orEmpty()
         desiredSlot = savedInstanceState?.getString("slot").orEmpty()
         desiredProsumer = savedInstanceState?.getString("prosumer").orEmpty()
@@ -114,6 +116,7 @@ class ReservationFormActivity : SolarActivity() {
         override fun onNothingSelected(parent: AdapterView<*>?) = Unit
     }
     private fun selectedPerson() = peopleRows.getOrNull(people.selectedItemPosition - 1)?.getString("id").orEmpty()
+    // Loads options for the reservation's prosumer, the signed-in prosumer, or the id passed in.
     private fun loadChoices(person: String = "") {
         screen.request {
             val identity = api.identity()
@@ -123,6 +126,7 @@ class ReservationFormActivity : SolarActivity() {
             BookingChoices(api.options(target.takeIf { it.isNotBlank() }), current, target)
         }
     }
+    // Create posts prosumer, slot, service, and energy. Modify posts only the new slot id.
     private fun review() {
         val slot = slotRows.getOrNull(slots.selectedItemPosition - 1)
         if (slot == null) { message.text = getString(R.string.select_slot); return }

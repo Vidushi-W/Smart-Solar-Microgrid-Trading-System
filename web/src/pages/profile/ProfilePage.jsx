@@ -15,6 +15,7 @@ import {
 } from "../../services/userService";
 import { isPasswordStrong, passwordRequirements } from "../../utils/passwordPolicy";
 
+// Load the chosen file, then release the object URL whether the image opens or fails.
 function loadImage(fileUrl) {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -96,6 +97,7 @@ export default function ProfilePage() {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
   }
 
+  // Shrink the longer side to at most 512px and save a JPEG only when the data URL stays under one million characters.
   async function chooseProfilePicture(event) {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -128,6 +130,7 @@ export default function ProfilePage() {
     }
   }
 
+  // Keep the previous picture and restore it if the save fails.
   async function storePicture(pictureData) {
     const previous = profilePictureData;
     setProfilePictureData(pictureData);
@@ -152,6 +155,7 @@ export default function ProfilePage() {
     }
   }
 
+  // Prosumers update their own profile. Staff also send their role and an optional password.
   function saveProfile(pictureData) {
     if (user.role === "Prosumer") {
       return updateProsumerProfile({ ...form, profilePictureData: pictureData });
@@ -167,6 +171,7 @@ export default function ProfilePage() {
     });
   }
 
+  // A new password is checked only for staff, and only when that field is not blank.
   async function save(event) {
     event.preventDefault();
     setError("");
@@ -206,6 +211,7 @@ export default function ProfilePage() {
     navigate("/login", { replace: true });
   }
 
+  // Prosumer only. This asks Backoffice to deactivate; it does not deactivate the account itself.
   async function requestDeactivation() {
     setError("");
     setNotice("");

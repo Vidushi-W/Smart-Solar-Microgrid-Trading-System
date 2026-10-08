@@ -64,6 +64,7 @@ export default function ProsumerReservationDetailPage() {
     setError("");
   }
 
+  // Cancel only with 12 hours' notice. A server message about 12 hours is shown as that same notice.
   async function confirmCancel() {
     if (!reservation || busy) return;
     if (!hasTwelveHourNotice(reservation.scheduledAtUtc)) {

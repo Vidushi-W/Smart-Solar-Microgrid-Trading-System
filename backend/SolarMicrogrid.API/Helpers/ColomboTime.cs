@@ -1,9 +1,12 @@
+// Booking windows use Asia/Colombo (UTC+5:30). Windows looks up Sri Lanka Standard Time first.
 namespace SolarMicrogrid.API.Helpers;
 
 public static class ColomboTime
 {
+    // Sri Lanka Standard Time, otherwise Asia/Colombo, otherwise a fixed UTC+5:30 zone.
     public static TimeZoneInfo Zone { get; } = Resolve();
 
+    // True when the start is still ahead and falls on or before the end of the local day seven days from today.
     public static bool IsInsideSevenDayWindow(DateTime startUtc, DateTime nowUtc)
     {
         var start = AsUtc(startUtc);
@@ -24,6 +27,7 @@ public static class ColomboTime
         return (AsUtc(startUtc) - AsUtc(nowUtc)).TotalHours >= 12;
     }
 
+    // That Colombo calendar day, from 00:00:00 through 23:59:59.999, converted to UTC.
     public static (DateTime FromUtc, DateTime ToUtc) DayRangeUtc(DateOnly day)
     {
         var from = ToUtc(day, TimeOnly.MinValue);
@@ -31,6 +35,7 @@ public static class ColomboTime
         return (from, to);
     }
 
+    // Treats the date and time as Colombo local time.
     public static DateTime ToUtc(DateOnly date, TimeOnly time)
     {
         var local = date.ToDateTime(time);
@@ -43,6 +48,7 @@ public static class ColomboTime
         return DateOnly.FromDateTime(local);
     }
 
+    // Unspecified values are labeled UTC without shifting. Local values are converted.
     public static DateTime AsUtc(DateTime value)
     {
         return value.Kind switch

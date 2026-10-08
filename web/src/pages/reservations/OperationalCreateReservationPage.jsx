@@ -71,6 +71,7 @@ export default function OperationalCreateReservationPage() {
     setError("");
   }
 
+  // Post the chosen prosumer, slot, service, and energy amount. The success step shows the saved response.
   async function confirmBooking(event) {
     event.preventDefault();
     setSubmitting(true);

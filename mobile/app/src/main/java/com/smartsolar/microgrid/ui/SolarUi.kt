@@ -1,3 +1,4 @@
+// Shared back bar, buttons, fact rows, status chips, choice cards, and confirmation popups.
 package com.smartsolar.microgrid.ui
 
 import android.app.Activity
@@ -97,6 +98,7 @@ object SolarUi {
         return card
     }
 
+    // Green for approved, completed, and scheduled; amber for pending and requested; red for cancelled and rejected.
     fun statusChip(context: android.content.Context, status: String) = TextView(context).apply {
         text = status.ifBlank { "—" }
         textSize = 13f

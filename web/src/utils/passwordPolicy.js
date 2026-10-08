@@ -1,3 +1,7 @@
+/**
+ * Client-side password checklist for signup, profile, and user forms. A strong password needs 8 characters, both letter cases, a digit, and a special character. The API still decides whether to accept it.
+ */
+// A special character is any symbol that is not a letter, digit, or whitespace.
 export function passwordRequirements(password) {
   return [
     { label: "At least 8 characters", met: password.length >= 8 },

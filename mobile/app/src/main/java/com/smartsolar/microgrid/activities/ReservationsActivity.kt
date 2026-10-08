@@ -1,3 +1,5 @@
+// Operational reservation list filtered by status, text, date, and station.
+// Prosumers get a create button. A row opens the operational detail screen.
 package com.smartsolar.microgrid.activities
 
 import android.content.Intent
@@ -29,7 +31,7 @@ class ReservationsActivity : SolarActivity() {
         day = input(getString(R.string.date_filter)).apply { id = R.id.reservation_date }
         station = input(getString(R.string.station_filter)).apply { id = R.id.reservation_station }
         val loadButton = button(getString(R.string.search)) { load() }
-        if (role == "Prosumer" || role == "Backoffice") button(getString(R.string.create_reservation)) { open(ReservationFormActivity::class.java) }
+        if (role == "Prosumer") button(getString(R.string.create_reservation)) { open(ReservationFormActivity::class.java) }
         if (intent.getBooleanExtra("history", false)) text(getString(R.string.history_hint))
         rows = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; content.addView(this) }
         back()
@@ -56,6 +58,7 @@ class ReservationsActivity : SolarActivity() {
         }
     }
     override fun onResume() { super.onResume(); if (::rows.isInitialized) load() }
+    // Reads the spinner and the three fields, then calls the reservation list API.
     private fun load() {
         val selected = statuses[filter.selectedItemPosition]
         val query = search.text.toString(); val date = day.text.toString(); val stationId = station.text.toString()

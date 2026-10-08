@@ -1,3 +1,5 @@
+// Public sign-up through POST /api/prosumers/register. This screen does not sign the user in.
+// NIC must be 12 digits or 9 digits plus V or X. PendingActivation shows the waiting message.
 package com.smartsolar.microgrid.activities
 
 import android.graphics.Color
@@ -120,6 +122,7 @@ class RegisterProsumerActivity : AppCompatActivity() {
         SolarUi.field(this)
     }.also { it.layoutParams = matchWidth() }
 
+    // Checks NIC, email, phone, and password locally, then registers without starting a session.
     private fun submitRegistration() {
         val request = RegisterProsumerRequest(
             nicInput.text.toString().trim(),
@@ -192,6 +195,7 @@ class RegisterProsumerActivity : AppCompatActivity() {
         messageView.text = message
     }
 
+    // Eight or more characters, with upper, lower, a digit, and a symbol.
     private fun isStrongPassword(password: String): Boolean =
         password.length >= 8
             && password.any(Char::isUpperCase)

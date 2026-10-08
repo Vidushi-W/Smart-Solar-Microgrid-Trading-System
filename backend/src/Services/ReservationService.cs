@@ -116,9 +116,9 @@ public sealed class ReservationService : IReservationService
             return NotFound<ReservationResponse>("Reservation not found.");
         }
 
-        if (!CanChange(actor, reservation))
+        if (!OwnsReservation(actor, reservation))
         {
-            return Forbidden<ReservationResponse>("You cannot update this reservation.");
+            return Forbidden<ReservationResponse>("Only the prosumer who made this reservation can update it.");
         }
 
         var statusError = ChangeableStatus(reservation);
@@ -214,9 +214,9 @@ public sealed class ReservationService : IReservationService
             return NotFound<ReservationResponse>("Reservation not found.");
         }
 
-        if (!CanChange(actor, reservation))
+        if (!OwnsReservation(actor, reservation))
         {
-            return Forbidden<ReservationResponse>("You cannot cancel this reservation.");
+            return Forbidden<ReservationResponse>("Only the prosumer who made this reservation can cancel it.");
         }
 
         var statusError = ChangeableStatus(reservation);
@@ -515,8 +515,8 @@ public sealed class ReservationService : IReservationService
         return null;
     }
 
-    private static bool CanChange(ReservationActor actor, EnergyReservation reservation) =>
-        IsBackoffice(actor) || (IsProsumer(actor) && string.Equals(actor.UserId, reservation.ProsumerId, StringComparison.Ordinal));
+    private static bool OwnsReservation(ReservationActor actor, EnergyReservation reservation) =>
+        IsProsumer(actor) && string.Equals(actor.UserId, reservation.ProsumerId, StringComparison.Ordinal);
 
     private static bool CanView(ReservationActor actor, EnergyReservation reservation) =>
         IsStaff(actor) || (IsProsumer(actor) && string.Equals(actor.UserId, reservation.ProsumerId, StringComparison.Ordinal));

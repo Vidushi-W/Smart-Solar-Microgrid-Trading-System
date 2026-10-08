@@ -2,7 +2,6 @@
  * Shared fetch for the station and slot screens. Attaches the JWT when one exists. ASP.NET validation errors are flattened into one ApiError message.
  */
 import { API_BASE } from "./contracts";
-import { enrichStations } from "./member2Mock";
 
 export class ApiError extends Error {
   constructor(message, status, payload) {
@@ -47,6 +46,7 @@ export async function apiRequest(path, { method = "GET", body, signal } = {}) {
   return payload;
 }
 
+// Reservation helpers on the account API. The reservation host has its own client in reservationsApi.
 export function createReservation(body) {
   return apiRequest("/reservations", { method: "POST", body });
 }
@@ -84,9 +84,10 @@ export function issueReservationQr(id) {
 }
 
 export function listStationsForReservations() {
-  return stationsApi.list().then(enrichStations);
+  return stationsApi.list();
 }
 
+// Station and slot routes on the account API. Deactivate is PUT, and a slot list requires a date.
 export const stationsApi = {
   list: () => apiRequest("/stations"),
   create: (body) => apiRequest("/stations", { method: "POST", body }),

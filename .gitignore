@@ -101,6 +101,17 @@ keystore.properties
 
 # Local scratch pages used while checking the UI
 web/public/_*.html
+web/src/pages/stations/*PreviewPage.jsx
+web/src/services/*Mock.js
+
+# Editor backups and Rider/Visual Studio user files
+*~
+*.bak
+*.orig
+*.tmp
+*.swp
+*.DotSettings.user
+*.rsuser
 
 # Local databases and runtime files
 *.db

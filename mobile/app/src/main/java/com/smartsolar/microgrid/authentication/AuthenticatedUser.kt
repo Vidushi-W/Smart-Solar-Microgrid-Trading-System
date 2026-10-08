@@ -1,3 +1,4 @@
+// Identity returned by GET /api/auth/me and copied into the local account store.
 package com.smartsolar.microgrid.authentication
 
 data class AuthenticatedUser(

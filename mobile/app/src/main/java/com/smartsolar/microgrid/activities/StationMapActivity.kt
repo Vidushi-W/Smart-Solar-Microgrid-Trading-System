@@ -1,3 +1,5 @@
+// Map of Active stations from GET /api/stations for a signed-in user.
+// Google Maps is used when a maps key exists; otherwise a local drawing is shown. The demo token loads nothing.
 package com.smartsolar.microgrid.activities
 
 import android.content.ActivityNotFoundException
@@ -48,6 +50,7 @@ class StationMapActivity : AppCompatActivity(), OnMapReadyCallback {
     private var stations: List<Station> = emptyList()
     private var mapContainerId: Int = View.NO_ID
 
+    // Uses Google Maps when a key is set; otherwise shows the drawn stand-in and asks for location.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mapContainerId = savedInstanceState?.getInt(MAP_CONTAINER_ID_KEY) ?: View.generateViewId()
@@ -62,7 +65,7 @@ class StationMapActivity : AppCompatActivity(), OnMapReadyCallback {
         } else {
             demoMapView.visibility = View.VISIBLE
             mapHint.visibility = View.VISIBLE
-            mapHint.text = getString(R.string.demo_map_preview)
+            mapHint.text = getString(R.string.stations_map_subtitle)
         }
         loadStations()
         requestLocationAccess()
@@ -152,15 +155,13 @@ class StationMapActivity : AppCompatActivity(), OnMapReadyCallback {
         displayStationsOnMap()
     }
 
+    // Skips the network when the token is missing or is the local demo token.
     private fun loadStations() {
         val token = getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE)
             .getString(MainActivity.TOKEN_KEY, null)
-        if (token.isNullOrBlank()) {
-            showStations(demoStations())
-            return
-        }
-        if (token == "local-demo-token") {
-            showStations(demoStations())
+        if (token.isNullOrBlank() || token == "local-demo-token") {
+            showStations(emptyList())
+            messageView.text = getString(R.string.no_active_stations)
             return
         }
 
@@ -174,8 +175,8 @@ class StationMapActivity : AppCompatActivity(), OnMapReadyCallback {
                 runOnUiThread { showStations(activeStations) }
             } catch (error: Exception) {
                 runOnUiThread {
-                    showStations(demoStations())
-                    messageView.text = "Showing nearby demo stations while the network is unavailable."
+                    showStations(emptyList())
+                    messageView.text = error.message ?: getString(R.string.no_active_stations)
                 }
             }
         }
@@ -213,12 +214,6 @@ class StationMapActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
     }
-
-    private fun demoStations(): List<Station> = listOf(
-        Station("CMB-01", "Colombo Fort Microgrid", 6.9344, 79.8428, 120.0, 18, 11, listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"), "06:00", "18:00", "Active", 1.8),
-        Station("KDY-01", "Kandy Lake Station", 7.2906, 80.6337, 80.0, 12, 7, listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"), "06:30", "17:30", "Active", 3.6),
-        Station("GAL-01", "Galle Fort Station", 6.0260, 80.2170, 60.0, 8, 5, listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"), "07:00", "17:00", "Active", 5.2)
-    )
 
     private fun showStations(rows: List<Station>) {
         stations = rows
@@ -275,6 +270,7 @@ class StationMapActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    // Drops out-of-range coordinates, then frames one station or the whole set.
     private fun displayStationsOnMap() {
         val map = googleMap ?: return
         map.clear()
@@ -351,6 +347,7 @@ class StationMapActivity : AppCompatActivity(), OnMapReadyCallback {
             typeface = Typeface.DEFAULT_BOLD
         }
 
+        // Draws stations by stretching their coordinates across the view.
         override fun onDraw(canvas: Canvas) {
             canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), backgroundPaint)
             for (index in 1..5) {
@@ -375,6 +372,7 @@ class StationMapActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
 
+        // Opens the station whose marker is nearest to the tap.
         override fun onTouchEvent(event: MotionEvent): Boolean {
             if (event.action != MotionEvent.ACTION_UP || stations.isEmpty()) return true
             val minLat = stations.minOf { it.latitude }

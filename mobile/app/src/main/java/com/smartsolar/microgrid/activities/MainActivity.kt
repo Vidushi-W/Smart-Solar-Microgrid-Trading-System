@@ -1,3 +1,5 @@
+// Sign-in screen. Posts /api/auth/login, then checks /api/auth/me.
+// Backoffice is rejected on mobile. A matching session is stored in authentication_session and copied to SQLite.
 package com.smartsolar.microgrid.activities
 
 import android.content.Intent
@@ -148,6 +150,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
+    // Blocks Backoffice, requires the login role to match /api/auth/me, and stores that user in SQLite.
     private fun submitLogin() {
         val identifier = identifierInput.text.toString().trim()
         val password = passwordInput.text.toString()
@@ -183,6 +186,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // Drops the saved session when the token is rejected or the account is inactive.
     private fun validateSavedSession(token: String, savedRole: String) {
         setLoading(true)
         messageView.text = getString(R.string.checking_session)

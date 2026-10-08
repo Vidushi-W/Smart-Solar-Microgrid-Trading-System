@@ -1,3 +1,4 @@
+// Prosumer profile from GET /api/prosumers/me/profile, including an optional JPEG data URL.
 package com.smartsolar.microgrid.authentication
 
 data class ProsumerProfile(

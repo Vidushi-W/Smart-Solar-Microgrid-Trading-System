@@ -1,5 +1,7 @@
+// Role names, reservation statuses, service types, and MongoDB collection names shared by this API.
 namespace SolarMicrogrid.API.Constants;
 
+// These strings are the only values accepted from X-User-Role.
 public static class AppRoles
 {
     public const string Backoffice = "Backoffice";
@@ -7,6 +9,7 @@ public static class AppRoles
     public const string Prosumer = "Prosumer";
 }
 
+// Holding statuses keep a slot reserved. ApprovedFuture and DueSoon are search labels, not stored statuses.
 public static class ReservationStatus
 {
     public const string Requested = "Requested";
@@ -22,6 +25,7 @@ public static class ReservationStatus
     public const string DueSoon = "DueSoon";
 }
 
+// Drop-off and Charging are the only service types a reservation accepts.
 public static class ServiceTypes
 {
     public const string DropOff = "Drop-off";
@@ -30,6 +34,7 @@ public static class ServiceTypes
     public static bool IsKnown(string? value) => value is DropOff or Charging;
 }
 
+// Collection names in the shared database. Reservations are not stored in the account API's EnergyReservation collection.
 public static class MongoCollections
 {
     // Kept apart from EnergyReservation, which the account reservation API owns.

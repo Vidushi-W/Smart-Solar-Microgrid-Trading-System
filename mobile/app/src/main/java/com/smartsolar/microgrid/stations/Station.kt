@@ -1,3 +1,4 @@
+// One station from GET /api/stations, with coordinates, battery slots, hours, and status.
 package com.smartsolar.microgrid.stations
 
 data class Station(

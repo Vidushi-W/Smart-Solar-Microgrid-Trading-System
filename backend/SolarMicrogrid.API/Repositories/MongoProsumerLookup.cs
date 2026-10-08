@@ -1,3 +1,4 @@
+// Reads id, name, and status from the Prosumers collection written by the account API.
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using SolarMicrogrid.API.Constants;
@@ -28,6 +29,7 @@ public class MongoProsumerLookup : IProsumerLookup
     }
 }
 
+// The prosumer fields this API maps. Other account fields on the document are left unread.
 public class ProsumerDocument
 {
     [BsonId]

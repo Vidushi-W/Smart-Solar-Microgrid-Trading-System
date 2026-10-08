@@ -7,6 +7,7 @@ using SolarMicrogrid.API.Repositories;
 
 namespace SolarMicrogrid.API.Services;
 
+// Signed-in callers only. Backoffice creates stations and slots. Grid Operator updates them and changes status.
 public class StationService : IStationService
 {
     private readonly ICatalogStore _catalog;
@@ -33,6 +34,7 @@ public class StationService : IStationService
         return rows;
     }
 
+    // Active stations with real coordinates only. Radius must be greater than 0 and at most 200 km.
     public async Task<IReadOnlyList<NearbyStationDto>> ListNearbyAsync(double latitude, double longitude, double radiusKm, CancellationToken cancellationToken)
     {
         RequireSignedIn();
@@ -89,6 +91,7 @@ public class StationService : IStationService
         return await ToStationDto(station, cancellationToken);
     }
 
+    // The code must be unique. A new station is stored as Active.
     public async Task<StationDto> CreateStationAsync(StationWriteRequest request, CancellationToken cancellationToken)
     {
         RequireRole(AppRoles.Backoffice);
@@ -108,9 +111,10 @@ public class StationService : IStationService
         return await ToStationDto(station, cancellationToken);
     }
 
+    // The code must stay unique among the other stations.
     public async Task<StationDto> UpdateStationAsync(string id, StationWriteRequest request, CancellationToken cancellationToken)
     {
-        RequireRole(AppRoles.Backoffice);
+        RequireRole(AppRoles.GridOperator);
         ValidateStation(request);
         var station = await RequireStation(id, cancellationToken);
         if (await _catalog.StationCodeExistsAsync(request.Code.Trim(), station.Id, cancellationToken))
@@ -123,9 +127,10 @@ public class StationService : IStationService
         return await ToStationDto(station, cancellationToken);
     }
 
+    // Inactive is refused while Requested, Approved, or Scheduled reservations still exist.
     public async Task<StationDto> SetStationStatusAsync(string id, string status, CancellationToken cancellationToken)
     {
-        RequireRole(AppRoles.Backoffice);
+        RequireRole(AppRoles.GridOperator);
         if (status is not ("Active" or "Inactive"))
         {
             throw Rule(400, "Status must be Active or Inactive.");
@@ -168,6 +173,7 @@ public class StationService : IStationService
         return await ToSlotDto(slot, stations, cancellationToken);
     }
 
+    // Capacity must be at least 1, and the end must be after the start.
     public async Task<SlotDto> CreateSlotAsync(SlotWriteRequest request, CancellationToken cancellationToken)
     {
         RequireRole(AppRoles.Backoffice);
@@ -179,9 +185,10 @@ public class StationService : IStationService
         return await ToSlotDto(slot, [station], cancellationToken);
     }
 
+    // A capacity hold blocks station or time changes, closing the slot, and capacity below that hold.
     public async Task<SlotDto> UpdateSlotAsync(string id, SlotWriteRequest request, CancellationToken cancellationToken)
     {
-        RequireRole(AppRoles.Backoffice);
+        RequireRole(AppRoles.GridOperator);
         var slot = await RequireSlot(id, cancellationToken);
         await RequireStation(request.StationId, cancellationToken);
         ValidateSlot(request);
@@ -212,9 +219,10 @@ public class StationService : IStationService
         return await ToSlotDto(slot, stations, cancellationToken);
     }
 
+    // Closing is refused while Requested, Approved, or Scheduled reservations still exist.
     public async Task<SlotDto> SetSlotOpenAsync(string id, bool isOpen, CancellationToken cancellationToken)
     {
-        RequireRole(AppRoles.Backoffice, AppRoles.GridOperator);
+        RequireRole(AppRoles.GridOperator);
         var slot = await RequireSlot(id, cancellationToken);
         if (!isOpen)
         {

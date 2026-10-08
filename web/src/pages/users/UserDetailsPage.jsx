@@ -1,3 +1,6 @@
+/**
+ * Backoffice read of one account from getUser. The edit link is hidden when that account's role is Prosumer.
+ */
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getUser } from "../../services/userService";

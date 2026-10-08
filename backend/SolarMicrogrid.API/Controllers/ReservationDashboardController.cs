@@ -1,3 +1,4 @@
+// Dashboard counts for the signed-in caller: pending, approved-future, and due-soon reservations.
 using Microsoft.AspNetCore.Mvc;
 using SolarMicrogrid.API.DTOs;
 using SolarMicrogrid.API.Interfaces;

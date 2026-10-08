@@ -1,3 +1,6 @@
+/**
+ * Role switch for a reservation: a Prosumer sees ProsumerReservationDetailPage and every other role sees StaffReservationDetailPage. OperationalReservationDetailPage loads one reservation through fetchReservation. Backoffice can approve or reject, a Grid Operator can schedule, and any other role can cancel or modify, but only when allowedActions includes that action.
+ */
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Modal from "../../components/common/Modal";
@@ -48,6 +51,7 @@ export function OperationalReservationDetailPage() {
     return () => controller.abort();
   }, [id, user.id, user.role, reload]);
 
+  // Modify sends the chosen slotId. Reject sends a reason. Every other action posts an empty body.
   async function run(action) {
     setBusy(true); setError(null); setNotice("");
     try {
@@ -59,13 +63,14 @@ export function OperationalReservationDetailPage() {
     } catch (e) { setError(e); }
     finally { setBusy(false); }
   }
+  // Load replacement options for this reservation's prosumer before the dialog can be confirmed.
   async function openModify() {
     setDialog("modify"); setOptions(null); setOptionsLoading(true); setError(null);
     try { setOptions(await fetchReservationOptions(user, reservation.prosumerId)); }
     catch (e) { setError(e); }
     finally { setOptionsLoading(false); }
   }
-  const roleActions = user.role === "Backoffice" ? ["approve", "reject", "cancel", "modify"]
+  const roleActions = user.role === "Backoffice" ? ["approve", "reject"]
     : user.role === "GridOperator" ? ["schedule"] : ["cancel", "modify"];
   const labels = { approve: "Approve", reject: "Reject", cancel: "Cancel reservation", modify: "Modify slot", schedule: "Confirm schedule" };
   const choices = options?.stations?.flatMap((station) => station.slots.map((slot) => ({ ...slot, stationName: station.name }))) || [];

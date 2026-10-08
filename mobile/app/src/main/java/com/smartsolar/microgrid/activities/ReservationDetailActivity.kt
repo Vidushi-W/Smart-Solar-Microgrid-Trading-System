@@ -1,3 +1,5 @@
+// One reservation from the account API.
+// Any role can show a transfer QR for Approved or Scheduled. Only a prosumer can modify or cancel, and only with 12 hours' notice.
 package com.smartsolar.microgrid.activities
 
 import android.content.Intent
@@ -65,6 +67,7 @@ class ReservationDetailActivity : AppCompatActivity() {
         load()
     }
 
+    // Reloads on resume. A one-time show-QR extra opens the code for an Approved or Scheduled booking.
     private fun load() {
         val token = token() ?: return
         val id = intent.getStringExtra(ID_KEY).orEmpty()
@@ -90,9 +93,10 @@ class ReservationDetailActivity : AppCompatActivity() {
         }
     }
 
+    // QR is offered for Approved or Scheduled. Modify and cancel are prosumer-only and need 12 hours' notice.
     private fun show(row: ReservationRecord) {
         body.removeAllViews()
-        val canChange = role() == "Prosumer" || role() == "Backoffice"
+        val canChange = role() == "Prosumer"
         body.addView(SolarUi.statusChip(this, row.status), LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
@@ -122,12 +126,14 @@ class ReservationDetailActivity : AppCompatActivity() {
         body.addView(SolarUi.outlineButton(this, getString(R.string.back)) { finish() }, wrap())
     }
 
+    // Returns false and shows the 12-hour notice when the start is too soon.
     private fun hasNotice(row: ReservationRecord): Boolean {
         if (BookingRules.hasTwelveHourNotice(row.scheduledAtUtc)) return true
         ruleNotice(getString(R.string.twelve_hour_notice))
         return false
     }
 
+    // Reuses a payload already issued for this reservation; otherwise posts for a new QR and draws it.
     private fun loadQr(row: ReservationRecord) {
         qrText?.takeIf { qrFor == row.reservationId }?.let {
             showQr(it)
@@ -230,6 +236,7 @@ class ReservationDetailActivity : AppCompatActivity() {
         body.addView(SolarUi.outlineButton(this, getString(R.string.my_bookings)) { finish() }, wrap())
     }
 
+    // Rule failures use a notice popup. Any other error is written on the screen.
     private fun showError(error: Exception) {
         runOnUiThread {
             progress.visibility = View.GONE
@@ -247,6 +254,7 @@ class ReservationDetailActivity : AppCompatActivity() {
     private fun role() = getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE)
         .getString(MainActivity.ROLE_KEY, "")
 
+    // Returns the session JWT, or closes this screen when it is missing.
     private fun token(): String? {
         val value = getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE).getString(MainActivity.TOKEN_KEY, null)
         if (value.isNullOrBlank()) {

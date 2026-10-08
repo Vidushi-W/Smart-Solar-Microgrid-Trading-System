@@ -1,3 +1,6 @@
+/**
+ * Backoffice directory of prosumer accounts from getProsumers. Station records are not changed here. The Pending filter also includes accounts whose status is Registered.
+ */
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -40,6 +43,7 @@ export default function ProsumerManagementPage() {
 
   useEffect(() => { load(); }, []);
 
+  // Registered matches the Pending Activation filter as well as an exact status match.
   const rows = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return prosumers.filter((prosumer) => {
@@ -51,6 +55,7 @@ export default function ProsumerManagementPage() {
     });
   }, [prosumers, query, status]);
 
+  // PendingActivation and Registered activate; DeactivationRequested deactivates; Deactivated reactivates; every other status asks for deactivation.
   async function processAction(prosumer) {
     setBusyId(prosumer.id);
     setError("");

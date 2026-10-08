@@ -34,11 +34,13 @@ class LocalAccountStore(context: Context) : SQLiteOpenHelper(
         )
     }
 
+    // Drops the local account table and creates it again.
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         db.execSQL("DROP TABLE IF EXISTS local_account")
         onCreate(db)
     }
 
+    // Keeps a single row, using the user id as the key when NIC is blank.
     fun save(user: AuthenticatedUser) {
         write(
             nic = user.nic.ifBlank { user.userId },
@@ -53,6 +55,7 @@ class LocalAccountStore(context: Context) : SQLiteOpenHelper(
         )
     }
 
+    // Saves the prosumer with role PROSUMER and the NIC as the username.
     fun save(profile: ProsumerProfile) {
         write(
             nic = profile.nic.ifBlank { profile.userId },
@@ -71,6 +74,7 @@ class LocalAccountStore(context: Context) : SQLiteOpenHelper(
         writableDatabase.delete(TABLE, null, null)
     }
 
+    // Reads the one stored row. createdAtUtc here is the local updated_at, not the server registration time.
     fun current(): MobileAccountProfile? {
         readableDatabase.query(TABLE, null, null, null, null, null, null, "1").use { cursor ->
             if (!cursor.moveToFirst()) return null
@@ -95,6 +99,7 @@ class LocalAccountStore(context: Context) : SQLiteOpenHelper(
         return if (isNull(index)) "" else getString(index)
     }
 
+    // Deletes every row, then inserts the current account with an updated timestamp.
     private fun write(
         nic: String,
         userId: String,

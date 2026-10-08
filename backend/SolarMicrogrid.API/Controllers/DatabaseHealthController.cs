@@ -1,3 +1,4 @@
+// Development-only MongoDB ping used to see whether the reservation API can reach its database.
 using Microsoft.AspNetCore.Mvc;
 using SolarMicrogrid.API.DTOs;
 using SolarMicrogrid.API.Interfaces;
@@ -22,6 +23,7 @@ public class DatabaseHealthController : ControllerBase
         _logger = logger;
     }
 
+    // Returns 404 outside Development. A failed ping is 503.
     [HttpGet("database")]
     public async Task<ActionResult<DatabaseStatusResponse>> GetDatabaseStatus(CancellationToken cancellationToken)
     {

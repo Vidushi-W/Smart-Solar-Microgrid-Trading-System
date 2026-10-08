@@ -1,3 +1,5 @@
+// Home for Prosumer and GridOperator. Any other saved role is sent back to login.
+// On start it refreshes /api/auth/me and reservation counts. SQLite is shown before the API profile arrives.
 package com.smartsolar.microgrid.activities
 
 import android.content.Intent
@@ -53,6 +55,7 @@ class RoleHomeActivity : AppCompatActivity() {
     private var role: String? = null
     private var sessionCheckRunning = false
 
+    // Allows only Prosumer and GridOperator, and shows the SQLite profile before the network refresh.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         role = getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE)
@@ -371,6 +374,7 @@ class RoleHomeActivity : AppCompatActivity() {
         return hero
     }
 
+    // Reloads identity, profile, and booking counts. Signs out on 401, expiry, or an inactive account.
     private fun validateSession() {
         if (sessionCheckRunning || isFinishing) return
         val token = getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE)
@@ -430,6 +434,7 @@ class RoleHomeActivity : AppCompatActivity() {
         }
     }
 
+    // Shows a JPEG data URL when present, otherwise the first letter of the name.
     private fun showProfile(profile: MobileAccountProfile) {
         avatarView.text = profile.name.firstOrNull()?.uppercase() ?: "?"
         val image = profile.profilePictureData
@@ -467,6 +472,7 @@ class RoleHomeActivity : AppCompatActivity() {
         val stations: List<StationRecord>
     )
 
+    // Prosumer counts are upcoming, completed, cancelled, and this week. Operator counts are pending, approved, completed, and cancelled.
     private fun loadBookings(token: String): HomeBookings {
         val api = ReservationApiClient(BuildConfig.API_BASE_URL)
         val stations = runCatching { api.stations(token) }.getOrDefault(emptyList())
@@ -493,6 +499,7 @@ class RoleHomeActivity : AppCompatActivity() {
         }
     }
 
+    // Counts rows whose UTC date falls between Monday and Sunday of the current UTC week.
     private fun weekCount(rows: List<ReservationRecord>): Int {
         val today = LocalDate.now(ZoneOffset.UTC)
         val monday = today.minusDays(((today.dayOfWeek.value + 6) % 7).toLong())
@@ -551,6 +558,7 @@ class RoleHomeActivity : AppCompatActivity() {
         rows.forEach { row -> recentList.addView(bookingCard(row, stations)) }
     }
 
+    // Prosumer cards for Approved or Scheduled include a button that opens the QR.
     private fun bookingCard(row: ReservationRecord, stations: List<StationRecord>): View {
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL

@@ -1,3 +1,5 @@
+// Grid-operator camera scan for a version-1 transfer QR.
+// Verifies with POST /api/transactions/verify, then completes using the returned verification token.
 package com.smartsolar.microgrid.activities
 
 import android.Manifest
@@ -87,6 +89,7 @@ class QrScanActivity : AppCompatActivity() {
         }
     }
 
+    // Keeps the first accepted code and ignores later frames until the scan is reset.
     private fun startCamera() {
         val future = ProcessCameraProvider.getInstance(this)
         future.addListener({
@@ -120,6 +123,7 @@ class QrScanActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
+    // Accepts only version 1 with a reservation id and token, then calls verify.
     private fun onScanned(raw: String) {
         val payload = runCatching { JSONObject(raw) }.getOrNull()
         reservationId = payload?.optString("reservationId").orEmpty()
@@ -158,6 +162,7 @@ class QrScanActivity : AppCompatActivity() {
         }
     }
 
+    // Completes the transfer with the QR token and the verification token from verify.
     private fun complete() {
         val session = token() ?: return
         confirm.isEnabled = false
@@ -190,6 +195,7 @@ class QrScanActivity : AppCompatActivity() {
         message.text = getString(R.string.scan_transfer)
     }
 
+    // Returns the session JWT, or closes this screen when it is missing.
     private fun token(): String? {
         val value = getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE)
             .getString(MainActivity.TOKEN_KEY, null)

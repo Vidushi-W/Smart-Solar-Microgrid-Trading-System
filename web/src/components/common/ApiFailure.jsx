@@ -1,3 +1,6 @@
+/**
+ * Shared alert for a failed request. The status is mapped to a short label. A 401 signs the user out and opens /login. Retry appears only when the caller passes onRetry.
+ */
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 

@@ -1,3 +1,5 @@
+// Prosumer booking flow: active stations, a Colombo date, open slots, then confirm.
+// Creates through the reservation API. The date picker spans 30 days, but a day past 7 is rejected.
 package com.smartsolar.microgrid.activities
 
 import android.app.DatePickerDialog
@@ -64,6 +66,7 @@ class CreateReservationActivity : AppCompatActivity() {
         loadStations()
     }
 
+    // Loads the signed-in user and keeps stations whose status is Active.
     private fun loadStations() {
         val token = token() ?: return
         progress.visibility = View.VISIBLE
@@ -99,6 +102,7 @@ class CreateReservationActivity : AppCompatActivity() {
         body.addView(backHome())
     }
 
+    // Picker range is 30 days, but a day past the next 7 is reset to today and a notice is shown.
     private fun showDate() {
         body.removeAllViews()
         body.addView(heading(stationLabel(stationId, stations)))
@@ -188,6 +192,7 @@ class CreateReservationActivity : AppCompatActivity() {
         }, wrap())
     }
 
+    // Stops when the slot has started or is outside the 7-day window, then creates the reservation and reloads it.
     private fun confirm(slot: SlotRecord) {
         when (BookingRules.slotWindow(slot.date, slot.startTime)) {
             SlotWindow.Started -> {
@@ -232,6 +237,7 @@ class CreateReservationActivity : AppCompatActivity() {
         body.addView(backHome())
     }
 
+    // Rule failures use a notice popup. Any other error is written on the screen.
     private fun showError(error: Exception) {
         runOnUiThread {
             progress.visibility = View.GONE
@@ -266,6 +272,7 @@ class CreateReservationActivity : AppCompatActivity() {
         setOnClickListener { finish() }
     }
 
+    // Returns the session JWT, or closes this screen when it is missing.
     private fun token(): String? {
         val value = getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE).getString(MainActivity.TOKEN_KEY, null)
         if (value.isNullOrBlank()) {
