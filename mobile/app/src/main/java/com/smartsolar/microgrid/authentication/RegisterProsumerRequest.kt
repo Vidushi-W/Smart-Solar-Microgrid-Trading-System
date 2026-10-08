@@ -1,3 +1,4 @@
+// Body for POST /api/prosumers/register. This type is not written to local storage.
 package com.smartsolar.microgrid.authentication
 
 data class RegisterProsumerRequest(

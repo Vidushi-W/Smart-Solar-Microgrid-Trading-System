@@ -1,3 +1,4 @@
+// Profile fields shared by staff and prosumer account responses, plus an optional photo data URL.
 package com.smartsolar.microgrid.authentication
 
 data class MobileAccountProfile(

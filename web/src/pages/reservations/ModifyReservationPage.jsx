@@ -98,6 +98,7 @@ export default function ModifyReservationPage() {
   const latestDate = colomboDateInput(new Date(), 7);
   const selectedBookable = selectedSlot ? slotBookingState(selectedSlot).ok : false;
 
+  // Both the current start and the new slot need at least 12 hours' notice before the update is sent.
   async function submitChange() {
     if (!reservation || !selectedSlot) return;
     if (!hasTwelveHourNotice(reservation.scheduledAtUtc) || !hasTwelveHourNotice(slotInstant(selectedSlot))) {

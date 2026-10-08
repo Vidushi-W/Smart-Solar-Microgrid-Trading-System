@@ -13,6 +13,7 @@ export const SIGN_UP_ROLES = [
   { value: ROLES.PROSUMER, label: "Solar Prosumer", icon: "prosumers" },
 ];
 
+// Backoffice, Grid Operator, and Prosumer all open /dashboard. Any other role returns to /login.
 export function homeForVerifiedRole(role) {
   if (role === ROLES.BACKOFFICE || role === ROLES.OPERATOR || role === ROLES.PROSUMER) {
     return "/dashboard";

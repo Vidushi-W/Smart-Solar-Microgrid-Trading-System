@@ -1,3 +1,5 @@
+// Prosumer screen that draws a transfer QR from QrWorkflowModel.
+// FLAG_SECURE blocks screenshots. Issuance goes through MicrogridApi.
 package com.smartsolar.microgrid.activities
 
 import android.os.Bundle
@@ -11,6 +13,7 @@ import com.smartsolar.microgrid.qr.QrWorkflowModel
 import com.smartsolar.microgrid.ui.SolarActivity
 
 class ReservationQrActivity : SolarActivity() {
+    // Prosumer only, and screenshots are blocked.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!setup(getString(R.string.transaction_qr), listOf("Prosumer"))) return

@@ -1,3 +1,5 @@
+// Shared shell for the operational reservation and QR screens.
+// setup() requires a JWT and an allowed role, otherwise it returns to login.
 package com.smartsolar.microgrid.ui
 
 import android.content.Intent
@@ -24,6 +26,7 @@ class ScreenModel : ViewModel() {
     val state = MutableLiveData(ScreenState())
     private val executor = Executors.newSingleThreadExecutor()
     private val main = Handler(Looper.getMainLooper())
+    // Ignores a new call while an earlier request is still running.
     fun request(work: () -> Any) {
         if (state.value?.busy == true) return
         state.value = state.value!!.copy(busy = true, error = null)
@@ -44,6 +47,7 @@ abstract class SolarActivity : AppCompatActivity() {
     protected lateinit var screen: ScreenModel
     private lateinit var signIn: Button
     protected var role = ""
+    // Sends the user to login when the token is missing or the saved role is not allowed.
     protected fun setup(title: String, roles: List<String> = listOf("Prosumer", "GridOperator", "Backoffice")): Boolean {
         val prefs = getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE)
         role = prefs.getString(MainActivity.ROLE_KEY, "").orEmpty()
@@ -58,6 +62,7 @@ abstract class SolarActivity : AppCompatActivity() {
             setBackgroundColor(getColor(R.color.solar_background))
         }
         setContentView(ScrollView(this).apply { addView(content) })
+        content.addView(SolarUi.backBar(this))
         heading(title)
         message = text("").apply { accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE }
         signIn = button(getString(R.string.login)) {
@@ -67,21 +72,40 @@ abstract class SolarActivity : AppCompatActivity() {
         }.apply { visibility = View.GONE }
         return true
     }
-    protected fun heading(value: String) = text(value).apply { textSize = 26f; setTextColor(getColor(R.color.solar_heading)) }
+    protected fun heading(value: String) = text(value).apply {
+        textSize = 26f
+        setTypeface(typeface, android.graphics.Typeface.BOLD)
+        setTextColor(getColor(R.color.solar_heading))
+    }
     protected fun text(value: String): TextView = TextView(this).apply {
         text = value; textSize = 16f; setTextColor(getColor(R.color.solar_muted))
         layoutParams = params(); content.addView(this)
     }
     protected fun button(label: String, enabled: Boolean = true, action: () -> Unit): Button = Button(this).apply {
-        text = label; isEnabled = enabled; layoutParams = params()
-        setOnClickListener { action() }; content.addView(this)
+        text = label
+        isEnabled = enabled
+        isAllCaps = false
+        backgroundTintList = null
+        stateListAnimator = null
+        setBackgroundResource(R.drawable.solar_button)
+        setTextColor(getColor(R.color.solar_accent))
+        setTypeface(typeface, android.graphics.Typeface.BOLD)
+        minHeight = dp(52)
+        layoutParams = params()
+        setOnClickListener { action() }
+        content.addView(this)
     }
     protected fun input(label: String): EditText = EditText(this).apply {
-        hint = label; setSingleLine(true); layoutParams = params(); content.addView(this)
+        hint = label
+        setSingleLine(true)
+        layoutParams = params()
+        SolarUi.field(this)
+        content.addView(this)
     }
     protected fun status(state: ScreenState) {
         report(state.busy, state.error)
     }
+    // A 401 shows a sign-in button that clears the session prefs and the SQLite account.
     protected fun report(busy: Boolean, error: Exception?) {
         signIn.visibility = if ((error as? ApiFailure)?.status == 401) View.VISIBLE else View.GONE
         message.setTextColor(getColor(if (error != null) R.color.solar_error else R.color.solar_muted))
@@ -91,6 +115,7 @@ abstract class SolarActivity : AppCompatActivity() {
             else -> ""
         }
     }
+    // Adds a label for status 0, 400, 401, 403, 404, and 409 before the server message.
     protected fun failureText(error: Exception): String {
         val prefix = when ((error as? ApiFailure)?.status) {
             0 -> getString(R.string.network_error)
@@ -109,8 +134,14 @@ abstract class SolarActivity : AppCompatActivity() {
     protected fun open(type: Class<*>, id: String? = null) {
         startActivity(Intent(this, type).apply { if (id != null) putExtra("reservationId", id) })
     }
-    protected fun back() = button(getString(R.string.back)) { finish() }
+    // Inserts the back bar as the first child only when that control is not already there.
+    protected fun back() {
+        val label = getString(R.string.back)
+        val already = content.childCount > 0 && content.getChildAt(0).contentDescription == label
+        if (!already) content.addView(SolarUi.backBar(this), 0)
+    }
     companion object {
+        // Formats the instant in Asia/Colombo, or returns the original text if it is not an instant.
         fun date(value: String): String = try {
             DateTimeFormatter.ofPattern("EEE, d MMM yyyy HH:mm").withZone(ZoneId.of("Asia/Colombo")).format(Instant.parse(value))
         } catch (_: Exception) { value }

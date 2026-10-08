@@ -3,6 +3,7 @@
  */
 import { useEffect, useRef } from "react";
 
+// "successful" and "cancelled" are treated as success. Every other message is a warning.
 function toneFor(message) {
   const text = String(message).toLowerCase();
   if (text.includes("successful") || text.includes("cancelled")) return "ok";

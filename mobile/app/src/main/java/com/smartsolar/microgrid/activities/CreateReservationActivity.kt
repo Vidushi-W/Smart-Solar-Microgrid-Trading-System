@@ -1,3 +1,5 @@
+// Prosumer booking flow: active stations, a Colombo date, open slots, then confirm.
+// Creates through the reservation API. The date picker spans 30 days, but a day past 7 is rejected.
 package com.smartsolar.microgrid.activities
 
 import android.app.DatePickerDialog
@@ -25,6 +27,7 @@ import com.smartsolar.microgrid.reservations.BookingRules
 import com.smartsolar.microgrid.reservations.SlotWindow
 import com.smartsolar.microgrid.reservations.noticeForApi
 import com.smartsolar.microgrid.reservations.ruleNotice
+import com.smartsolar.microgrid.ui.SolarUi
 import java.time.LocalDate
 import java.util.concurrent.Executors
 
@@ -45,14 +48,15 @@ class CreateReservationActivity : AppCompatActivity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(32, 28, 32, 40)
-            setBackgroundColor(Color.rgb(246, 248, 242))
+            setBackgroundColor(getColor(R.color.solar_background))
         }
+        root.addView(SolarUi.backBar(this))
         root.addView(TextView(this).apply {
             text = getString(R.string.find_book_energy)
             textSize = 26f
-            setTextColor(Color.rgb(20, 35, 29))
+            setTextColor(getColor(R.color.solar_heading))
         })
-        message = TextView(this).apply { setTextColor(Color.rgb(160, 53, 43)) }
+        message = TextView(this).apply { setTextColor(getColor(R.color.solar_error)) }
         root.addView(message, wrap())
         progress = ProgressBar(this).apply { visibility = View.GONE }
         root.addView(progress, wrap())
@@ -62,6 +66,7 @@ class CreateReservationActivity : AppCompatActivity() {
         loadStations()
     }
 
+    // Loads the signed-in user and keeps stations whose status is Active.
     private fun loadStations() {
         val token = token() ?: return
         progress.visibility = View.VISIBLE
@@ -87,20 +92,17 @@ class CreateReservationActivity : AppCompatActivity() {
         body.addView(heading(getString(R.string.choose_station)))
         if (stations.isEmpty()) body.addView(note(getString(R.string.no_stations)))
         stations.forEach { station ->
-            body.addView(Button(this).apply {
-                text = "${stationLabel(station)}\n${station.stationId}"
-                isAllCaps = false
-                setOnClickListener {
-                    stationId = station.stationId
-                    slotId = ""
-                    date = BookingRules.colomboToday().toString()
-                    showDate()
-                }
+            body.addView(SolarUi.choiceCard(this, stationLabel(station), station.stationId) {
+                stationId = station.stationId
+                slotId = ""
+                date = BookingRules.colomboToday().toString()
+                showDate()
             }, wrap())
         }
         body.addView(backHome())
     }
 
+    // Picker range is 30 days, but a day past the next 7 is reset to today and a notice is shown.
     private fun showDate() {
         body.removeAllViews()
         body.addView(heading(stationLabel(stationId, stations)))
@@ -127,10 +129,7 @@ class CreateReservationActivity : AppCompatActivity() {
                 picker.show()
             }
         }, wrap())
-        body.addView(Button(this).apply {
-            text = getString(R.string.load_slots)
-            setOnClickListener { loadSlots() }
-        }, wrap())
+        body.addView(SolarUi.primaryButton(this, getString(R.string.load_slots)) { loadSlots() }, wrap())
         body.addView(Button(this).apply {
             text = getString(R.string.back)
             setOnClickListener { showStations() }
@@ -162,13 +161,13 @@ class CreateReservationActivity : AppCompatActivity() {
         val open = slots.filter { BookingRules.bookable(it) }
         if (open.isEmpty()) body.addView(note(getString(R.string.no_open_slots)))
         open.forEach { slot ->
-            body.addView(Button(this).apply {
-                text = "${slot.startTime}–${slot.endTime}  ${slot.status}\n${slot.remainingCapacity} remaining"
-                isAllCaps = false
-                setOnClickListener {
-                    slotId = slot.slotId
-                    showReview()
-                }
+            body.addView(SolarUi.choiceCard(
+                this,
+                "${slot.startTime}–${slot.endTime}",
+                "${slot.status} · ${slot.remainingCapacity} remaining"
+            ) {
+                slotId = slot.slotId
+                showReview()
             }, wrap())
         }
         body.addView(Button(this).apply {
@@ -181,23 +180,19 @@ class CreateReservationActivity : AppCompatActivity() {
         val slot = slots.find { it.slotId == slotId } ?: return
         body.removeAllViews()
         body.addView(heading(getString(R.string.review_reservation)))
-        body.addView(note(buildString {
-            append(getString(R.string.station_line, stationLabel(stationId, stations)))
-            append("\n")
-            append(getString(R.string.date_line, slot.date))
-            append("\n")
-            append(getString(R.string.time_line, "${slot.startTime}–${slot.endTime} UTC"))
-        }))
-        body.addView(Button(this).apply {
-            text = getString(R.string.confirm_reservation)
-            setOnClickListener { confirm(slot) }
-        }, wrap())
+        body.addView(SolarUi.facts(this, listOf(
+            getString(R.string.station) to stationLabel(stationId, stations),
+            "Date" to slot.date,
+            "Time" to "${slot.startTime}–${slot.endTime} UTC"
+        )), wrap())
+        body.addView(SolarUi.primaryButton(this, getString(R.string.confirm_reservation)) { confirm(slot) }, wrap())
         body.addView(Button(this).apply {
             text = getString(R.string.back)
             setOnClickListener { showSlots() }
         }, wrap())
     }
 
+    // Stops when the slot has started or is outside the 7-day window, then creates the reservation and reloads it.
     private fun confirm(slot: SlotRecord) {
         when (BookingRules.slotWindow(slot.date, slot.startTime)) {
             SlotWindow.Started -> {
@@ -233,18 +228,16 @@ class CreateReservationActivity : AppCompatActivity() {
     private fun showSummary(reservation: ReservationRecord) {
         body.removeAllViews()
         body.addView(heading(getString(R.string.booking_summary)))
-        body.addView(note(summaryText(reservation, getString(R.string.result_booked))))
-        body.addView(Button(this).apply {
-            text = getString(R.string.view_reservation)
-            setOnClickListener {
-                startActivity(Intent(this@CreateReservationActivity, ReservationDetailActivity::class.java)
-                    .putExtra(ReservationDetailActivity.ID_KEY, reservation.reservationId))
-                finish()
-            }
+        body.addView(SolarUi.facts(this, summaryFacts(reservation, getString(R.string.result_booked))), wrap())
+        body.addView(SolarUi.primaryButton(this, getString(R.string.view_reservation)) {
+            startActivity(Intent(this, ReservationDetailActivity::class.java)
+                .putExtra(ReservationDetailActivity.ID_KEY, reservation.reservationId))
+            finish()
         }, wrap())
         body.addView(backHome())
     }
 
+    // Rule failures use a notice popup. Any other error is written on the screen.
     private fun showError(error: Exception) {
         runOnUiThread {
             progress.visibility = View.GONE
@@ -252,31 +245,26 @@ class CreateReservationActivity : AppCompatActivity() {
         }
     }
 
-    private fun summaryText(reservation: ReservationRecord, result: String) = buildString {
-        append(getString(R.string.result_line, result))
-        append("\n")
-        append(reservation.reservationId)
-        append("\n")
-        append(stationLabel(reservation.stationId, stations))
-        append("\n")
-        append(utcDate(reservation.scheduledAtUtc))
-        append("  ")
-        append(utcTime(reservation.scheduledAtUtc))
-        append(" UTC\n")
-        append(reservation.status)
-    }
+    private fun summaryFacts(reservation: ReservationRecord, result: String) = listOf(
+        "Result" to result,
+        getString(R.string.station) to stationLabel(reservation.stationId, stations),
+        "Date" to utcDate(reservation.scheduledAtUtc),
+        "Time" to "${utcTime(reservation.scheduledAtUtc)} UTC",
+        "Status" to reservation.status,
+        getString(R.string.reservation_id) to reservation.reservationId
+    )
 
     private fun heading(text: String) = TextView(this).apply {
         this.text = text
         textSize = 20f
-        setTextColor(Color.rgb(20, 35, 29))
+        setTextColor(getColor(R.color.solar_heading))
         setPadding(0, 16, 0, 8)
     }
 
     private fun note(text: String) = TextView(this).apply {
         this.text = text
         textSize = 15f
-        setTextColor(Color.rgb(96, 112, 100))
+        setTextColor(getColor(R.color.solar_muted))
     }
 
     private fun backHome() = Button(this).apply {
@@ -284,6 +272,7 @@ class CreateReservationActivity : AppCompatActivity() {
         setOnClickListener { finish() }
     }
 
+    // Returns the session JWT, or closes this screen when it is missing.
     private fun token(): String? {
         val value = getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE).getString(MainActivity.TOKEN_KEY, null)
         if (value.isNullOrBlank()) {

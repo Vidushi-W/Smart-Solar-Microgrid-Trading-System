@@ -55,6 +55,7 @@ class ReservationApiClient(private val baseUrl: String) {
         return reservation(send("POST", "/api/reservations", token, body))
     }
 
+    // PUT includes the new slot time and the status the reservation already has.
     fun update(
         token: String,
         id: String,
@@ -76,6 +77,7 @@ class ReservationApiClient(private val baseUrl: String) {
     fun cancel(token: String, id: String): ReservationRecord =
         reservation(send("DELETE", "/api/reservations/${encode(id)}", token, null))
 
+    // Returns the qrPayload object as text, accepting either JSON name casing.
     fun issueQr(token: String, id: String): String {
         val item = send("POST", "/api/reservations/${encode(id)}/qr", token, JSONObject())
         val payload = item.optJSONObject("qrPayload") ?: item.optJSONObject("QrPayload")
@@ -137,6 +139,7 @@ class ReservationApiClient(private val baseUrl: String) {
         }
     }
 
+    // Uses message, then detail, then title from an error body.
     private fun messageOf(body: String, code: Int): String {
         val json = runCatching { JSONObject(body) }.getOrNull() ?: return "HTTP $code"
         val message = json.optString("message")

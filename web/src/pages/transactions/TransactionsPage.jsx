@@ -15,6 +15,7 @@ import { formatDateTime, formatTimeRange } from "../../utils/format";
 const TRANSFER_STATUSES = ["Approved", "Scheduled", "Completed"];
 const STATUS_FILTERS = ["All", ...TRANSFER_STATUSES];
 
+// Last history timestamp, or the reservation start when history is empty.
 function updatedAt(row) {
   const history = row.history || [];
   return history.length ? history[history.length - 1].at : row.start;

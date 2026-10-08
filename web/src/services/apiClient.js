@@ -46,6 +46,7 @@ export async function apiRequest(path, { method = "GET", body, signal } = {}) {
   return payload;
 }
 
+// Reservation helpers on the account API. The reservation host has its own client in reservationsApi.
 export function createReservation(body) {
   return apiRequest("/reservations", { method: "POST", body });
 }
@@ -86,6 +87,7 @@ export function listStationsForReservations() {
   return stationsApi.list();
 }
 
+// Station and slot routes on the account API. Deactivate is PUT, and a slot list requires a date.
 export const stationsApi = {
   list: () => apiRequest("/stations"),
   create: (body) => apiRequest("/stations", { method: "POST", body }),

@@ -1,3 +1,4 @@
+// Read-only station and slot snapshots for reservation rules. Slot times are returned as UTC.
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using SolarMicrogrid.API.Constants;
@@ -55,6 +56,7 @@ public class MongoEnergyCatalog : IEnergyCatalog
     }
 }
 
+// Station document in SolarStationInfo. Reservation checks use the smaller StationSnapshot.
 public class StationDocument
 {
     [BsonId]
@@ -70,6 +72,7 @@ public class StationDocument
     public string Hours { get; set; } = "";
 }
 
+// Slot document in EnergyBookingSlots. Start and End are treated as UTC.
 public class SlotDocument
 {
     [BsonId]

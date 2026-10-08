@@ -1,3 +1,6 @@
+/**
+ * Transfer screen for Backoffice and Grid Operator. The reservation comes from fetchReservation. Only a Grid Operator verifies pasted QR JSON with verifyQr and finishes it with completeTransfer. Schedule calls postReservationAction with the schedule action.
+ */
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import PageHeader from "../../components/common/PageHeader";
@@ -33,6 +36,7 @@ export default function TransactionDetailPage() {
     return () => controller.abort();
   }, [id, user.id, user.role, reload]);
 
+  // Accept only QR JSON with version, reservationId, and token, and only when reservationId is this page's id.
   async function verify(e) {
     e.preventDefault(); setError(null); setTransfer(null); setCredentials(null);
     let payload;
@@ -51,6 +55,7 @@ export default function TransactionDetailPage() {
     } catch (e) { setError(e); }
     finally { setBusy(false); }
   }
+  // Complete the transfer, then reload the reservation. A missing status, status 0, a 5xx, or a 2xx on the error marks the outcome unknown.
   async function complete() {
     setBusy(true); setError(null); setConfirmOpen(false);
     try {
@@ -63,6 +68,7 @@ export default function TransactionDetailPage() {
       if (e.status == null || e.status === 0 || e.status >= 500 || (e.status >= 200 && e.status < 300)) setUncertain(true);
     } finally { setBusy(false); }
   }
+  // Ask the reservation API to schedule this reservation and replace the loaded record with the result.
   async function schedule() {
     setBusy(true); setError(null); setCredentials(null); setTransfer(null);
     try { setReservation(await postReservationAction(user, id, "schedule")); }

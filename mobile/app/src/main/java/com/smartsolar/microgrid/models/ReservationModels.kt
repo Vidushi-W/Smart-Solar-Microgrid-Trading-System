@@ -1,3 +1,4 @@
+// Station, slot, and reservation rows parsed from the account API.
 package com.smartsolar.microgrid.models
 
 data class StationRecord(
@@ -34,6 +35,7 @@ private val stationNames = mapOf(
     "st-7d9de2cb" to "Kandy Grid Point"
 )
 
+// Prefers the API name, then a fixed name for a few known station ids.
 fun stationLabel(station: StationRecord?): String {
     val provided = station?.name?.trim().orEmpty()
     if (provided.isNotEmpty()) return provided
@@ -44,7 +46,9 @@ fun stationLabel(station: StationRecord?): String {
 fun stationLabel(stationId: String, stations: List<StationRecord>): String =
     stationLabel(stations.find { it.stationId == stationId } ?: StationRecord(stationId, "", "", 0.0))
 
+// The first 10 characters of the ISO value.
 fun utcDate(iso: String): String = iso.take(10)
 
+// HH:mm taken from index 11, or empty when the string is shorter than 16 characters.
 fun utcTime(iso: String): String =
     if (iso.length >= 16) iso.substring(11, 16) else ""

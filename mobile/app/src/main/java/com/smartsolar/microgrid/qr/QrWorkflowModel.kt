@@ -27,6 +27,7 @@ class QrWorkflowModel : ViewModel() {
             QrState(reservation = detail, payload = api.issue(id))
         }
     }
+    // Rejects a code that fails local parsing and does not call the API.
     fun verify(api: MicrogridApi, raw: String) {
         if (state.value?.busy == true) return
         val payload = try { QrPayload.parse(raw) } catch (e: Exception) {
@@ -38,6 +39,7 @@ class QrWorkflowModel : ViewModel() {
         val payload = state.value?.payload ?: return
         verify(api, payload.json().toString())
     }
+    // Posts the in-memory QR token and the verification receipt from the last check.
     fun complete(api: MicrogridApi) {
         val current = state.value ?: return
         val payload = current.payload ?: return
@@ -46,6 +48,7 @@ class QrWorkflowModel : ViewModel() {
         run(true) { QrState(transfer = api.complete(transfer.transactionId, payload.token, receipt)) }
     }
     fun reset() { if (state.value?.busy != true) state.value = QrState() }
+    // A failed completion clears the token. It is uncertain for no status, status 0, 2xx, or 5xx, and certain for other HTTP statuses.
     private fun run(completion: Boolean, work: () -> QrState) {
         val previous = state.value ?: QrState()
         if (previous.busy) return

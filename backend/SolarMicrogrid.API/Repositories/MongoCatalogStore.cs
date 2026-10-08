@@ -1,3 +1,4 @@
+// Reads and writes full station and slot documents. Booking rules are checked before anything is saved.
 using MongoDB.Driver;
 using SolarMicrogrid.API.Constants;
 using SolarMicrogrid.API.Interfaces;
@@ -35,6 +36,7 @@ public class MongoCatalogStore : ICatalogStore
         return _stations.ReplaceOneAsync(item => item.Id == station.Id, station, cancellationToken: cancellationToken);
     }
 
+    // True when another station already uses this code. ignoreId skips the station being edited.
     public async Task<bool> StationCodeExistsAsync(string code, string? ignoreId, CancellationToken cancellationToken)
     {
         var builder = Builders<StationDocument>.Filter;
@@ -48,6 +50,7 @@ public class MongoCatalogStore : ICatalogStore
         return count > 0;
     }
 
+    // A blank station id returns every slot.
     public async Task<IReadOnlyList<SlotDocument>> ListSlotsAsync(string? stationId, CancellationToken cancellationToken)
     {
         var filter = string.IsNullOrWhiteSpace(stationId)

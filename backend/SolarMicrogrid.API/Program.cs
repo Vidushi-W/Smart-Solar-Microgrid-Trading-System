@@ -77,4 +77,6 @@ app.Lifetime.ApplicationStarted.Register(() =>
     }
 });
 
+DevelopmentAccountApi.EnsureStarted(app);
+
 app.Run();

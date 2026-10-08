@@ -1,3 +1,6 @@
+/**
+ * Backoffice view and edit of one prosumer, loaded with getProsumerByNic. The NIC is read-only. Saves call updateProsumerByNic. The status button calls activate, deactivate, reactivate, or request-deactivation according to the current account status.
+ */
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
@@ -11,6 +14,7 @@ import {
 
 const phonePattern = /^\+?[0-9\s().-]+$/;
 
+// Count digits only, so spaces and separators do not change the 7 to 15 length check.
 function isPhoneNumberValid(phoneNumber) {
   const normalized = phoneNumber.trim();
   const digitCount = normalized.replace(/\D/g, "").length;
@@ -29,6 +33,7 @@ export default function ProsumerAccountPage({ editing = false }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
+  // Show a notice passed through navigation, then clear it so a refresh does not repeat it.
   useEffect(() => {
     if (!location.state?.notice) return;
     setNotice(location.state.notice);
@@ -89,6 +94,7 @@ export default function ProsumerAccountPage({ editing = false }) {
     }
   }
 
+  // PendingActivation and Registered activate; DeactivationRequested deactivates; Deactivated reactivates; every other status asks for deactivation.
   async function processAction() {
     setBusy(true);
     setError("");

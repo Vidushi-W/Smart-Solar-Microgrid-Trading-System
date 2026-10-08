@@ -1,7 +1,16 @@
 <resources>
-    <color name="solar_background">#F6F8F2</color>
-    <color name="solar_heading">#14231D</color>
-    <color name="solar_muted">#607064</color>
-    <color name="solar_accent">#C46B42</color>
-    <color name="solar_error">#A0352B</color>
+    <color name="solar_background">#F3F3F0</color>
+    <color name="solar_heading">#211A1A</color>
+    <color name="solar_muted">#716764</color>
+    <color name="solar_accent">#D8442D</color>
+    <color name="solar_error">#B43D2D</color>
+    <color name="solar_success">#1B6F62</color>
+    <color name="solar_navy">#24171A</color>
+    <color name="solar_gold">#FFC15F</color>
+    <color name="solar_gold_ink">#341518</color>
+    <color name="solar_card">#FFFFFF</color>
+    <color name="solar_line">#E4DEDA</color>
+    <color name="solar_hero_start">#8F2024</color>
+    <color name="solar_hero_mid">#BD2F27</color>
+    <color name="solar_hero_end">#E36A33</color>
 </resources>

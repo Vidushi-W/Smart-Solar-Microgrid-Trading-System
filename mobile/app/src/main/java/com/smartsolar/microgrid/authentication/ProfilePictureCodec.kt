@@ -1,3 +1,5 @@
+// Builds a JPEG data URL for profile updates.
+// Shrinks the image until the JPEG is at most 750 KB.
 package com.smartsolar.microgrid.authentication
 
 import android.content.ContentResolver
@@ -11,6 +13,7 @@ import java.io.IOException
 object ProfilePictureCodec {
     private const val MAXIMUM_JPEG_BYTES = 750_000
 
+    // Subsamples so the longer side is at most 1024 px, then compresses.
     fun encodeJpeg(contentResolver: ContentResolver, uri: Uri): String {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
@@ -34,6 +37,7 @@ object ProfilePictureCodec {
         }
     }
 
+    // Scales toward 512 px and retries JPEG qualities until the byte cap is met.
     private fun encodeResized(source: Bitmap): String {
         var scale = minOf(1f, 512f / maxOf(source.width, source.height))
         while (true) {

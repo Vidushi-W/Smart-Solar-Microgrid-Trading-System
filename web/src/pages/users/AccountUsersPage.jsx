@@ -27,10 +27,12 @@ export default function AccountUsersPage() {
 
   useEffect(() => { load(); }, []);
 
+  // Drop a one-time notice from navigation state so a refresh does not show it again.
   useEffect(() => {
     if (location.state?.notice) navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
+  // Pending includes PendingActivation and Registered. The Approved filter matches account status Active.
   const rows = useMemo(() => users.filter((item) => {
     const search = `${item.id} ${item.name} ${item.username} ${item.email} ${item.nic}`.toLowerCase();
     const accountStatus = item.accountStatus || (item.isActive ? "Active" : "Deactivated");

@@ -1,3 +1,5 @@
+// Operational reservation detail. Buttons follow the role and stay disabled unless the server allow-list includes them.
+// Grid operators schedule, backoffice approves or rejects, and prosumers modify or cancel.
 package com.smartsolar.microgrid.activities
 
 import android.os.Bundle
@@ -11,6 +13,7 @@ import org.json.JSONObject
 class OperationalReservationDetailActivity : SolarActivity() {
     private lateinit var id: String
     private lateinit var details: LinearLayout
+    // Grid operators schedule, backoffice approves or rejects, and prosumers modify or cancel when the server allows it.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!setup(getString(R.string.reservation_details))) return
@@ -29,7 +32,7 @@ class OperationalReservationDetailActivity : SolarActivity() {
                 val blocks = row.getJSONObject("actionBlocks")
                 val actions = when (role) {
                     "GridOperator" -> listOf("schedule")
-                    "Backoffice" -> listOf("approve", "reject", "modify", "cancel")
+                    "Backoffice" -> listOf("approve", "reject")
                     else -> listOf("modify", "cancel")
                 }
                 actions.forEach { action ->
@@ -43,15 +46,29 @@ class OperationalReservationDetailActivity : SolarActivity() {
                     button(label, !state.busy && action in allowed) {
                         if (action == "modify") open(ReservationFormActivity::class.java, id)
                         else if (action == "reject") {
-                            val reason = android.widget.EditText(this)
-                            AlertDialog.Builder(this).setTitle(label).setView(reason)
-                                .setPositiveButton(R.string.confirm) { _, _ ->
+                            val reason = android.widget.EditText(this).apply {
+                                hint = getString(R.string.reject)
+                                com.smartsolar.microgrid.ui.SolarUi.field(this)
+                            }
+                            com.smartsolar.microgrid.ui.SolarUi.popup(
+                                activity = this,
+                                title = label,
+                                content = reason,
+                                confirm = getString(R.string.confirm),
+                                dismiss = getString(R.string.back),
+                                onConfirm = {
                                     val body = JSONObject().put("reason", reason.text.toString())
                                     screen.request { api.action(id, action, body) }
-                                }.setNegativeButton(R.string.back, null).show()
-                        } else AlertDialog.Builder(this).setTitle(label).setMessage(row.getString("code"))
-                            .setPositiveButton(R.string.confirm) { _, _ -> screen.request { api.action(id, action) } }
-                            .setNegativeButton(R.string.back, null).show()
+                                }
+                            )
+                        } else com.smartsolar.microgrid.ui.SolarUi.popup(
+                            activity = this,
+                            title = label,
+                            message = row.getString("code"),
+                            confirm = getString(R.string.confirm),
+                            dismiss = getString(R.string.back),
+                            onConfirm = { screen.request { api.action(id, action) } }
+                        )
                     }
                     if (blocks.has(action)) text(blocks.getString(action))
                 }
@@ -69,6 +86,7 @@ class OperationalReservationDetailActivity : SolarActivity() {
             }
         }
     }
+    // Reloads the reservation each time the screen is shown.
     override fun onResume() { super.onResume(); if (::id.isInitialized) load() }
     private fun load() = screen.request { api.detail(id) }
     private fun showReservation(row: JSONObject) {

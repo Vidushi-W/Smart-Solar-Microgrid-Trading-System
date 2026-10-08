@@ -7,15 +7,15 @@ export const NAV_ITEMS = [
   { to: "/prosumers", label: "Prosumer Management", icon: "prosumers", roles: ["Backoffice"], end: true },
   { to: "/prosumers/pending", label: "Pending Activations", icon: "prosumers", roles: ["Backoffice"], end: true },
   { to: "/prosumers/deactivated", label: "Deactivated Accounts", icon: "prosumers", roles: ["Backoffice"] },
-  { to: "/stations", label: "Stations", icon: "stations", roles: ["Backoffice", "GridOperator"] },
-  { to: "/slots", label: "Energy slots", icon: "slots", roles: ["Backoffice", "GridOperator"] },
+  { to: "/stations", label: "Stations", roleLabels: { GridOperator: "Microgrid Nodes", Prosumer: "Stations" }, icon: "stations", roles: ["Backoffice", "GridOperator", "Prosumer"] },
+  { to: "/slots", label: "Energy slots", icon: "slots", roles: ["Backoffice", "GridOperator", "Prosumer"] },
   { to: "/reservations", label: "Reservations", roleLabels: { GridOperator: "Bookings", Prosumer: "My Reservations" }, icon: "reservations", roles: ["Backoffice", "GridOperator", "Prosumer"] },
-  { to: "/member2", label: "Stations", icon: "stations", roles: ["Prosumer"], end: true },
   { to: "/reservation-history", label: "Reservation History", icon: "history", roles: ["Prosumer"], end: true },
   { to: "/transactions", label: "Transfers", roleLabels: { GridOperator: "Energy Transfer" }, icon: "transfers", roles: ["Backoffice", "GridOperator"] },
   { to: "/profile", label: "Profile", icon: "profile", roles: ["Backoffice", "GridOperator", "Prosumer"], end: true },
 ];
 
+// Specific paths are checked before the sidebar prefixes, so an edit or detail title is not replaced by the list title.
 export function titleForPath(pathname) {
   if (pathname === "/dashboard") return "Dashboard";
   if (pathname === "/profile") return "My profile";
@@ -27,7 +27,6 @@ export function titleForPath(pathname) {
   if (pathname === "/prosumers") return "Prosumer Management";
   if (pathname.startsWith("/prosumers/") && pathname !== "/prosumers/pending" && pathname !== "/prosumers/deactivated") return "Prosumer details";
   if (pathname.startsWith("/prosumers")) return "Prosumers";
-  if (pathname === "/member2") return "Stations & energy slots";
   if (pathname === "/reservation-history") return "Reservation History";
   if (pathname === "/reservations/new") return "New reservation";
   if (pathname.endsWith("/modify")) return "Modify reservation";

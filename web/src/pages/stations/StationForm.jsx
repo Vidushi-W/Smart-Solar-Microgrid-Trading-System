@@ -47,6 +47,7 @@ export default function StationForm({ station, saving, onClose, onSave }) {
     }));
   }
 
+  // Require one operating day, a close time after open, available slots within the total, and capacity above zero. Saved days stay in Monday-to-Sunday order.
   async function submit(event) {
     event.preventDefault();
     setError("");

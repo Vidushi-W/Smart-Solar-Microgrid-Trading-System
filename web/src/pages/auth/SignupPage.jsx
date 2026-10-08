@@ -1,3 +1,6 @@
+/**
+ * Public registration. registerProsumer accepts Backoffice, GridOperator, or Prosumer, and the account stays inactive until it is activated. The NIC becomes the sign-in id. The Google button stays disabled because OAuth is not configured.
+ */
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Icon from "../../components/common/Icon";
@@ -19,6 +22,7 @@ const initialForm = {
 const nicPattern = /^(?:\d{12}|\d{9}[VX])$/i;
 const phonePattern = /^\+?[0-9\s().-]+$/;
 
+// Count digits only, so spaces and separators do not change the 7 to 15 length check.
 function isPhoneNumberValid(phoneNumber) {
   const normalized = phoneNumber.trim();
   const digitCount = normalized.replace(/\D/g, "").length;
@@ -47,6 +51,7 @@ export default function SignupPage() {
     setShowConfirmPassword(false);
   }
 
+  // Stop before registerProsumer unless the NIC, phone, password, and role all pass. A new NIC is 12 digits; an older NIC is 9 digits followed by V or X.
   async function submit(event) {
     event.preventDefault();
     setError("");
