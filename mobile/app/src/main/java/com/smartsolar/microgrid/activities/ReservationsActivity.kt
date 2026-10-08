@@ -1,3 +1,5 @@
+// Operational reservation list filtered by status, text, date, and station.
+// Prosumers get a create button. A row opens the operational detail screen.
 package com.smartsolar.microgrid.activities
 
 import android.content.Intent
@@ -29,7 +31,7 @@ class ReservationsActivity : SolarActivity() {
         day = input(getString(R.string.date_filter)).apply { id = R.id.reservation_date }
         station = input(getString(R.string.station_filter)).apply { id = R.id.reservation_station }
         val loadButton = button(getString(R.string.search)) { load() }
-        if (role == "Prosumer" || role == "Backoffice") button(getString(R.string.create_reservation)) { open(ReservationFormActivity::class.java) }
+        if (role == "Prosumer") button(getString(R.string.create_reservation)) { open(ReservationFormActivity::class.java) }
         if (intent.getBooleanExtra("history", false)) text(getString(R.string.history_hint))
         rows = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; content.addView(this) }
         back()
@@ -40,16 +42,23 @@ class ReservationsActivity : SolarActivity() {
             if (!state.busy && list != null) {
                 if (list.length() == 0) rows.addView(TextView(this).apply { text = getString(R.string.no_reservations) })
                 list.objects().forEach { row ->
-                    rows.addView(Button(this).apply {
-                        text = "${row.getString("code")} · ${row.getString("status")}\n${row.getString("stationName")}\n${date(row.getString("start"))} · ${row.getDouble("energyKwh")} kWh"
-                        setOnClickListener { startActivity(Intent(this@ReservationsActivity, OperationalReservationDetailActivity::class.java)
-                            .putExtra("reservationId", row.getString("id"))) }
-                    })
+                    rows.addView(com.smartsolar.microgrid.ui.SolarUi.choiceCard(
+                        this,
+                        "${row.getString("code")} · ${row.getString("status")}",
+                        "${row.getString("stationName")}\n${date(row.getString("start"))} · ${row.getDouble("energyKwh")} kWh"
+                    ) {
+                        startActivity(Intent(this, OperationalReservationDetailActivity::class.java)
+                            .putExtra("reservationId", row.getString("id")))
+                    }, LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply { bottomMargin = dp(10) })
                 }
             }
         }
     }
     override fun onResume() { super.onResume(); if (::rows.isInitialized) load() }
+    // Reads the spinner and the three fields, then calls the reservation list API.
     private fun load() {
         val selected = statuses[filter.selectedItemPosition]
         val query = search.text.toString(); val date = day.text.toString(); val stationId = station.text.toString()

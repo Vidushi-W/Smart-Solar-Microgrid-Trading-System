@@ -1,3 +1,5 @@
+// Prosumer profile. Loads and updates /api/prosumers/me/profile and can request deactivation.
+// Shows the SQLite account first. Logout clears the session prefs and that local row.
 package com.smartsolar.microgrid.activities
 
 import android.content.Intent
@@ -75,9 +77,11 @@ class ProsumerProfileActivity : AppCompatActivity() {
             return
         }
         setContentView(createView())
+        showCachedAccount()
         loadProfile()
     }
 
+    // Blank data shows the letter avatar. A data URL is decoded as a JPEG and shown instead.
     private fun showAvatar(data: String?) {
         if (data.isNullOrBlank()) {
             photoView.visibility = View.GONE
@@ -97,23 +101,20 @@ class ProsumerProfileActivity : AppCompatActivity() {
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(40, 32, 40, 48)
-            setBackgroundColor(Color.rgb(246, 248, 242))
+            setBackgroundColor(getColor(R.color.solar_background))
         }
-        content.addView(Button(this).apply {
-            text = getString(R.string.back)
-            setOnClickListener { finish() }
-        }, matchWidth())
+        content.addView(com.smartsolar.microgrid.ui.SolarUi.backBar(this), matchWidth())
         content.addView(TextView(this).apply {
             text = getString(R.string.my_profile)
             textSize = 28f
-            setTextColor(Color.rgb(20, 35, 29))
+            setTextColor(getColor(R.color.solar_heading))
         }, matchWidth())
         avatarView = TextView(this).apply {
             text = "?"
             textSize = 28f
             gravity = Gravity.CENTER
             setTextColor(Color.WHITE)
-            setBackgroundColor(Color.rgb(169, 67, 50))
+            setBackgroundColor(getColor(R.color.solar_accent))
             contentDescription = getString(R.string.default_avatar)
         }
         content.addView(avatarView, LinearLayout.LayoutParams(96, 96).apply {
@@ -148,6 +149,7 @@ class ProsumerProfileActivity : AppCompatActivity() {
         saveButton = Button(this).apply {
             text = getString(R.string.save_profile)
             visibility = View.GONE
+            com.smartsolar.microgrid.ui.SolarUi.primary(this)
             setOnClickListener { saveProfile() }
         }
         cancelButton = Button(this).apply {
@@ -195,6 +197,18 @@ class ProsumerProfileActivity : AppCompatActivity() {
         }
     }
 
+    // Fills the form from SQLite while the profile request is still running.
+    private fun showCachedAccount() {
+        val cached = LocalAccountStore(this).current() ?: return
+        avatarView.text = cached.name.firstOrNull()?.uppercase() ?: "?"
+        nicView.text = getString(R.string.nic_value, cached.nic)
+        statusView.text = getString(R.string.account_status_value, cached.accountStatus)
+        nameInput.setText(cached.name)
+        emailInput.setText(cached.email)
+        phoneInput.setText(cached.contactNumber)
+        addressInput.setText(cached.address)
+    }
+
     private fun showProfile(value: ProsumerProfile) {
         profile = value
         profilePictureData = value.profilePictureData
@@ -212,6 +226,7 @@ class ProsumerProfileActivity : AppCompatActivity() {
         deactivationButton.isEnabled = value.accountStatus == "Active" && !editing
     }
 
+    // Enables the photo and text fields. NIC, status, and registration date stay read-only.
     private fun setEditing(value: Boolean) {
         editing = value
         pictureButton.isEnabled = value
@@ -262,6 +277,7 @@ class ProsumerProfileActivity : AppCompatActivity() {
             .show()
     }
 
+    // Posts deactivation, then saves the returned status into SQLite.
     private fun requestDeactivation() {
         setLoading(true)
         executor.execute {
@@ -299,6 +315,7 @@ class ProsumerProfileActivity : AppCompatActivity() {
         finish()
     }
 
+    // Signs out on 401, an expired token, or an inactive account.
     private fun handleApiError(error: Exception) {
         val message = error.message ?: getString(R.string.profile_failed)
         if (message.contains("401", ignoreCase = true) || message.contains("expired", ignoreCase = true)
@@ -310,12 +327,12 @@ class ProsumerProfileActivity : AppCompatActivity() {
     }
 
     private fun showSuccess(message: String) {
-        messageView.setTextColor(Color.rgb(47, 126, 89))
+        messageView.setTextColor(getColor(R.color.solar_success))
         messageView.text = message
     }
 
     private fun showErrorMessage(message: String) {
-        messageView.setTextColor(Color.rgb(160, 53, 43))
+        messageView.setTextColor(getColor(R.color.solar_error))
         messageView.text = message
     }
 
@@ -329,7 +346,7 @@ class ProsumerProfileActivity : AppCompatActivity() {
     private fun readOnlyField(label: Int) = TextView(this).apply {
         text = getString(label)
         textSize = 16f
-        setTextColor(Color.rgb(96, 112, 100))
+        setTextColor(getColor(R.color.solar_muted))
         setPadding(0, 12, 0, 12)
         layoutParams = matchWidth()
     }
@@ -340,9 +357,11 @@ class ProsumerProfileActivity : AppCompatActivity() {
         setSingleLine(!multiline)
         isEnabled = false
         if (multiline) minLines = 3
+        com.smartsolar.microgrid.ui.SolarUi.field(this)
         layoutParams = matchWidth()
     }
 
+    // Optional leading plus and punctuation, with 7 to 15 digits.
     private fun isPhoneValid(value: String): Boolean {
         val digits = value.count(Char::isDigit)
         return Regex("^\\+?[0-9\\s().-]+$").matches(value) && digits in 7..15

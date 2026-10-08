@@ -8,6 +8,7 @@ using SolarMicrogrid.API.Models;
 
 namespace SolarMicrogrid.API.Services;
 
+// Prosumers create, modify, and cancel their own bookings. Backoffice approves or rejects. Grid Operator schedules.
 public class ReservationService : IReservationService
 {
     private readonly IReservationRepository _reservations;
@@ -30,12 +31,11 @@ public class ReservationService : IReservationService
         _clock = clock;
     }
 
+    // Starts as Requested. Fails when the slot is full, energy exceeds station capacity, or the prosumer is not active.
     public async Task<ReservationDto> CreateAsync(CreateReservationRequest request, CancellationToken cancellationToken)
     {
-        RequireRole(AppRoles.Prosumer, AppRoles.Backoffice);
-        var prosumerId = _currentUser.Role == AppRoles.Prosumer
-            ? _currentUser.ProsumerId
-            : request.ProsumerId;
+        RequireRole(AppRoles.Prosumer);
+        var prosumerId = _currentUser.ProsumerId;
         if (string.IsNullOrWhiteSpace(prosumerId))
         {
             throw Rule(400, "A prosumer is required.");
@@ -82,6 +82,7 @@ public class ReservationService : IReservationService
         return await Map(reservation, cancellationToken);
     }
 
+    // Prosumer or Backoffice. Closed, full, past, out-of-window, and overlapping slots are left out.
     public async Task<ReservationOptionsDto> GetOptionsAsync(string? prosumerId, CancellationToken cancellationToken)
     {
         RequireRole(AppRoles.Prosumer, AppRoles.Backoffice);
@@ -145,6 +146,7 @@ public class ReservationService : IReservationService
         return new ReservationOptionsDto(active, availableStations);
     }
 
+    // Prosumers only see their own rows. ApprovedFuture and DueSoon are filters, and a date must be yyyy-MM-dd.
     public async Task<IReadOnlyList<ReservationDto>> SearchAsync(string? status, string? stationId, string? date, string? query, CancellationToken cancellationToken)
     {
         RequireSignedIn();
@@ -217,15 +219,17 @@ public class ReservationService : IReservationService
         return mapped;
     }
 
+    // Another prosumer's reservation is reported as not found.
     public async Task<ReservationDto> GetAsync(string id, CancellationToken cancellationToken)
     {
         var reservation = await RequireAccessible(id, cancellationToken);
         return await Map(reservation, cancellationToken);
     }
 
+    // Only Requested or Approved. The replacement slot must be different and start at least 12 hours from now.
     public async Task<ReservationDto> ModifyAsync(string id, ModifyReservationRequest request, CancellationToken cancellationToken)
     {
-        RequireRole(AppRoles.Prosumer, AppRoles.Backoffice);
+        RequireRole(AppRoles.Prosumer);
         var reservation = await RequireAccessible(id, cancellationToken);
         if (reservation.Status is not (ReservationStatus.Requested or ReservationStatus.Approved))
         {
@@ -268,9 +272,10 @@ public class ReservationService : IReservationService
         return await Map(reservation, cancellationToken);
     }
 
+    // Only a capacity-holding reservation, and only with 12 hours' notice. Cancelling releases the hold.
     public async Task<ReservationDto> CancelAsync(string id, CancellationToken cancellationToken)
     {
-        RequireRole(AppRoles.Prosumer, AppRoles.Backoffice);
+        RequireRole(AppRoles.Prosumer);
         var reservation = await RequireAccessible(id, cancellationToken);
         if (!ReservationStatus.Holding.Contains(reservation.Status))
         {
@@ -288,6 +293,7 @@ public class ReservationService : IReservationService
         return await Map(reservation, cancellationToken);
     }
 
+    // Backoffice only, and only a Requested reservation whose station is active, slot is open, and start is still ahead.
     public async Task<ReservationDto> ApproveAsync(string id, CancellationToken cancellationToken)
     {
         RequireRole(AppRoles.Backoffice);
@@ -320,6 +326,7 @@ public class ReservationService : IReservationService
         return await Map(reservation, cancellationToken);
     }
 
+    // Backoffice only. A reason is required, and only a Requested reservation can be rejected.
     public async Task<ReservationDto> RejectAsync(string id, RejectReservationRequest request, CancellationToken cancellationToken)
     {
         RequireRole(AppRoles.Backoffice);
@@ -340,6 +347,7 @@ public class ReservationService : IReservationService
         return await Map(reservation, cancellationToken);
     }
 
+    // Grid Operator only, and only an Approved reservation whose start is still ahead.
     public async Task<ReservationDto> ScheduleAsync(string id, CancellationToken cancellationToken)
     {
         RequireRole(AppRoles.GridOperator);
@@ -360,6 +368,7 @@ public class ReservationService : IReservationService
         return await Map(reservation, cancellationToken);
     }
 
+    // Prosumers get counts for their own reservations. Due soon means a hold starting in under 12 hours.
     public async Task<ReservationDashboardDto> GetDashboardAsync(CancellationToken cancellationToken)
     {
         RequireSignedIn();
@@ -533,8 +542,6 @@ public class ReservationService : IReservationService
         {
             Consider(allowed, blocks, "approve", ApproveBlock(reservation, station, slot, now));
             Consider(allowed, blocks, "reject", reservation.Status == ReservationStatus.Requested ? "" : "Only a requested reservation can be rejected.");
-            Consider(allowed, blocks, "cancel", CancelBlock(reservation, now));
-            Consider(allowed, blocks, "modify", ModifyBlock(reservation, now));
         }
         else if (_currentUser.Role == AppRoles.GridOperator)
         {

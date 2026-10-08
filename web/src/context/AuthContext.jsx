@@ -6,6 +6,7 @@ import { getCurrentUser, login as loginRequest } from "../services/authService";
 
 const AuthContext = createContext(null);
 
+// The API identity uses userId. The console stores that value as id.
 function mapIdentity(identity) {
   return {
     id: identity.userId,
@@ -35,6 +36,7 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
+  // Store the token, then load /auth/me. If that call fails, delete the token so a half-finished login is not kept.
   const login = useCallback(async (identifier, password, role) => {
     const result = await loginRequest(identifier, password, role);
     localStorage.setItem("authToken", result.token);

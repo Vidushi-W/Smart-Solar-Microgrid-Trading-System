@@ -1,3 +1,5 @@
+// Grid-operator camera scan for a version-1 transfer QR.
+// Verifies with POST /api/transactions/verify, then completes using the returned verification token.
 package com.smartsolar.microgrid.activities
 
 import android.Manifest
@@ -45,12 +47,13 @@ class QrScanActivity : AppCompatActivity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(24, 24, 24, 32)
-            setBackgroundColor(Color.rgb(246, 248, 242))
+            setBackgroundColor(getColor(R.color.solar_background))
         }
+        root.addView(com.smartsolar.microgrid.ui.SolarUi.backBar(this))
         root.addView(TextView(this).apply {
             text = getString(R.string.scan_transfer)
             textSize = 24f
-            setTextColor(Color.rgb(20, 35, 29))
+            setTextColor(getColor(R.color.solar_heading))
         })
         previewView = PreviewView(this)
         root.addView(previewView, LinearLayout.LayoutParams(
@@ -60,7 +63,7 @@ class QrScanActivity : AppCompatActivity() {
         message = TextView(this).apply {
             setPadding(0, 16, 0, 8)
             textSize = 16f
-            setTextColor(Color.rgb(32, 40, 36))
+            setTextColor(getColor(R.color.solar_heading))
             text = getString(R.string.scan_transfer)
         }
         root.addView(message)
@@ -86,6 +89,7 @@ class QrScanActivity : AppCompatActivity() {
         }
     }
 
+    // Keeps the first accepted code and ignores later frames until the scan is reset.
     private fun startCamera() {
         val future = ProcessCameraProvider.getInstance(this)
         future.addListener({
@@ -119,6 +123,7 @@ class QrScanActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
+    // Accepts only version 1 with a reservation id and token, then calls verify.
     private fun onScanned(raw: String) {
         val payload = runCatching { JSONObject(raw) }.getOrNull()
         reservationId = payload?.optString("reservationId").orEmpty()
@@ -157,6 +162,7 @@ class QrScanActivity : AppCompatActivity() {
         }
     }
 
+    // Completes the transfer with the QR token and the verification token from verify.
     private fun complete() {
         val session = token() ?: return
         confirm.isEnabled = false
@@ -189,6 +195,7 @@ class QrScanActivity : AppCompatActivity() {
         message.text = getString(R.string.scan_transfer)
     }
 
+    // Returns the session JWT, or closes this screen when it is missing.
     private fun token(): String? {
         val value = getSharedPreferences(MainActivity.SESSION_PREFS, MODE_PRIVATE)
             .getString(MainActivity.TOKEN_KEY, null)

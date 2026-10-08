@@ -12,10 +12,12 @@ function storageKey(reservationId) {
   return `transfer-qr:${reservationId}`;
 }
 
+// Ids that start with RSV- are local samples and must not call the QR API.
 export function isSampleReservation(reservationId) {
   return String(reservationId || "").startsWith("RSV-");
 }
 
+// Build a local JSON payload so a sample reservation can still draw a QR.
 function sampleQrText(reservationId) {
   const raw = Array.from(String(reservationId))
     .map((char) => char.charCodeAt(0).toString(16).padStart(2, "0"))
@@ -24,6 +26,7 @@ function sampleQrText(reservationId) {
   return JSON.stringify({ version: 1, reservationId, token });
 }
 
+// Share one in-flight POST per reservation and keep the returned code in sessionStorage.
 function issueOnce(reservationId) {
   if (!inflight.has(reservationId)) {
     const request = issueReservationQr(reservationId)
@@ -75,6 +78,7 @@ export default function TransferQr({ reservationId, status, compact = false }) {
   }
   if (!visible) return null;
 
+  // Drop the saved code and ask for another. A sample id only redraws the local payload.
   async function replaceCode() {
     setBusy(true);
     setError("");

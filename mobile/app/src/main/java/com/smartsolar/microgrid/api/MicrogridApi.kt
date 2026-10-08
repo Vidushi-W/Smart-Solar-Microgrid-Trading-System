@@ -1,3 +1,6 @@
+// Authenticated client for reservation lists and QR transfers.
+// Reservation calls use RESERVATION_API_BASE_URL. QR issue, verify, and complete use API_BASE_URL.
+// The JWT comes from authentication_session. Debug builds also send X-User-Id and X-User-Role.
 package com.smartsolar.microgrid.api
 
 import android.content.Context
@@ -52,6 +55,7 @@ class MicrogridApi(context: Context) {
         ?: throw ApiFailure(401, "Sign in is required.")
     fun identity(): JSONObject = request(BuildConfig.API_BASE_URL, "/api/auth/me") as JSONObject
 
+    // Bearer JSON call. A dead connection becomes status 0 because the outcome may be unknown.
     private fun request(base: String, path: String, method: String = "GET", body: JSONObject? = null,
                         identity: JSONObject? = null): Any {
         val jwt = token
@@ -97,6 +101,7 @@ class MicrogridApi(context: Context) {
             connection.disconnect()
         }
     }
+    // Reservation host. Debug builds attach the user from GET /api/auth/me.
     private fun reservation(path: String, method: String = "GET", body: JSONObject? = null): Any =
         request(BuildConfig.RESERVATION_API_BASE_URL, "/api$path", method, body, identity())
     fun reservations(status: String = "", query: String = "", date: String = "", stationId: String = ""): JSONArray {
@@ -121,6 +126,7 @@ class MicrogridApi(context: Context) {
         "/api/transactions/${encode(id)}/complete", "POST",
         JSONObject().put("token", token).put("verificationToken", receipt)) as JSONObject)
     companion object {
+        // URL-encodes and turns spaces into %20.
         fun encode(value: String): String = java.net.URLEncoder.encode(value, "UTF-8").replace("+", "%20")
     }
 }

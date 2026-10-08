@@ -38,6 +38,7 @@ export function isApprovedFuture(reservation, now = new Date()) {
   );
 }
 
+// Due soon is a holding reservation whose start is still ahead and less than 12 hours away.
 export function summarizeReservations(reservations, now = new Date()) {
   return {
     pending: reservations.filter((item) => item.status === "Requested").length,
@@ -52,6 +53,7 @@ export function summarizeReservations(reservations, now = new Date()) {
   };
 }
 
+// Count other holding reservations on this slot. ignoreId is left out, so the reservation being edited is not counted against itself.
 export function slotHoldCount(reservations, slotId, ignoreId) {
   return reservations.filter(
     (item) =>
@@ -69,6 +71,7 @@ export function describeLead(iso, now = new Date()) {
   return `${Math.round(hours / 24)} days ahead`;
 }
 
+// Approve only a Requested reservation on an active station with an open slot that has not started.
 export function canApprove(reservation, slot, station) {
   if (!reservation || reservation.status !== "Requested") {
     return "Only a requested reservation can be approved.";
@@ -92,6 +95,7 @@ export function canReject(reservation) {
   return "";
 }
 
+// Schedule only an Approved reservation whose start is still in the future.
 export function canSchedule(reservation) {
   if (!reservation || reservation.status !== "Approved") {
     return "Only an approved reservation can be marked scheduled.";
@@ -102,6 +106,7 @@ export function canSchedule(reservation) {
   return "";
 }
 
+// Cancel only while the reservation still holds capacity and the start is at least 12 hours away.
 export function canCancel(reservation) {
   if (!reservation || !holdsCapacity(reservation.status)) {
     return "This reservation can no longer be cancelled.";
@@ -112,6 +117,7 @@ export function canCancel(reservation) {
   return "";
 }
 
+// Modify only Requested or Approved, and only with at least 12 hours before the current start. Scheduled stays locked.
 export function canModify(reservation) {
   if (!reservation || !["Requested", "Approved"].includes(reservation.status)) {
     return "Only a requested or approved reservation can be modified. A scheduled reservation stays locked until the team agrees otherwise.";
@@ -122,6 +128,7 @@ export function canModify(reservation) {
   return "";
 }
 
+// Complete a transfer only when the reservation is Scheduled and the QR token is already Verified.
 export function canCompleteTransfer(reservation, transaction) {
   if (!reservation || reservation.status !== "Scheduled") {
     return "The reservation must be scheduled before the energy transfer is completed.";

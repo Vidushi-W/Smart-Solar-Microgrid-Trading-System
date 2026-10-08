@@ -1,3 +1,6 @@
+/**
+ * Fetch wrapper for the reservation host. It sends the JWT stored as authToken. In development it also sends X-User-Id and X-User-Role; those headers are left off outside development.
+ */
 import { RESERVATION_API_BASE } from "./apiTargets";
 import { ApiError } from "./apiClient";
 

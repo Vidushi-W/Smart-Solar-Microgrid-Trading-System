@@ -25,6 +25,11 @@ function stationTitle(station) {
   return station?.name?.trim() || station?.stationId || "Station";
 }
 
+// Slot date and start time as a UTC instant, shared with booking-window checks.
+function slotWhen(slot) {
+  return slotInstant(slot);
+}
+
 export default function CreateReservationPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -147,6 +152,7 @@ export default function CreateReservationPage() {
     setError("");
   }
 
+  // A date before today or more than 30 Colombo days ahead is left unchanged. Any other date clears the chosen slot, and a date past 7 days is reset to today with the 7-day notice.
   function chooseDate(nextDate) {
     if (!nextDate || nextDate < earliestDate || nextDate > furthestDate) return;
     setDate(nextDate);
@@ -165,6 +171,7 @@ export default function CreateReservationPage() {
     setError("");
   }
 
+  // Refuse a slot that has started or sits outside the 7-day window, then POST /reservations and open the confirmation for the returned id.
   async function confirmReservation() {
     if (submitting) return;
     if (!station || !slot) {
@@ -184,7 +191,7 @@ export default function CreateReservationPage() {
         prosumerId: user.id,
         stationId: station.stationId,
         slotId: slot.slotId,
-        scheduledAtUtc: slotInstant(slot),
+        scheduledAtUtc: slotWhen(slot),
       });
       if (!saved?.reservationId) {
         throw new Error("The server did not return a reservation ID. Check your reservations before trying again.");

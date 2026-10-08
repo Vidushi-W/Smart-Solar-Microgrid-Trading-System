@@ -1,3 +1,4 @@
+// GET /api/stations with the caller's bearer token.
 package com.smartsolar.microgrid.stations
 
 import org.json.JSONArray
@@ -7,6 +8,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 class StationsApiClient(private val baseUrl: String) {
+    // Skips rows whose latitude or longitude is missing or out of range.
     fun list(token: String): List<Station> {
         val connection = (URL("${baseUrl.trimEnd('/')}/api/stations").openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"

@@ -10,6 +10,7 @@ public class HeaderCurrentUser : ICurrentUser
     public const string UserIdHeader = "X-User-Id";
     public const string RoleHeader = "X-User-Role";
 
+    // A blank user id, or a role other than Backoffice, GridOperator, or Prosumer, stays anonymous.
     public HeaderCurrentUser(IHttpContextAccessor accessor, IHostEnvironment environment)
     {
         // Outside Development the headers are ignored, so the request stays anonymous.
@@ -33,5 +34,6 @@ public class HeaderCurrentUser : ICurrentUser
     public bool IsAuthenticated { get; }
     public string UserId { get; } = "";
     public string Role { get; } = "";
+    // The user id is the prosumer id only when the role is Prosumer.
     public string? ProsumerId => Role == AppRoles.Prosumer ? UserId : null;
 }

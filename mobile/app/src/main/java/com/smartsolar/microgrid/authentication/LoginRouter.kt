@@ -1,3 +1,4 @@
+// Maps each UserRole to a home destination. MainActivity still refuses Backoffice before opening home.
 package com.smartsolar.microgrid.authentication
 
 sealed interface LoginDestination {

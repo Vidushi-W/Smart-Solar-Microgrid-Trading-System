@@ -13,6 +13,7 @@ export default function SlotForm({ slot, selectedDate, saving, onClose, onSave }
   const [status, setStatus] = useState(slot?.status || "Open");
   const [error, setError] = useState("");
 
+  // End must be after start, and remaining capacity cannot exceed the total. Status is sent only when editing an existing slot.
   async function submit(event) {
     event.preventDefault();
     setError("");

@@ -110,12 +110,30 @@ public class ReservationServiceTests
     public async Task Cancel_RejectsInsideTwelveHours()
     {
         var world = World();
-        world.User.Role = AppRoles.Backoffice;
         world.Reservations.Items.Add(Hold("rs-soon", "p-ishara", "sl-soon", Hours(6), Hours(7)));
 
         var error = await Assert.ThrowsAsync<ReservationRuleException>(() => world.Service.CancelAsync("rs-soon", CancellationToken.None));
 
         Assert.Contains("12 hours", error.Message);
+    }
+
+    [Fact]
+    public async Task ModifyAndCancel_RejectBackoffice()
+    {
+        var world = World();
+        world.User.Role = AppRoles.Backoffice;
+        world.Reservations.Items.Add(Hold("rs-later", "p-ishara", "sl-tomorrow", Hours(30), Hours(31)));
+
+        var modify = await Assert.ThrowsAsync<ReservationRuleException>(() => world.Service.ModifyAsync(
+            "rs-later",
+            new ModifyReservationRequest { SlotId = "sl-later" },
+            CancellationToken.None));
+        var cancel = await Assert.ThrowsAsync<ReservationRuleException>(() => world.Service.CancelAsync("rs-later", CancellationToken.None));
+
+        Assert.Equal(403, modify.StatusCode);
+        Assert.Equal(403, cancel.StatusCode);
+        Assert.Equal(ReservationStatus.Requested, world.Reservations.Items[0].Status);
+        Assert.Equal("sl-tomorrow", world.Reservations.Items[0].SlotId);
     }
 
     [Fact]

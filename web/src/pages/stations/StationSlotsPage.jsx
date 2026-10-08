@@ -1,5 +1,5 @@
 /**
- * Slots for one station on one date. Create, update, and delete go through stationsApi.
+ * Slots for one station on one date, loaded from the station API. Only a Grid Operator can edit or delete a slot.
  */
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -11,6 +11,7 @@ import { useAuth } from "../../context/AuthContext";
 import { stationsApi } from "../../services/apiClient";
 import SlotForm from "./SlotForm";
 
+// Local calendar date, not the UTC date, for the date input.
 function localDateValue() {
   const now = new Date();
   const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
@@ -20,7 +21,8 @@ function localDateValue() {
 export default function StationSlotsPage() {
   const { stationId } = useParams();
   const { user } = useAuth();
-  const canManage = user?.role === "Backoffice";
+  const canAdd = user?.role === "Backoffice" || user?.role === "GridOperator";
+  const canChange = user?.role === "GridOperator";
   const [station, setStation] = useState(null);
   const [slots, setSlots] = useState([]);
   const [date, setDate] = useState(localDateValue);
@@ -92,10 +94,10 @@ export default function StationSlotsPage() {
     <div className="page station-slots-page">
       <Link to="/stations" className="back-link">← Back to stations</Link>
       <PageHeader
-        eyebrow="Backoffice · slot manager"
+        eyebrow="Energy slots"
         title={station?.name || "Station slots"}
-        description={station ? `Manage date-specific availability for ${station.name}.` : "Load station availability by date."}
-        actions={canManage && station?.status === "Active" ? <button type="button" className="btn primary" onClick={() => { setEditingSlot(null); setFormOpen(true); }}>Add slot</button> : null}
+        description={station ? `Slots for ${station.name}. A prosumer reservation uses one of these slots.` : "Load station availability by date."}
+        actions={canAdd && station?.status === "Active" ? <button type="button" className="btn primary" onClick={() => { setEditingSlot(null); setFormOpen(true); }}>Add slot</button> : user?.role === "Prosumer" && station ? <Link className="btn primary" to="/reservations/new">Reserve this station</Link> : null}
       />
 
       {error ? <div className="banner warn" role="alert"><p>{error}</p><button type="button" onClick={() => setError("")}>Dismiss</button></div> : null}
@@ -123,7 +125,7 @@ export default function StationSlotsPage() {
       ) : (
         <div className="table-wrap">
           <table className="slot-table">
-            <thead><tr><th>Time</th><th>Total capacity</th><th>Remaining capacity</th><th>Status</th>{canManage ? <th>Actions</th> : null}</tr></thead>
+            <thead><tr><th>Time</th><th>Total capacity</th><th>Remaining capacity</th><th>Status</th>{canChange ? <th>Actions</th> : null}</tr></thead>
             <tbody>
               {slots.map((slot) => (
                 <tr key={slot.slotId}>
@@ -131,7 +133,7 @@ export default function StationSlotsPage() {
                   <td>{slot.totalCapacity}</td>
                   <td>{slot.remainingCapacity}</td>
                   <td><StatusBadge value={slot.status} /></td>
-                  {canManage ? <td><div className="row-actions">
+                  {canChange ? <td><div className="row-actions">
                     <button type="button" className="btn ghost" onClick={() => { setEditingSlot(slot); setFormOpen(true); }}>Edit</button>
                     <button type="button" className="btn danger" onClick={() => setDeletingSlot(slot)}>Delete</button>
                   </div></td> : null}

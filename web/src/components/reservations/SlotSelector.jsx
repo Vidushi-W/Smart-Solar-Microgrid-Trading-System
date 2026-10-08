@@ -4,6 +4,7 @@
 import StatusBadge from "../common/StatusBadge";
 import { slotBookingState } from "../../pages/reservations/reservationTime";
 
+// Bookable when the slot is inside the booking window, not Closed or Full, and still has remaining places.
 function canReserve(slot) {
   return slotBookingState(slot).ok && slot.status !== "Closed" && slot.status !== "Full" && slot.remainingCapacity > 0;
 }

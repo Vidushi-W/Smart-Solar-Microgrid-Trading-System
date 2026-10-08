@@ -1,3 +1,5 @@
+// HTTP client for login, registration, and profile calls on the account API.
+// Prosumer profiles use /api/prosumers/me. Staff profiles use /api/users/me/profile.
 package com.smartsolar.microgrid.authentication
 
 import org.json.JSONObject
@@ -47,6 +49,7 @@ class AuthenticationApiClient(
         }
     }
 
+    // GET /api/auth/me. Failures include the HTTP status so screens can recognize 401.
     fun getCurrentUser(token: String): AuthenticatedUser {
         val connection = (URL("${baseUrl.trimEnd('/')}/api/auth/me").openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
@@ -168,6 +171,7 @@ class AuthenticationApiClient(
     fun getMyStaffProfile(token: String): MobileAccountProfile =
         parseAccountProfile(authorizedRequest("/api/users/me/profile", token, "GET"))
 
+    // PUT /api/users/me/profile for staff. A Prosumer role is rejected before the call.
     fun updateMyStaffProfile(
         token: String,
         role: UserRole,
@@ -192,9 +196,11 @@ class AuthenticationApiClient(
         return parseAccountProfile(authorizedRequest("/api/users/me/profile", token, "PUT", payload))
     }
 
+    // Same profile endpoint as getMyProfile, mapped into the shared account shape used by the home screen.
     fun getMyProsumerAccount(token: String): MobileAccountProfile =
         parseAccountProfile(authorizedRequest("/api/prosumers/me/profile", token, "GET"))
 
+    // Uses accountStatus when present, otherwise derives Active or Inactive from isActive.
     private fun parseAccountProfile(response: JSONObject) = MobileAccountProfile(
         userId = response.optString("userId", response.optString("id")),
         username = response.optString("username", response.optString("nic")),
@@ -210,11 +216,13 @@ class AuthenticationApiClient(
         profilePictureData = response.optString("profilePictureData").takeIf(String::isNotBlank)
     )
 
+    // POST /api/prosumers/me/deactivation and returns the new status, or DeactivationRequested.
     fun requestDeactivation(token: String): String {
         return authorizedRequest("/api/prosumers/me/deactivation", token, "POST")
             .optString("accountStatus", "DeactivationRequested")
     }
 
+    // Bearer call whose error text starts with the HTTP status code.
     private fun authorizedRequest(
         path: String,
         token: String,
@@ -248,6 +256,7 @@ class AuthenticationApiClient(
         }
     }
 
+    // Maps the three API role names and rejects anything else.
     private fun parseRole(value: String): UserRole = when (value) {
         "Prosumer" -> UserRole.PROSUMER
         "GridOperator" -> UserRole.GRID_OPERATOR

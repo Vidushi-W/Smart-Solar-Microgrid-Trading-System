@@ -1,3 +1,4 @@
+// MongoDB access for OperationalEnergyReservation. Start, end, and history times are stored and read as UTC.
 using MongoDB.Driver;
 using SolarMicrogrid.API.Constants;
 using SolarMicrogrid.API.Helpers;
@@ -33,6 +34,7 @@ public class MongoReservationRepository : IReservationRepository
         return _collection.ReplaceOneAsync(item => item.Id == reservation.Id, reservation, cancellationToken: cancellationToken);
     }
 
+    // Empty filters match every reservation. The result is capped at 500 rows.
     public async Task<IReadOnlyList<EnergyReservation>> SearchAsync(ReservationSearch search, CancellationToken cancellationToken)
     {
         var filters = new List<FilterDefinition<EnergyReservation>>();
@@ -67,6 +69,7 @@ public class MongoReservationRepository : IReservationRepository
         return rows.Select(Normalize).ToList();
     }
 
+    // Counts Requested, Approved, and Scheduled on the slot, skipping ignoreId when it is set.
     public async Task<int> CountHoldingAsync(string slotId, string? ignoreId, CancellationToken cancellationToken)
     {
         var builder = Builders<EnergyReservation>.Filter;
@@ -80,6 +83,7 @@ public class MongoReservationRepository : IReservationRepository
         return (int)count;
     }
 
+    // Counts Requested, Approved, and Scheduled reservations for the station.
     public async Task<int> CountHoldingForStationAsync(string stationId, CancellationToken cancellationToken)
     {
         var builder = Builders<EnergyReservation>.Filter;
@@ -88,6 +92,7 @@ public class MongoReservationRepository : IReservationRepository
         return (int)count;
     }
 
+    // Holding reservations for the prosumer, skipping ignoreId when it is set.
     public async Task<IReadOnlyList<EnergyReservation>> ListHoldingForProsumerAsync(string prosumerId, string? ignoreId, CancellationToken cancellationToken)
     {
         var builder = Builders<EnergyReservation>.Filter;

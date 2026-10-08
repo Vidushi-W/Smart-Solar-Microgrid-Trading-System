@@ -19,6 +19,7 @@ const emptyForm = {
 };
 const phonePattern = /^\+?[0-9\s().-]+$/;
 
+// Count digits only, so spaces and separators do not change the 7 to 15 length check.
 function isPhoneNumberValid(phoneNumber) {
   const normalized = phoneNumber.trim();
   const digitCount = normalized.replace(/\D/g, "").length;
@@ -83,6 +84,7 @@ export default function UserFormPage() {
     }
   }
 
+  // On edit, a blank password is sent as null so the stored password is left unchanged. A new password must meet the checklist.
   async function submit(event) {
     event.preventDefault();
     setError("");

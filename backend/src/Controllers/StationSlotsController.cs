@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SolarMicrogridTrading.Api.Constants;
 using SmartSolar.Microgrid.DTOs;
 using SmartSolar.Microgrid.Interfaces;
 using SmartSolar.Microgrid.Services;
@@ -18,7 +17,7 @@ public sealed class StationSlotsController : ControllerBase
     public StationSlotsController(IEnergyBookingSlotService service) => _service = service;
 
     [HttpPost]
-    [Authorize(Policy = AuthorizationPolicies.BackofficeOnly)]
+    [Authorize(Roles = "Backoffice,GridOperator")]
     [ProducesResponseType(typeof(EnergyBookingSlotResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

@@ -1,3 +1,5 @@
+// Grid-operator scanner. Screenshots are blocked.
+// Confirm is enabled only for a Scheduled reservation that still has a verification token.
 package com.smartsolar.microgrid.activities
 
 import android.Manifest
@@ -27,6 +29,7 @@ class QrScannerActivity : SolarActivity() {
     private val permission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) scan() else message.text = getString(R.string.camera_denied)
     }
+    // Grid operator only. Screenshots are blocked.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!setup(getString(R.string.scan_qr), listOf("GridOperator"))) return
@@ -79,10 +82,14 @@ class QrScannerActivity : SolarActivity() {
                 transfer.completedBy?.let { text("${getString(R.string.completed_by)}: $it") }
                 if (!state.uncertain && state.payload != null && transfer.reservationStatus != "Completed") {
                     button(getString(R.string.confirm_transfer), !state.busy && transfer.reservationStatus == "Scheduled" && transfer.verificationToken != null) {
-                        AlertDialog.Builder(this).setTitle(R.string.confirm_transfer)
-                            .setMessage("${transfer.reservationId} · ${transfer.energyKwh} kWh")
-                            .setPositiveButton(R.string.confirm) { _, _ -> model.complete(api) }
-                            .setNegativeButton(R.string.back, null).show()
+                        com.smartsolar.microgrid.ui.SolarUi.popup(
+                            activity = this,
+                            title = getString(R.string.confirm_transfer),
+                            message = "${transfer.reservationId} · ${transfer.energyKwh} kWh",
+                            confirm = getString(R.string.confirm),
+                            dismiss = getString(R.string.back),
+                            onConfirm = { model.complete(api) }
+                        )
                     }
                     button(getString(R.string.verify_again), !state.busy) { model.verifyAgain(api) }
                     if (transfer.reservationStatus == "Approved") text(getString(R.string.schedule_before_verify))
@@ -92,6 +99,7 @@ class QrScannerActivity : SolarActivity() {
             content = original
         }
     }
+    // Does nothing while a request is in flight or the last completion outcome is uncertain.
     private fun scan() {
         if (model.state.value?.busy == true || model.state.value?.uncertain == true) return
         model.reset(); reading = true

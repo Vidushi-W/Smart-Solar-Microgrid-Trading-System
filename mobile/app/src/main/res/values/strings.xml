@@ -17,6 +17,17 @@
     <string name="mobile_role_unavailable">Backoffice accounts cannot sign in to the mobile application.</string>
     <string name="login_successful">Login successful as %1$s</string>
     <string name="prosumer_home">Prosumer Home</string>
+    <string name="prosumer_kicker">OPERATIONS PORTAL</string>
+    <string name="reserve_energy">Reserve energy</string>
+    <string name="reserve_energy_hint">Book a station slot and create a reservation.</string>
+    <string name="your_energy">Your energy</string>
+    <string name="upcoming_reservations">Upcoming</string>
+    <string name="completed_reservations">Completed</string>
+    <string name="cancelled_reservations">Cancelled</string>
+    <string name="this_week">This week</string>
+    <string name="recent_bookings">Recent bookings</string>
+    <string name="no_reservations_yet">No reservations yet.</string>
+    <string name="live_bookings">Live bookings</string>
     <string name="operator_home">Grid Operator Home</string>
     <string name="backoffice_home">Backoffice Home</string>
     <string name="access_unavailable">Access unavailable</string>
@@ -74,6 +85,7 @@
     <string name="cancellation_summary">Cancellation summary</string>
     <string name="view_reservation">View reservation</string>
     <string name="reservation_details">Reservation details</string>
+    <string name="notice_title">Check this booking</string>
     <string name="modify_reservation">Modify reservation</string>
     <string name="cancel_reservation">Cancel reservation</string>
     <string name="keep_reservation">Keep reservation</string>
