@@ -92,7 +92,6 @@ public sealed class EnergyBookingSlotService : IEnergyBookingSlotService
         slot.TotalCapacity = request.TotalCapacity;
         slot.RemainingCapacity = request.RemainingCapacity;
         slot.Status = request.Status == EnergyBookingSlotStatus.Closed
-            || (!request.Status.HasValue && slot.Status == EnergyBookingSlotStatus.Closed)
             ? EnergyBookingSlotStatus.Closed
             : request.RemainingCapacity == 0
                 ? EnergyBookingSlotStatus.Full

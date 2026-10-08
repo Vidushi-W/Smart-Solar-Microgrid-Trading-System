@@ -1,5 +1,5 @@
 /**
- * Prosumer home. Counts and the recent list come from the signed-in prosumer's reservations.
+ * Prosumer home. Counts, reservations, and station details come from the API.
  * A transfer QR opens only when the prosumer asks for it.
  */
 import { useEffect, useMemo, useState } from "react";
@@ -270,6 +270,55 @@ export default function ProsumerDashboard({ name }) {
             </table>
           </div>
         ) : null}
+      </section>
+
+      <section className="pd-panel">
+        <header>
+          <div>
+            <h2>Station directory</h2>
+            <p>Stations currently registered in the network.</p>
+          </div>
+        </header>
+        <div className="table-wrap">
+          <table className="account-table">
+            <thead>
+              <tr>
+                <th>Station</th>
+                <th>Location</th>
+                <th>Capacity</th>
+                <th>Hours</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stations.map((station) => (
+                <tr key={station.stationId}>
+                  <td>
+                    <strong>{station.name || "Unnamed station"}</strong>
+                    <small className="table-subtitle">{station.stationId}</small>
+                  </td>
+                  <td>
+                    {station.address || "Address not provided"}
+                    <small className="table-subtitle">
+                      {Number.isFinite(Number(station.latitude)) && Number.isFinite(Number(station.longitude))
+                        ? `${Number(station.latitude).toFixed(4)}, ${Number(station.longitude).toFixed(4)}`
+                        : "Coordinates not provided"}
+                    </small>
+                  </td>
+                  <td>
+                    {Number(station.capacityKwh || 0)} kWh
+                    <small className="table-subtitle">{station.status || "Unknown status"}</small>
+                  </td>
+                  <td>{station.openTime && station.closeTime ? `${station.openTime}–${station.closeTime}` : "Not provided"}</td>
+                  <td><StatusBadge value={station.status || "Unknown"} /></td>
+                </tr>
+              ))}
+              {!loading && stations.length === 0 ? (
+                <tr><td colSpan="5">No stations are currently available.</td></tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       {selected ? (

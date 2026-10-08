@@ -1,5 +1,5 @@
 /**
- * Backoffice list of web users. Activate and deactivate call the account API; they do not change the browser demo data.
+ * Backoffice list of users returned by the account API.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";

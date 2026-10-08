@@ -10,6 +10,7 @@ import EmptyState from "../../components/common/EmptyState";
 import { useAuth } from "../../context/AuthContext";
 import { stationsApi } from "../../services/apiClient";
 import StationForm from "./StationForm";
+import StationNetworkMap from "../../components/stations/StationNetworkMap";
 
 export default function StationsPage() {
   const { user } = useAuth();
@@ -26,13 +27,16 @@ export default function StationsPage() {
   const [formStation, setFormStation] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deactivateTarget, setDeactivateTarget] = useState(null);
+  const [selectedId, setSelectedId] = useState("");
 
   const loadStations = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
       const rows = await stationsApi.list();
-      setStations(Array.isArray(rows) ? rows : []);
+      const list = Array.isArray(rows) ? rows : [];
+      setStations(list);
+      setSelectedId((current) => current || list[0]?.stationId || "");
     } catch (loadError) {
       setError(loadError.message || "Could not load stations.");
     } finally {
@@ -90,7 +94,7 @@ export default function StationsPage() {
   }
 
   return (
-    <div className="page">
+    <div className="page stations-page">
       <PageHeader
         eyebrow="Stations"
         title="Solar stations"
@@ -101,8 +105,16 @@ export default function StationsPage() {
       {error ? <div className="banner warn" role="alert"><p>{error}</p><button type="button" onClick={() => setError("")}>Dismiss</button></div> : null}
       {notice ? <div className="banner ok" role="status"><p>{notice}</p><button type="button" onClick={() => setNotice("")}>Dismiss</button></div> : null}
 
+      <section className="station-metrics" aria-label="Station network summary">
+        <article className="station-metric station-metric-primary"><span className="station-metric-icon">⌖</span><div><small>NETWORK STATIONS</small><strong>{stations.length}</strong><span>{stations.filter((item) => item.status === "Active").length} currently active</span></div></article>
+        <article className="station-metric"><span className="station-metric-icon">◒</span><div><small>CONNECTED CAPACITY</small><strong>{stations.reduce((sum, item) => sum + Number(item.capacityKwh || 0), 0)} <em>kWh</em></strong><span>across the live network</span></div></article>
+        <article className="station-metric"><span className="station-metric-icon">↗</span><div><small>BATTERY AVAILABILITY</small><strong>{stations.reduce((sum, item) => sum + Number(item.availableBatterySlots || 0), 0)}</strong><span>open battery slots</span></div></article>
+      </section>
+
+      {!loading && stations.length > 0 ? <StationNetworkMap stations={stations} selectedId={selectedId} onSelect={setSelectedId} /> : null}
+
       <section className="filter-card station-filters">
-        <header className="panel-head"><h2>Stations</h2><span className="hint">{rows.length} shown</span></header>
+        <header className="panel-head"><div><span className="eyebrow">NETWORK DIRECTORY</span><h2>Station directory</h2></div><span className="hint">{rows.length} of {stations.length} shown</span></header>
         <div className="filter-grid">
           <label>
             Search
@@ -123,15 +135,15 @@ export default function StationsPage() {
       {loading ? <div className="panel"><p className="hint">Loading stations…</p></div> : error && stations.length === 0 ? null : rows.length === 0 ? (
         <EmptyState title="No stations found" text={query || status !== "All" ? "Change the search or status filter." : "Add a station to start managing this network."} />
       ) : (
-        <div className="table-wrap">
+        <div className="table-wrap stations-table-wrap">
           <table className="station-table">
-            <thead><tr><th>Name</th><th>Location</th><th>Capacity</th><th>Battery slots</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Station</th><th>Location</th><th>Capacity</th><th>Battery slots</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
               {rows.map((station) => (
-                <tr key={station.stationId}>
-                  <td><strong>{station.name}</strong><small className="table-subtitle">{station.stationId}</small></td>
-                  <td>{Number(station.latitude).toFixed(4)}, {Number(station.longitude).toFixed(4)}</td>
-                  <td>{station.capacityKwh} kWh</td>
+                <tr key={station.stationId} className={selectedId === station.stationId ? "is-highlighted" : ""}>
+                  <td><button type="button" className="station-name-button" onClick={() => setSelectedId(station.stationId)}><strong>{station.name}</strong><small>{station.stationId}</small></button></td>
+                  <td><span className="location-cell">⌖ {station.address || "Sri Lanka"}</span><small className="table-subtitle">{Number(station.latitude).toFixed(4)}, {Number(station.longitude).toFixed(4)}</small></td>
+                  <td><strong>{station.capacityKwh} kWh</strong><small className="table-subtitle">solar + storage</small></td>
                   <td>{station.availableBatterySlots} available / {station.totalBatterySlots}</td>
                   <td><StatusBadge value={station.status} /></td>
                   <td>

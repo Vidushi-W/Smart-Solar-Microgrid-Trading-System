@@ -9,6 +9,7 @@ namespace SmartSolar.Microgrid.Controllers;
 
 [ApiController]
 [Route("api/stations/{stationId}/slots")]
+[Authorize]
 public sealed class StationSlotsController : ControllerBase
 {
     private readonly IEnergyBookingSlotService _service;
